@@ -133,7 +133,7 @@ cd PIXTONE
 The debug APK is produced at:
 
 ```
-app/build/outputs/apk/debug/app-debug.apk
+app/build/outputs/apk/debug/Pixtone-1.0.0.apk
 ```
 
 `local.properties` with your own `sdk.dir` is ignored by Git.
