@@ -72,6 +72,78 @@ import com.vova.glyph.ui.theme.GlyphWhite
 import kotlinx.coroutines.delay
 
 @Composable
+fun CoverUpdateDialog(
+    onFindMissing: () -> Unit,
+    onUpdateAll: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val shape = RoundedCornerShape(2.dp)
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .border(1.dp, GlyphLine, shape),
+            color = GlyphSurface,
+            shape = shape,
+        ) {
+            Column(Modifier.padding(20.dp)) {
+                MicroLabel("ОБЛОЖКИ", color = GlyphRed)
+                Spacer(Modifier.height(14.dp))
+                CoverOptionCard(
+                    title = "НЕДОСТАЮЩИЕ ОБЛОЖКИ",
+                    body = "Найти обложки для треков, где PIXTONE нарисовал точки.",
+                    onClick = onFindMissing,
+                )
+                Spacer(Modifier.height(10.dp))
+                CoverOptionCard(
+                    title = "ВСЕ ОБЛОЖКИ",
+                    body = "Перекачать обложки для всех треков библиотеки.",
+                    onClick = onUpdateAll,
+                )
+                Spacer(Modifier.height(16.dp))
+                GlyphButton(
+                    text = "Закрыть",
+                    onClick = onDismiss,
+                    filled = false,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun CoverOptionCard(
+    title: String,
+    body: String,
+    onClick: () -> Unit,
+) {
+    val shape = RoundedCornerShape(2.dp)
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .border(1.dp, GlyphLine, shape)
+            .padding(12.dp),
+    ) {
+        Text(
+            title,
+            style = MaterialTheme.typography.titleSmall.copy(color = GlyphWhite),
+        )
+        Spacer(Modifier.height(5.dp))
+        Text(
+            body,
+            style = MaterialTheme.typography.bodySmall.copy(color = GlyphGray, fontSize = 11.sp),
+        )
+        Spacer(Modifier.height(10.dp))
+        GlyphButton(
+            text = "ОБНОВИТЬ ОБЛОЖКИ",
+            onClick = onClick,
+            modifier = Modifier.fillMaxWidth(),
+        )
+    }
+}
+
+@Composable
 fun CreatePlaylistDialog(
     coverUri: Uri?,
     onPickCover: () -> Unit,

@@ -96,10 +96,6 @@ class MainViewModel(
 
     private var artworkJob: Job? = null
 
-    private var pendingCoverIds: MutableSet<Long> = mutableSetOf()
-
-    private var pendingCoversManual = false
-
     private val _message = MutableSharedFlow<String>(extraBufferCapacity = 8)
     val messages: SharedFlow<String> = _message.asSharedFlow()
 
@@ -186,13 +182,6 @@ class MainViewModel(
                     }
                 )
 
-                if (result.newCount > 0) {
-                    val addedUris = result.added.mapTo(HashSet()) { it.uri }
-                    val newIds = repo.tracks.value
-                        .filter { it.uri in addedUris }
-                        .mapTo(HashSet()) { it.id }
-                    refreshCovers(ids = newIds)
-                }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -213,32 +202,15 @@ class MainViewModel(
         onFolderPicked(uri, fromOnboarding = false)
     }
 
-    private fun refreshCovers(ids: Set<Long>? = null, manual: Boolean = false) {
-        if (ids.isNullOrEmpty() && !manual) return
-
-        if (artworkJob?.isActive == true) {
-            if (manual) pendingCoversManual = true
-            ids?.let { pendingCoverIds += it }
-            return
-        }
-
-        if (manual) pendingCoversManual = true else ids?.let { pendingCoverIds += it }
-
-        artworkJob = viewModelScope.launch {
-            do {
-                val requestManual = pendingCoversManual
-                val requestIds = pendingCoverIds.toSet()
-                pendingCoversManual = false
-                pendingCoverIds = mutableSetOf()
-
-                if (requestManual || requestIds.isNotEmpty()) {
-                    runArtworkPass(ids = requestIds, manual = requestManual)
-                }
-            } while (pendingCoversManual || pendingCoverIds.isNotEmpty())
-        }
+    fun findMissingCovers() {
+        startCoverRefresh(allTracks = false)
     }
 
     fun refreshAllCovers() {
+        startCoverRefresh(allTracks = true)
+    }
+
+    private fun startCoverRefresh(allTracks: Boolean) {
         if (_scanning.value) {
             notify("Дождитесь окончания сканирования")
             return
@@ -251,27 +223,24 @@ class MainViewModel(
             notify("Нет интернета — обложки обновить не получится")
             return
         }
-        val missing = repo.tracks.value.count { track ->
-            track.source == Track.SOURCE_LOCAL &&
-                !container.artworkStore.hasArtwork(track.artwork)
+        if (artworkJob?.isActive == true) return
+        if (!allTracks) {
+            val missing = repo.tracks.value.count { track ->
+                track.source == Track.SOURCE_LOCAL &&
+                    !container.artworkStore.hasArtwork(track.artwork)
+            }
+            if (missing == 0) {
+                notify("Все обложки уже на месте")
+                return
+            }
         }
-        if (missing == 0) {
-            notify("Все обложки уже на месте")
-            return
-        }
-        refreshCovers(manual = true)
+        artworkJob = viewModelScope.launch { runArtworkPass(allTracks) }
     }
 
-    private suspend fun runArtworkPass(ids: Set<Long>, manual: Boolean) {
-        val preferGenius = !container.geniusGate.isBlocked
+    private suspend fun runArtworkPass(allTracks: Boolean) {
         val pending = repo.tracks.value.filter { track ->
-            when {
-                manual -> track.source == Track.SOURCE_LOCAL &&
-                    !container.artworkStore.hasArtwork(track.artwork)
-
-                else -> track.id in ids &&
-                    container.artworkStore.needsRemoteCover(track.artwork, preferGenius)
-            }
+            track.source == Track.SOURCE_LOCAL &&
+                (allTracks || !container.artworkStore.hasArtwork(track.artwork))
         }
         if (pending.isEmpty() || !hasInternet()) return
 
@@ -327,7 +296,7 @@ class MainViewModel(
         val count = updated.get()
         if (count > 0) {
             notify("Обложки обновлены: $count")
-        } else if (manual) {
+        } else {
             notify("Не удалось найти обложки — проверьте интернет или попробуйте позже")
         }
     }

@@ -45,6 +45,7 @@ import com.vova.glyph.i18n.AppLanguage
 import com.vova.glyph.i18n.LangController
 import com.vova.glyph.i18n.tr
 import com.vova.glyph.ui.components.ColorPickerDialog
+import com.vova.glyph.ui.components.CoverUpdateDialog
 import com.vova.glyph.ui.components.DotGrid
 import com.vova.glyph.ui.components.DotSpinner
 import com.vova.glyph.ui.components.Glyph
@@ -141,6 +142,7 @@ private fun SettingsMain(
     val artworkStatus by vm.artworkStatus.collectAsStateWithLifecycle()
     val tracks by vm.tracks.collectAsStateWithLifecycle()
     val favoritesList by vm.favorites.collectAsStateWithLifecycle()
+    var showCoverDialog by remember { mutableStateOf(false) }
 
     val folderPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocumentTree()
@@ -265,20 +267,19 @@ private fun SettingsMain(
                 modifier = Modifier.weight(1f),
             )
             GlyphButton(
-                text = "СКАНИРОВАТЬ",
-                onClick = vm::rescanFolder,
+                text = "ОБЛОЖКИ",
+                onClick = { showCoverDialog = true },
                 filled = false,
-                enabled = !scanning && !folderName.isNullOrBlank(),
+                enabled = !scanning && artworkStatus == null && tracks.isNotEmpty(),
                 modifier = Modifier.weight(1f),
             )
         }
         Spacer(Modifier.height(9.dp))
         GlyphButton(
-            text = if (artworkStatus != null) "ОБНОВЛЯЮ ОБЛОЖКИ…" else "ОБНОВИТЬ ОБЛОЖКИ",
-            onClick = vm::refreshAllCovers,
+            text = "СКАНИРОВАТЬ",
+            onClick = vm::rescanFolder,
             filled = false,
-            enabled = !scanning && artworkStatus == null && tracks.isNotEmpty(),
-            leading = Glyph.Download,
+            enabled = !scanning && !folderName.isNullOrBlank(),
             modifier = Modifier.fillMaxWidth(),
         )
         Spacer(Modifier.height(11.dp))
@@ -345,6 +346,20 @@ private fun SettingsMain(
         MicroLabel("PIXTONE · ЛИЧНЫЙ ПЛЕЕР", color = GlyphDim, fontSize = 8)
         Spacer(Modifier.weight(1f))
         MicroLabel("СДЕЛАНО ДЛЯ МУЗЫКИ", color = GlyphDim, fontSize = 8)
+    }
+
+    if (showCoverDialog) {
+        CoverUpdateDialog(
+            onFindMissing = {
+                showCoverDialog = false
+                vm.findMissingCovers()
+            },
+            onUpdateAll = {
+                showCoverDialog = false
+                vm.refreshAllCovers()
+            },
+            onDismiss = { showCoverDialog = false },
+        )
     }
 }
 

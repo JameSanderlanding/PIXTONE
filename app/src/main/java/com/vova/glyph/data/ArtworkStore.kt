@@ -46,7 +46,8 @@ class ArtworkStore(context: Context) {
         file.absolutePath
     }.getOrNull()
 
-    fun needsRemoteCover(path: String?, preferGenius: Boolean = true): Boolean {        if (path.isNullOrBlank()) return true
+    fun needsRemoteCover(path: String?, preferGenius: Boolean = true): Boolean {
+        if (path.isNullOrBlank()) return true
         if (path.startsWith("http://") || path.startsWith("https://")) return false
         val name = File(path).name
         if (name.startsWith("embedded_")) return true
