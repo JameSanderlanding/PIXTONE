@@ -1,0 +1,39 @@
+PIXTONE - Third-Party Notices
+
+This application uses the following open source components.
+
+AndroidX and Jetpack Compose
+Copyright 2014-2025 The Android Open Source Project
+Licensed under the Apache License, Version 2.0.
+
+Android Media3 (ExoPlayer)
+Copyright The Android Open Source Project
+Licensed under the Apache License, Version 2.0.
+
+AndroidX DocumentFile
+Copyright The Android Open Source Project
+Licensed under the Apache License, Version 2.0.
+
+Coil
+Copyright 2020 Coil Contributors
+Licensed under the Apache License, Version 2.0.
+
+OkHttp
+Copyright 2019 Square, Inc.
+Licensed under the Apache License, Version 2.0.
+
+Kotlin Coroutines
+Copyright 2016-2025 JetBrains s.r.o.
+Licensed under the Apache License, Version 2.0.
+
+Jsoup
+Copyright 2009-2025 Jonathan Hedley
+Licensed under the MIT License.
+
+Fonts
+Doto — Copyright 2024 The Doto Project Authors
+Pixelify Sans — Copyright 2021 The Pixelify Sans Project Authors
+Space Grotesk — Copyright 2020 The Space Grotesk Project Authors
+All fonts are licensed under the SIL Open Font License, Version 1.1.
+
+Full license texts are provided in the licenses section of this application.

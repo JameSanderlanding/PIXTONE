@@ -1,0 +1,460 @@
+package com.vova.glyph.ui.screens
+
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.material3.MaterialTheme
+import com.vova.glyph.ui.components.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.vova.glyph.MainViewModel
+import com.vova.glyph.data.Playlist
+import com.vova.glyph.data.Track
+import com.vova.glyph.ui.components.CreatePlaylistDialog
+import com.vova.glyph.ui.components.DotSpinner
+import com.vova.glyph.ui.components.EmptyState
+import com.vova.glyph.ui.components.LyricsDialog
+import com.vova.glyph.ui.components.Glyph
+import com.vova.glyph.ui.components.GlyphButton
+import com.vova.glyph.ui.components.GlyphCover
+import com.vova.glyph.ui.components.GlyphIcon
+import com.vova.glyph.ui.components.MicroLabel
+import com.vova.glyph.ui.components.ScreenHeader
+import com.vova.glyph.ui.components.SectionHeader
+import com.vova.glyph.ui.components.TrackRow
+import com.vova.glyph.ui.theme.DotoFamily
+import com.vova.glyph.ui.theme.GlyphBlack
+import com.vova.glyph.ui.theme.GlyphDim
+import com.vova.glyph.ui.theme.GlyphGray
+import com.vova.glyph.ui.theme.GlyphLine
+import com.vova.glyph.ui.theme.GlyphRed
+import com.vova.glyph.ui.theme.GlyphSurface
+import com.vova.glyph.ui.theme.GlyphWhite
+
+@Composable
+fun LibraryScreen(vm: MainViewModel) {
+    val tracks by vm.tracks.collectAsStateWithLifecycle()
+    val favorites by vm.favorites.collectAsStateWithLifecycle()
+    val playlists by vm.playlists.collectAsStateWithLifecycle()
+    val currentTrack by vm.currentTrack.collectAsStateWithLifecycle()
+    val playerState by vm.playerState.collectAsStateWithLifecycle()
+    val folderName by vm.folderName.collectAsStateWithLifecycle()
+    val scanning by vm.scanning.collectAsStateWithLifecycle()
+    val scanStatus by vm.scanStatus.collectAsStateWithLifecycle()
+    val scanFound by vm.scanFound.collectAsStateWithLifecycle()
+    val lyrics by vm.lyrics.collectAsStateWithLifecycle()
+    val syncedLyrics by vm.syncedLyrics.collectAsStateWithLifecycle()
+    val lyricsLoading by vm.lyricsLoading.collectAsStateWithLifecycle()
+
+    var query by remember { mutableStateOf("") }
+    var showCreate by remember { mutableStateOf(false) }
+    var coverUri by remember { mutableStateOf<Uri?>(null) }
+    var playlistTarget by remember { mutableStateOf<Track?>(null) }
+    var showLyrics by remember { mutableStateOf(false) }
+    var lyricsTrack by remember { mutableStateOf<Track?>(null) }
+    var lyricsCompletionBase by remember { mutableStateOf(0L) }
+
+    
+    LaunchedEffect(playerState.completionCount) {
+        val track = lyricsTrack ?: return@LaunchedEffect
+        if (!showLyrics || playerState.completionCount <= lyricsCompletionBase) return@LaunchedEffect
+        if (playerState.completedTrackId == track.id) {
+            showLyrics = false
+            lyricsTrack = null
+            vm.clearLyrics()
+        }
+    }
+
+    val imagePicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri -> if (uri != null) coverUri = uri }
+
+    val folderPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocumentTree()
+    ) { uri -> if (uri != null) vm.onFolderPicked(uri, fromOnboarding = false) }
+
+    val filtered = remember(tracks, query) {
+        val q = query.trim()
+        if (q.isBlank()) tracks
+        else tracks.filter {
+            it.title.contains(q, ignoreCase = true) ||
+                it.artist.contains(q, ignoreCase = true) ||
+                it.album.contains(q, ignoreCase = true)
+        }
+    }
+
+    LazyColumn(
+        Modifier.fillMaxWidth(),
+        contentPadding = PaddingValues(bottom = 24.dp),
+    ) {
+        item {
+            ScreenHeader(
+                index = "01",
+                title = "Библиотека",
+                subtitle = buildString {
+                    append("${tracks.size} ТРЕКОВ · ${favorites.size} В ИЗБРАННОМ")
+                    folderName?.takeIf { it.isNotBlank() }?.let {
+                        append(" · ${it.uppercase()}")
+                    }
+                },
+                onSettings = vm::openSettings,
+            )
+        }
+        item { Spacer(Modifier.height(18.dp)) }
+        if (scanning) {
+            item { LibraryScanCard(status = scanStatus, found = scanFound) }
+        } else {
+            item {
+                LibrarySearchField(
+                    query = query,
+                    onQueryChange = { query = it },
+                    modifier = Modifier.padding(horizontal = 20.dp),
+                )
+            }
+            item {
+                SectionHeader(
+                    number = "02",
+                    title = "ПЛЕЙЛИСТЫ",
+                    modifier = Modifier.padding(top = 8.dp),
+                    action = {
+                        Row(
+                            Modifier.clickable { showCreate = true },
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            GlyphIcon(Glyph.Plus, tint = GlyphWhite, modifier = Modifier.size(12.dp))
+                            Spacer(Modifier.width(5.dp))
+                            MicroLabel("СОЗДАТЬ", color = GlyphWhite)
+                        }
+                    },
+                )
+            }
+            item {
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 20.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    item(key = "create") {
+                        CreatePlaylistCard(onClick = { showCreate = true })
+                    }
+                    items(playlists, key = { it.id }) { playlist ->
+                        PlaylistCard(playlist = playlist, onClick = { vm.openPlaylist(playlist.id) })
+                    }
+                }
+            }
+            item {
+                SectionHeader(
+                    number = "03",
+                    title = if (query.isBlank()) "ВСЕ ТРЕКИ" else "РЕЗУЛЬТАТЫ: ${filtered.size}",
+                    modifier = Modifier.padding(top = 10.dp),
+                    action = {
+                        if (tracks.isNotEmpty() && query.isBlank()) {
+                            Row(
+                                Modifier.clickable { folderPicker.launch(null) },
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                GlyphIcon(Glyph.Folder, tint = GlyphGray, modifier = Modifier.size(13.dp))
+                                Spacer(Modifier.width(5.dp))
+                                MicroLabel("ПАПКА", color = GlyphGray)
+                            }
+                        }
+                    },
+                )
+            }
+            if (tracks.isEmpty()) {
+                item {
+                    EmptyState(
+                        glyph = Glyph.Library,
+                        title = "Здесь пока пусто",
+                        body = "Выберите папку с музыкой на устройстве.",
+                        action = {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                GlyphButton(
+                                    text = "ВЫБРАТЬ ПАПКУ",
+                                    onClick = { folderPicker.launch(null) },
+                                    leading = Glyph.Folder,
+                                )
+                            }
+                        },
+                    )
+                }
+            } else if (filtered.isEmpty()) {
+                item {
+                    EmptyState(
+                        glyph = Glyph.Search,
+                        title = "Ничего не найдено",
+                        body = "Попробуйте другое название, исполнителя или альбом.",
+                    )
+                }
+            } else {
+                itemsIndexed(filtered, key = { _, track -> track.id }) { index, track ->
+                    TrackRow(
+                        track = track,
+                        isCurrent = currentTrack?.id == track.id,
+                        isPlaying = playerState.isPlaying && currentTrack?.id == track.id,
+                        onClick = {
+                            vm.playTracks(filtered, index)
+                        },
+                        onFavorite = { vm.toggleFavorite(track) },
+                        onLyrics = {
+                            lyricsTrack = track
+                            lyricsCompletionBase = playerState.completionCount
+                            vm.fetchLyrics(track)
+                            showLyrics = true
+                        },
+                        onAddToPlaylist = { playlistTarget = track },
+                    )
+                }
+            }
+        }
+    }
+
+    if (showCreate) {
+        CreatePlaylistDialog(
+            coverUri = coverUri,
+            onPickCover = { imagePicker.launch("image/*") },
+            onDismiss = {
+                showCreate = false
+                coverUri = null
+            },
+            onCreate = { name, description ->
+                vm.createPlaylist(name, description, coverUri)
+                showCreate = false
+                coverUri = null
+            },
+        )
+    }
+
+    playlistTarget?.let { track ->
+        com.vova.glyph.ui.components.AddToPlaylistSheet(
+            track = track,
+            playlists = playlists,
+            onDismiss = { playlistTarget = null },
+            onSelect = { playlist ->
+                vm.addTrackToPlaylist(playlist.id, track)
+                playlistTarget = null
+            },
+            onCreateNew = {
+                playlistTarget = null
+                showCreate = true
+            },
+        )
+    }
+
+    if (showLyrics) {
+        lyricsTrack?.let { track ->
+            LyricsDialog(
+                track = track,
+                lyrics = lyrics,
+                syncedLines = syncedLyrics,
+                positionMs = if (currentTrack?.id == track.id) playerState.positionMs else null,
+                durationMs = if (currentTrack?.id == track.id) playerState.durationMs else 0L,
+                onSeek = if (currentTrack?.id == track.id) vm::seekToLine else null,
+                loading = lyricsLoading,
+                onRetry = { vm.fetchLyrics(track) },
+                onDismiss = {
+                    showLyrics = false
+                    lyricsTrack = null
+                    vm.clearLyrics()
+                },
+            )
+        }
+    }
+}
+
+@Composable
+private fun LibrarySearchField(
+    query: String,
+    onQueryChange: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier
+            .fillMaxWidth()
+            .background(GlyphSurface, RoundedCornerShape(2.dp))
+            .border(1.dp, GlyphLine, RoundedCornerShape(2.dp))
+            .padding(horizontal = 13.dp, vertical = 11.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        GlyphIcon(Glyph.Search, tint = GlyphGray, modifier = Modifier.size(16.dp), stroke = 1.5.dp)
+        Spacer(Modifier.width(10.dp))
+        Box(Modifier.weight(1f)) {
+            if (query.isEmpty()) {
+                Text(
+                    "Поиск по библиотеке",
+                    style = MaterialTheme.typography.bodySmall.copy(color = GlyphDim),
+                )
+            }
+            BasicTextField(
+                value = query,
+                onValueChange = onQueryChange,
+                singleLine = true,
+                textStyle = TextStyle(
+                    color = GlyphWhite,
+                    fontSize = 13.sp,
+                ),
+                cursorBrush = SolidColor(GlyphRed),
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+        if (query.isNotEmpty()) {
+            Box(
+                Modifier.size(26.dp).clickable { onQueryChange("") },
+                contentAlignment = Alignment.Center,
+            ) {
+                GlyphIcon(Glyph.Close, tint = GlyphGray, modifier = Modifier.size(13.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun PlaylistCard(playlist: Playlist, onClick: () -> Unit) {
+    Column(Modifier.width(116.dp).clickable(onClick = onClick)) {
+        GlyphCover(
+            artwork = playlist.cover,
+            seed = playlist.name,
+            modifier = Modifier.size(116.dp),
+        )
+        Spacer(Modifier.height(8.dp))
+        Text(
+            playlist.name,
+            style = MaterialTheme.typography.titleSmall.copy(color = GlyphWhite),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Spacer(Modifier.height(2.dp))
+        Text(
+            "${playlist.trackCount} ТРЕКОВ",
+            style = MaterialTheme.typography.labelSmall.copy(color = GlyphDim, fontSize = 8.sp),
+        )
+    }
+}
+
+@Composable
+private fun CreatePlaylistCard(onClick: () -> Unit) {
+    val shape = RoundedCornerShape(2.dp)
+    Column(
+        Modifier
+            .width(116.dp)
+            .clickable(onClick = onClick)
+    ) {
+        Box(
+            Modifier
+                .size(116.dp)
+                .clip(shape)
+                .background(GlyphSurface)
+                .border(1.dp, GlyphLine, shape),
+            contentAlignment = Alignment.Center,
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Box(
+                    Modifier
+                        .size(38.dp)
+                        .border(1.dp, GlyphDim, CircleShape),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    GlyphIcon(Glyph.Plus, tint = GlyphWhite, modifier = Modifier.size(18.dp))
+                }
+                Spacer(Modifier.height(8.dp))
+                MicroLabel("НОВЫЙ", color = GlyphGray, fontSize = 8)
+            }
+        }
+        Spacer(Modifier.height(8.dp))
+        Text(
+            "Создать плейлист",
+            style = MaterialTheme.typography.titleSmall.copy(color = GlyphGray),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Spacer(Modifier.height(2.dp))
+        Text(
+            "ОБЛОЖКА · ОПИСАНИЕ",
+            style = MaterialTheme.typography.labelSmall.copy(color = GlyphDim, fontSize = 8.sp),
+        )
+    }
+}
+
+@Composable
+private fun LibraryScanCard(status: String, found: Int) {
+    val shape = RoundedCornerShape(2.dp)
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 18.dp)
+            .background(GlyphSurface, shape)
+            .border(1.dp, GlyphLine, shape)
+            .padding(20.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        DotSpinner(Modifier.size(30.dp), color = GlyphWhite)
+        Spacer(Modifier.height(14.dp))
+        Text(
+            "ОБНОВЛЯЮ",
+            style = MaterialTheme.typography.titleLarge.copy(color = GlyphWhite, fontSize = 17.sp),
+        )
+        Spacer(Modifier.height(8.dp))
+        Text(
+            status.ifBlank { "ПОДГОТОВКА…" },
+            style = MaterialTheme.typography.labelSmall.copy(
+                color = GlyphGray,
+                fontSize = 8.sp,
+                letterSpacing = 0.4.sp,
+            ),
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Spacer(Modifier.height(16.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            MicroLabel("НАЙДЕНО", color = GlyphDim)
+            Spacer(Modifier.width(8.dp))
+            Text(
+                found.toString().padStart(2, '0'),
+                style = MaterialTheme.typography.displaySmall.copy(
+                    fontFamily = DotoFamily,
+                    color = GlyphRed,
+                    fontSize = 30.sp,
+                    lineHeight = 30.sp,
+                ),
+            )
+            Spacer(Modifier.width(8.dp))
+            MicroLabel("ТРЕКОВ", color = GlyphDim)
+        }
+    }
+}
+
+

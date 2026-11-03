@@ -1,0 +1,464 @@
+package com.vova.glyph.i18n
+
+
+
+
+
+
+
+internal fun translate(text: String, language: AppLanguage): String {
+    DICT[text]?.let { return it.of(language) }
+    for (rule in RULES) {
+        val match = rule.regex.matchEntire(text) ?: continue
+        return rule.apply(language, match)
+    }
+    return text
+}
+
+private data class Tr(
+    val en: String,
+    val de: String,
+    val fr: String,
+    val zh: String,
+    val ja: String,
+) {
+    fun of(language: AppLanguage): String = when (language) {
+        AppLanguage.EN -> en
+        AppLanguage.DE -> de
+        AppLanguage.FR -> fr
+        AppLanguage.ZH -> zh
+        AppLanguage.JA -> ja
+        AppLanguage.RU -> ""
+    }
+}
+
+private fun t(en: String, de: String, fr: String, zh: String, ja: String) =
+    Tr(en, de, fr, zh, ja)
+
+private class Rule(
+    val regex: Regex,
+    val en: String,
+    val de: String,
+    val fr: String,
+    val zh: String,
+    val ja: String,
+) {
+    fun apply(language: AppLanguage, match: MatchResult): String {
+        val format = when (language) {
+            AppLanguage.EN -> en
+            AppLanguage.DE -> de
+            AppLanguage.FR -> fr
+            AppLanguage.ZH -> zh
+            AppLanguage.JA -> ja
+            AppLanguage.RU -> return match.value
+        }
+        var result = format
+        for (index in 1 until match.groupValues.size) {
+            result = result.replace("%$index", match.groupValues[index])
+        }
+        return result
+    }
+}
+
+private fun r(
+    pattern: String,
+    en: String,
+    de: String,
+    fr: String,
+    zh: String,
+    ja: String,
+) = Rule(Regex(pattern), en, de, fr, zh, ja)
+
+private val DICT: Map<String, Tr> = mapOf(
+    
+    "БИБЛИОТЕКА" to t("LIBRARY", "BIBLIOTHEK", "BIBLIOTHÈQUE", "音乐库", "ライブラリ"),
+    "ИЗБРАННОЕ" to t("FAVORITES", "FAVORITEN", "FAVORIS", "收藏", "お気に入り"),
+    "НАСТРОЙКИ" to t("SETTINGS", "EINSTELLUNGEN", "RÉGLAGES", "设置", "設定"),
+    "PIXTONE / НАСТРОЙКИ" to t("PIXTONE / SETTINGS", "PIXTONE / EINSTELLUNGEN", "PIXTONE / RÉGLAGES", "PIXTONE / 设置", "PIXTONE / 設定"),
+    "PIXTONE / ПЛЕЕР" to t("PIXTONE / PLAYER", "PIXTONE / PLAYER", "PIXTONE / LECTEUR", "PIXTONE / 播放器", "PIXTONE / プレイヤー"),
+    "PIXTONE · ЛИЧНЫЙ ПЛЕЕР" to t("PIXTONE · PERSONAL PLAYER", "PIXTONE · PERSÖNLICHER PLAYER", "PIXTONE · LECTEUR PERSONNEL", "PIXTONE · 私人播放器", "PIXTONE · パーソナルプレイヤー"),
+    "СДЕЛАНО ДЛЯ МУЗЫКИ" to t("MADE FOR MUSIC", "FÜR MUSIK GEMACHT", "FAIT POUR LA MUSIQUE", "为音乐而生", "音楽のために"),
+    "СЕЙЧАС" to t("NOW", "JETZT", "MAINTENANT", "现在", "現在"),
+    "СЕЙЧАС ИГРАЕТ" to t("NOW PLAYING", "SPIELT JETZT", "EN LECTURE", "正在播放", "再生中"),
+    "ПАУЗА" to t("PAUSED", "PAUSE", "PAUSE", "暂停", "一時停止"),
+    "ВОСПРОИЗВЕДЕНИЕ" to t("PLAYING", "WIEDERGABE", "LECTURE", "播放中", "再生中"),
+    "НЕТ ТРЕКА" to t("NO TRACK", "KEIN TITEL", "AUCUN TITRE", "无曲目", "曲なし"),
+    "Тишина" to t("Silence", "Stille", "Silence", "寂静", "静寂"),
+    "Выберите трек в библиотеке." to t("Choose a track in your library.", "Wählen Sie einen Titel in der Bibliothek.", "Choisissez un morceau dans la bibliothèque.", "在音乐库中选择曲目。", "ライブラリから曲を選んでください。"),
+    "К БИБЛИОТЕКЕ" to t("TO LIBRARY", "ZUR BIBLIOTHEK", "À LA BIBLIOTHÈQUE", "返回音乐库", "ライブラリへ"),
+    "ЛОКАЛЬНЫЙ ФАЙЛ" to t("LOCAL FILE", "LOKALE DATEI", "FICHIER LOCAL", "本地文件", "ローカルファイル"),
+    "ЛОКАЛЬНО" to t("LOCAL", "LOKAL", "LOCAL", "本地", "ローカル"),
+    "ЛОКАЛЬНО · БЕЗ ОБЛАКА" to t("LOCAL · NO CLOUD", "LOKAL · OHNE CLOUD", "LOCAL · SANS CLOUD", "本地 · 无云端", "ローカル · クラウドなし"),
+    "ТЕКСТ" to t("LYRICS", "TEXT", "PAROLES", "歌词", "歌詞"),
+    "ОЧЕРЕДЬ · ЕСТЬ СЛЕДУЮЩИЙ" to t("QUEUE · NEXT AVAILABLE", "WARTESCHLANGE · NÄCHSTER VORHANDEN", "FILE · SUIVANT DISPONIBLE", "队列 · 有下一首", "キュー · 次あり"),
+    "ОЧЕРЕДЬ · ПОСЛЕДНИЙ ТРЕК" to t("QUEUE · LAST TRACK", "WARTESCHLANGE · LETZTER TITEL", "FILE · DERNIER MORCEAU", "队列 · 最后一首", "キュー · 最後の曲"),
+    "ПЕРЕМЕШКА ВКЛ" to t("SHUFFLE ON", "SHUFFLE AN", "ALÉATOIRE ON", "随机播放开", "シャッフルON"),
+    "ПЕРЕМЕШКА ВЫКЛ" to t("SHUFFLE OFF", "SHUFFLE AUS", "ALÉATOIRE OFF", "随机播放关", "シャッフルOFF"),
+    "ПОВТОР ОДНОГО ТРЕКА" to t("REPEAT ONE", "TITEL WIEDERHOLEN", "RÉPÉTER LE TITRE", "单曲循环", "1曲リピート"),
+    "ПОВТОР ВСЕГО СПИСКА" to t("REPEAT ALL", "ALLE WIEDERHOLEN", "RÉPÉTER TOUT", "列表循环", "全曲リピート"),
+    "В ПЛЕЙЛИСТ" to t("TO PLAYLIST", "ZUR PLAYLIST", "À LA PLAYLIST", "加入播放列表", "プレイリストへ"),
+    "Нажмите на обложку, чтобы поставить на паузу." to t("Tap the cover to pause.", "Tippen Sie auf das Cover, um zu pausieren.", "Touchez la pochette pour mettre en pause.", "点击封面即可暂停。", "カバーをタップすると一時停止します。"),
+    "Библиотека" to t("Library", "Bibliothek", "Bibliothèque", "音乐库", "ライブラリ"),
+    "Избранное" to t("Favorites", "Favoriten", "Favoris", "收藏", "お気に入り"),
+
+    
+    "ПЛЕЙЛИСТЫ" to t("PLAYLISTS", "WIEDERGABELISTEN", "PLAYLISTS", "播放列表", "プレイリスト"),
+    "СОЗДАТЬ" to t("CREATE", "ERSTELLEN", "CRÉER", "创建", "作成"),
+    "ВСЕ ТРЕКИ" to t("ALL TRACKS", "ALLE TITEL", "TOUS LES MORCEAUX", "全部曲目", "すべての曲"),
+    "ПАПКА" to t("FOLDER", "ORDNER", "DOSSIER", "文件夹", "フォルダ"),
+    "Здесь пока пусто" to t("Nothing here yet", "Noch nichts hier", "Rien pour l'instant", "这里还是空的", "まだ何もありません"),
+    "Выберите папку с музыкой на устройстве." to t("Choose a music folder on your device.", "Wählen Sie einen Musikordner auf Ihrem Gerät.", "Choisissez un dossier de musique sur votre appareil.", "在设备上选择音乐文件夹。", "デバイスの音楽フォルダを選んでください。"),
+    "ВЫБРАТЬ ПАПКУ" to t("CHOOSE FOLDER", "ORDNER WÄHLEN", "CHOISIR UN DOSSIER", "选择文件夹", "フォルダを選択"),
+    "Ничего не найдено" to t("Nothing found", "Nichts gefunden", "Aucun résultat", "未找到", "見つかりません"),
+    "Попробуйте другое название, исполнителя или альбом." to t("Try another title, artist, or album.", "Versuchen Sie einen anderen Titel, Künstler oder ein Album.", "Essayez un autre titre, artiste ou album.", "试试其他歌名、歌手或专辑。", "別の曲名・アーティスト・アルバムをお試しください。"),
+    "Поиск по библиотеке" to t("Search library", "Bibliothek durchsuchen", "Rechercher dans la bibliothèque", "搜索音乐库", "ライブラリを検索"),
+    "НОВЫЙ" to t("NEW", "NEU", "NOUVEAU", "新建", "新規"),
+    "Создать плейлист" to t("Create playlist", "Playlist erstellen", "Créer une playlist", "创建播放列表", "プレイリストを作成"),
+    "ОБЛОЖКА · ОПИСАНИЕ" to t("COVER · DESCRIPTION", "COVER · BESCHREIBUNG", "POCHETTE · DESCRIPTION", "封面 · 描述", "カバー · 説明"),
+
+    
+    "СЛУШАТЬ ВСЁ" to t("PLAY ALL", "ALLE ABSPIELEN", "TOUT ÉCOUTER", "全部播放", "すべて再生"),
+    "НА УСТРОЙСТВЕ" to t("ON DEVICE", "AUF DEM GERÄT", "SUR L'APPAREIL", "本机", "デバイス内"),
+    "ВАША КОЛЛЕКЦИЯ" to t("YOUR COLLECTION", "IHRE SAMMLUNG", "VOTRE COLLECTION", "你的收藏", "あなたのコレクション"),
+    "Здесь пока тихо" to t("Quiet here", "Hier ist es still", "C'est calme ici", "这里很安静", "ここは静かです"),
+    "Отмечайте треки сердцем в библиотеке." to t("Heart tracks in your library.", "Markieren Sie Titel in der Bibliothek mit dem Herz.", "Ajoutez des cœurs aux morceaux dans la bibliothèque.", "在音乐库中用爱心标记曲目。", "ライブラリでハートを付けてください。"),
+    "ОТКРЫТЬ БИБЛИОТЕКУ" to t("OPEN LIBRARY", "BIBLIOTHEK ÖFFNEN", "OUVRIR LA BIBLIOTHÈQUE", "打开音乐库", "ライブラリを開く"),
+
+    
+    "Папка с музыкой и данные приложения. Всё хранится только на этом устройстве." to t("Music folder and app data. Everything stays on this device.", "Musikordner und App-Daten. Alles bleibt auf diesem Gerät.", "Dossier musical et données de l'application. Tout reste sur cet appareil.", "音乐文件夹和应用数据。全部仅保存在本设备上。", "音楽フォルダとアプリデータ。すべてこのデバイスに保存されます。"),
+    "ЛОКАЛЬНАЯ МУЗЫКА" to t("LOCAL MUSIC", "LOKALE MUSIK", "MUSIQUE LOCALE", "本地音乐", "ローカル音楽"),
+    "ТЕКУЩАЯ ПАПКА" to t("CURRENT FOLDER", "AKTUELLER ORDNER", "DOSSIER ACTUEL", "当前文件夹", "現在のフォルダ"),
+    "Папка не выбрана" to t("No folder selected", "Kein Ordner gewählt", "Aucun dossier sélectionné", "未选择文件夹", "フォルダ未選択"),
+    "ОБЛОЖКИ" to t("COVERS", "COVER", "POCHETTES", "封面", "カバー"),
+    "ПОДГОТОВКА…" to t("PREPARING…", "VORBEREITUNG…", "PRÉPARATION…", "准备中…", "準備中…"),
+    "СМЕНИТЬ" to t("CHANGE", "ÄNDERN", "CHANGER", "更换", "変更"),
+    "СКАНИРОВАТЬ" to t("SCAN", "SCANNEN", "SCANNER", "扫描", "スキャン"),
+    "ОБНОВЛЯЮ ОБЛОЖКИ…" to t("UPDATING COVERS…", "COVER WERDEN AKTUALISIERT…", "MISE À JOUR DES POCHETTES…", "正在更新封面…", "カバーを更新中…"),
+    "ОБНОВИТЬ ОБЛОЖКИ" to t("UPDATE COVERS", "COVER AKTUALISIEREN", "METTRE À JOUR LES POCHETTES", "更新封面", "カバーを更新"),
+    "О ПРИЛОЖЕНИИ" to t("ABOUT", "ÜBER DIE APP", "À PROPOS", "关于应用", "アプリについて"),
+    "ЛИЦЕНЗИИ" to t("LICENSES", "LIZENZEN", "LICENCES", "许可证", "ライセンス"),
+    "БИБЛИОТЕКИ" to t("LIBRARIES", "BIBLIOTHEKEN", "BIBLIOTHÈQUES", "库", "ライブラリ"),
+    "УВЕДОМЛЕНИЯ" to t("NOTICES", "HINWEISE", "MENTIONS", "声明", "通知"),
+    "Открытые лицензии и уведомления правообладателей. Нажмите на строку, чтобы прочитать текст." to t(
+        "Open source licenses and copyright notices. Tap a row to read the text.",
+        "Open-Source-Lizenzen und Urheberrechtshinweise. Tippen Sie auf eine Zeile, um den Text zu lesen.",
+        "Licences open source et mentions de droits d'auteur. Touchez une ligne pour lire le texte.",
+        "开源许可证与版权声明。点击一行以阅读全文。",
+        "オープンソースライセンスと著作権表示。行をタップすると全文を読めます。",
+    ),
+    "ВЕРСИЯ" to t("VERSION", "VERSION", "VERSION", "版本", "バージョン"),
+    "СБОРКА" to t("BUILD", "BUILD", "BUILD", "构建", "ビルド"),
+    "ДАННЫЕ" to t("DATA", "DATEN", "DONNÉES", "数据", "データ"),
+    "ОФОРМЛЕНИЕ" to t("APPEARANCE", "DARSTELLUNG", "APPARENCE", "外观", "外観"),
+    "ШРИФТЫ" to t("FONTS", "SCHRIFTEN", "POLICES", "字体", "フォント"),
+    "ОСНОВНОЙ ШРИФТ" to t("BODY FONT", "GRUNDSCHRIFT", "POLICE PRINCIPALE", "正文字体", "本文フォント"),
+    "ЗАГОЛОВКИ" to t("HEADINGS", "ÜBERSCHRIFTEN", "TITRES", "标题", "見出し"),
+    "АКЦЕНТНЫЙ ШРИФТ" to t("ACCENT FONT", "AKZENTSCHRIFT", "POLICE D'ACCENT", "强调字体", "アクセントフォント"),
+    "СИСТЕМНЫЙ" to t("SYSTEM", "SYSTEM", "SYSTÈME", "系统", "システム"),
+    "Выберите шрифты интерфейса." to t("Choose interface fonts.", "Wählen Sie die Schriften der Oberfläche.", "Choisissez les polices de l'interface.", "选择界面字体。", "インターフェースのフォントを選んでください。"),
+    "СТАНДАРТ" to t("DEFAULT", "STANDARD", "PAR DÉFAUT", "默认", "デフォルト"),
+    "СВОИ" to t("CUSTOM", "EIGENE", "PERSO", "自定义", "カスタム"),
+    "ТЕМА" to t("THEME", "DESIGN", "THÈME", "主题", "テーマ"),
+    "ЯЗЫК" to t("LANGUAGE", "SPRACHE", "LANGUE", "语言", "言語"),
+    "СВОЯ" to t("CUSTOM", "EIGENE", "PERSO", "自定义", "カスタム"),
+    "ПРЕСЕТЫ" to t("PRESETS", "VORGABEN", "PRÉRÉGLAGES", "预设", "プリセット"),
+    "СОЗДАТЬ ПРЕСЕТ" to t("CREATE PRESET", "PRESET ERSTELLEN", "CRÉER UN PRÉSET", "创建预设", "プリセットを作成"),
+    "НОВЫЙ ПРЕСЕТ" to t("NEW PRESET", "NEUES PRESET", "NOUVEAU PRÉSET", "新建预设", "新しいプリセット"),
+    "НАЗВАНИЕ ПРЕСЕТА" to t("PRESET NAME", "PRESET-NAME", "NOM DU PRÉSET", "预设名称", "プリセット名"),
+    "МОЙ ПРЕСЕТ" to t("MY PRESET", "MEIN PRESET", "MON PRÉSET", "我的预设", "マイプリセット"),
+    "ПАЛИТРА" to t("PALETTE", "PALETTE", "PALETTE", "配色", "パレット"),
+    "СОХРАНИТЬ" to t("SAVE", "SPEICHERN", "ENREGISTRER", "保存", "保存"),
+    "Настройте цвета и сохраните пресет." to t("Adjust the colors and save the preset.", "Passen Sie die Farben an und speichern Sie das Preset.", "Ajustez les couleurs et enregistrez le préset.", "调整颜色并保存预设。", "色を調整してプリセットを保存します。"),
+    "СВОЯ ПАЛИТРА" to t("CUSTOM PALETTE", "EIGENE PALETTE", "PALETTE PERSONNALISÉE", "自定义配色", "カスタムパレット"),
+    "СБРОСИТЬ К СТАНДАРТНОЙ" to t("RESET TO DEFAULT", "AUF STANDARD ZURÜCKSETZEN", "RÉINITIALISER", "恢复默认", "デフォルトに戻す"),
+    "СБРОСИТЬ К СТАНДАРТНЫМ" to t("RESET TO DEFAULT FONTS", "AUF STANDARDSCHRIFTEN ZURÜCKSETZEN", "RÉINITIALISER LES POLICES", "恢复默认字体", "デフォルトフォントに戻す"),
+    "ФОН" to t("BACKGROUND", "HINTERGRUND", "FOND", "背景", "背景"),
+    "ПОВЕРХНОСТЬ" to t("SURFACE", "FLÄCHE", "SURFACE", "表面", "サーフェス"),
+    "ПОВЕРХНОСТЬ 2" to t("SURFACE 2", "FLÄCHE 2", "SURFACE 2", "表面 2", "サーフェス 2"),
+    "ОСНОВНОЙ ТЕКСТ" to t("PRIMARY TEXT", "HAUPTTEXT", "TEXTE PRINCIPAL", "主文字", "メインテキスト"),
+    "СЕРЫЙ" to t("GRAY", "GRAU", "GRIS", "灰色", "グレー"),
+    "ТУСКЛЫЙ" to t("DIM", "GEDÄMPFT", "ATTÉNUÉ", "暗色", "暗色"),
+    "ЛИНИИ" to t("LINES", "LINIEN", "LIGNES", "线条", "ライン"),
+    "АКЦЕНТ" to t("ACCENT", "AKZENT", "ACCENT", "强调色", "アクセント"),
+    "Цвета интерфейса применяются сразу." to t("Interface colors apply instantly.", "Die Farben werden sofort angewendet.", "Les couleurs s'appliquent immédiatement.", "界面颜色会立即生效。", "色はすぐに反映されます。"),
+    "Выберите язык интерфейса." to t("Choose the interface language.", "Wählen Sie die Sprache der Oberfläche.", "Choisissez la langue de l'interface.", "选择界面语言。", "インターフェースの言語を選んでください。"),
+    "ПРИМЕНИТЬ" to t("APPLY", "ANWENDEN", "APPLIQUER", "应用", "適用"),
+    "КРАСНЫЙ" to t("RED", "ROT", "ROUGE", "红", "赤"),
+    "ЗЕЛЁНЫЙ" to t("GREEN", "GRÜN", "VERT", "绿", "緑"),
+    "СИНИЙ" to t("BLUE", "BLAU", "BLEU", "蓝", "青"),
+
+    
+    "НОВЫЙ ПЛЕЙЛИСТ" to t("NEW PLAYLIST", "NEUE PLAYLIST", "NOUVELLE PLAYLIST", "新建播放列表", "新しいプレイリスト"),
+    "Обложка плейлиста" to t("Playlist cover", "Playlist-Cover", "Pochette de la playlist", "播放列表封面", "プレイリストのカバー"),
+    "ОБЛОЖКА" to t("COVER", "COVER", "POCHETTE", "封面", "カバー"),
+    "Выберите .PNG или .JPG" to t("Choose .PNG or .JPG", ".PNG oder .JPG wählen", "Choisissez .PNG ou .JPG", "选择 .PNG 或 .JPG", ".PNG または .JPG を選択"),
+    "Обложка выбрана" to t("Cover selected", "Cover gewählt", "Pochette choisie", "已选择封面", "カバーを選択済み"),
+    "Необязательно. Без обложки PIXTONE сам нарисует точечный узор." to t("Optional. Without a cover PIXTONE draws a dot pattern.", "Optional. Ohne Cover zeichnet PIXTONE ein Punktmuster.", "Facultatif. Sans pochette, PIXTONE dessine un motif de points.", "可选。没有封面时 PIXTONE 会绘制点阵图案。", "任意。カバーがない場合、PIXTONE がドット模様を描きます。"),
+    "Название плейлиста" to t("Playlist name", "Name der Playlist", "Nom de la playlist", "播放列表名称", "プレイリスト名"),
+    "Описание — настроение, повод, пара слов" to t("Description — mood, occasion, a few words", "Beschreibung — Stimmung, Anlass, ein paar Worte", "Description — humeur, occasion, quelques mots", "描述——心情、场合、几个词", "説明 — 気分、場面、ひとこと"),
+    "Отмена" to t("Cancel", "Abbrechen", "Annuler", "取消", "キャンセル"),
+    "ОТМЕНА" to t("CANCEL", "ABBRECHEN", "ANNULER", "取消", "キャンセル"),
+    "УДАЛИТЬ" to t("DELETE", "LÖSCHEN", "SUPPRIMER", "删除", "削除"),
+    "ЗАКРЫТЬ" to t("CLOSE", "SCHLIESSEN", "FERMER", "关闭", "閉じる"),
+    "ПОВТОРИТЬ" to t("RETRY", "WIEDERHOLEN", "RÉESSAYER", "重试", "再試行"),
+    "Создать" to t("Create", "Erstellen", "Créer", "创建", "作成"),
+    "Дайте плейлисту название" to t("Give the playlist a name", "Geben Sie der Playlist einen Namen", "Donnez un nom à la playlist", "请给播放列表起个名字", "プレイリストに名前を付けてください"),
+    "ПОДТВЕРДИТЕ ДЕЙСТВИЕ" to t("CONFIRM ACTION", "AKTION BESTÄTIGEN", "CONFIRMER L'ACTION", "确认操作", "操作を確認"),
+    "ПОДТВЕРЖДЕНИЕ" to t("CONFIRMATION", "BESTÄTIGUNG", "CONFIRMATION", "确认", "確認"),
+    "Ищу текст…" to t("Searching lyrics…", "Suche Text…", "Recherche des paroles…", "正在搜索歌词…", "歌詞を検索中…"),
+    "Повторите попытку" to t("Try again", "Erneut versuchen", "Réessayez", "请重试", "もう一度お試しください"),
+    "ТЕКСТ ПЕСНИ" to t("SONG LYRICS", "SONGTEXT", "PAROLES", "歌词", "歌詞"),
+    "СИНХРОНИЗАЦИЯ" to t("SYNC", "SYNC", "SYNCHRO", "同步", "同期"),
+    "Повторить" to t("Retry", "Wiederholen", "Réessayer", "重试", "再試行"),
+    "Закрыть" to t("Close", "Schließen", "Fermer", "关闭", "閉じる"),
+
+    
+    "ПЕРВЫЙ ЗАПУСК / 00" to t("FIRST LAUNCH / 00", "ERSTER START / 00", "PREMIER LANCEMENT / 00", "首次启动 / 00", "初回起動 / 00"),
+    "ЗНАКОМСТВО" to t("INTRO", "VORSTELLUNG", "INTRODUCTION", "初见", "はじめに"),
+    "ГДЕ ТВОЯ\nМУЗЫКА?" to t("WHERE IS\nYOUR MUSIC?", "WO IST\nDEINE MUSIK?", "OÙ EST\nTA MUSIQUE ?", "你的音乐\n在哪里？", "あなたの音楽は\nどこ？"),
+    "У МЕНЯ ЕСТЬ ПАПКА С МУЗЫКОЙ" to t("I HAVE A MUSIC FOLDER", "ICH HABE EINEN MUSIKORDNER", "J'AI UN DOSSIER DE MUSIQUE", "我有音乐文件夹", "音楽フォルダがあります"),
+    "Укажите папку на устройстве — PIXTONE прочитает MP3, M4A, FLAC, WAV и OGG вместе с обложками и тегами." to t("Pick a folder on your device — PIXTONE reads MP3, M4A, FLAC, WAV and OGG with covers and tags.", "Wählen Sie einen Ordner — PIXTONE liest MP3, M4A, FLAC, WAV und OGG mit Covern und Tags.", "Choisissez un dossier — PIXTONE lit les MP3, M4A, FLAC, WAV et OGG avec pochettes et tags.", "在设备上选择文件夹——PIXTONE 会读取 MP3、M4A、FLAC、WAV 和 OGG 及其封面和标签。", "デバイスのフォルダを選択 — PIXTONE が MP3、M4A、FLAC、WAV、OGG をカバーとタグごと読み込みます。"),
+    "СМЕНИТЬ ПАПКУ" to t("CHANGE FOLDER", "ORDNER ÄNDERN", "CHANGER DE DOSSIER", "更换文件夹", "フォルダを変更"),
+    "ГОТОВОЙ ПАПКИ НЕТ" to t("NO FOLDER YET", "NOCH KEIN ORDNER", "PAS ENCORE DE DOSSIER", "还没有文件夹", "フォルダはまだない"),
+    "Пропустите шаг и выберите папку позже в библиотеке или настройках." to t("Skip this step and pick a folder later in the library or settings.", "Überspringen Sie diesen Schritt und wählen Sie den Ordner später in der Bibliothek oder den Einstellungen.", "Passez cette étape et choisissez un dossier plus tard dans la bibliothèque ou les réglages.", "跳过此步骤，稍后在音乐库或设置中选择文件夹。", "この手順を飛ばして、後でライブラリや設定からフォルダを選べます。"),
+    "ПРОПУСТИТЬ" to t("SKIP", "ÜBERSPRINGEN", "PASSER", "跳过", "スキップ"),
+    "АЛЬТЕРНАТИВА" to t("ALTERNATIVE", "ALTERNATIVE", "ALTERNATIVE", "其他方式", "別の方法"),
+    "ЛОКАЛЬНАЯ ФОНОТЕКА" to t("LOCAL LIBRARY", "LOKALE BIBLIOTHEK", "BIBLIOTHÈQUE LOCALE", "本地音乐库", "ローカルライブラリ"),
+    "НАЙДЕНО" to t("FOUND", "GEFUNDEN", "TROUVÉS", "已找到", "検出"),
+    "ТРЕКОВ" to t("TRACKS", "TITEL", "MORCEAUX", "首", "曲"),
+    "Не закрывайте приложение. Большая фонотека может занять несколько минут." to t("Don't close the app. A large library may take a few minutes.", "Schließen Sie die App nicht. Eine große Bibliothek kann einige Minuten dauern.", "Ne fermez pas l'application. Une grande bibliothèque peut prendre quelques minutes.", "请勿关闭应用。大型音乐库可能需要几分钟。", "アプリを閉じないでください。大きなライブラリは数分かかることがあります。"),
+
+    
+    "Удалить плейлист" to t("Delete playlist", "Playlist löschen", "Supprimer la playlist", "删除播放列表", "プレイリストを削除"),
+    "СОЗДАНО В PIXTONE" to t("CREATED IN PIXTONE", "IN PIXTONE ERSTELLT", "CRÉÉ DANS PIXTONE", "在 PIXTONE 中创建", "PIXTONE で作成"),
+    "СЛУШАТЬ" to t("LISTEN", "ANHÖREN", "ÉCOUTER", "播放", "再生"),
+    "ДОБАВИТЬ" to t("ADD", "HINZUFÜGEN", "AJOUTER", "添加", "追加"),
+    "ТРЕКИ В ПЛЕЙЛИСТЕ" to t("TRACKS IN PLAYLIST", "TITEL IN DER PLAYLIST", "MORCEAUX DE LA PLAYLIST", "播放列表中的曲目", "プレイリストの曲"),
+    "Плейлист пуст" to t("Playlist is empty", "Playlist ist leer", "La playlist est vide", "播放列表为空", "プレイリストは空です"),
+    "ПЛЕЙЛИСТ ПУСТ" to t("PLAYLIST IS EMPTY", "PLAYLIST IST LEER", "LA PLAYLIST EST VIDE", "播放列表为空", "プレイリストは空です"),
+    "ЗДЕСЬ ПОКА ПУСТО" to t("NOTHING HERE YET", "NOCH NICHTS HIER", "RIEN POUR L'INSTANT", "这里还是空的", "まだ何もありません"),
+    "ЗДЕСЬ ПОКА ТИХО" to t("QUIET HERE", "HIER IST ES STILL", "C'EST CALME ICI", "这里很安静", "ここは静かです"),
+    "НИЧЕГО НЕ НАЙДЕНО" to t("NOTHING FOUND", "NICHTS GEFUNDEN", "AUCUN RÉSULTAT", "未找到", "見つかりません"),
+    "ТИШИНА" to t("SILENCE", "STILLE", "SILENCE", "寂静", "静寂"),
+    "Добавьте треки из библиотеки — название, описание и обложка уже сохранены." to t("Add tracks from your library — name, description and cover are already saved.", "Fügen Sie Titel aus der Bibliothek hinzu — Name, Beschreibung und Cover sind bereits gespeichert.", "Ajoutez des morceaux depuis la bibliothèque — nom, description et pochette sont déjà enregistrés.", "从音乐库添加曲目——名称、描述和封面已保存。", "ライブラリから曲を追加 — 名前、説明、カバーは保存済みです。"),
+    "ДОБАВИТЬ ТРЕКИ" to t("ADD TRACKS", "TITEL HINZUFÜGEN", "AJOUTER DES MORCEAUX", "添加曲目", "曲を追加"),
+    "Удалить плейлист?" to t("Delete playlist?", "Playlist löschen?", "Supprimer la playlist ?", "删除播放列表？", "プレイリストを削除しますか？"),
+    "Удалить" to t("Delete", "Löschen", "Supprimer", "删除", "削除"),
+    "В библиотеке нет треков. Сначала импортируйте папку или скачайте музыку." to t("No tracks in the library. Import a folder or download music first.", "Keine Titel in der Bibliothek. Importieren Sie zuerst einen Ordner oder laden Sie Musik herunter.", "Aucun morceau dans la bibliothèque. Importez d'abord un dossier ou téléchargez de la musique.", "音乐库中没有曲目。请先导入文件夹或下载音乐。", "ライブラリに曲がありません。先にフォルダを読み込むか音楽をダウンロードしてください。"),
+    "ДОБАВИТЬ В ПЛЕЙЛИСТ" to t("ADD TO PLAYLIST", "ZUR PLAYLIST HINZUFÜGEN", "AJOUTER À LA PLAYLIST", "加入播放列表", "プレイリストに追加"),
+    "Плейлистов пока нет. Создайте первый — добавьте название, описание и обложку." to t("No playlists yet. Create the first one — add a name, description and cover.", "Noch keine Playlists. Erstellen Sie die erste — mit Name, Beschreibung und Cover.", "Pas encore de playlist. Créez la première — nom, description et pochette.", "还没有播放列表。创建第一个——添加名称、描述和封面。", "プレイリストはまだありません。最初の一つを作成 — 名前、説明、カバーを追加。"),
+    "Новый плейлист" to t("New playlist", "Neue Playlist", "Nouvelle playlist", "新建播放列表", "新しいプレイリスト"),
+
+    
+    "Убрать из избранного" to t("Remove from favorites", "Aus Favoriten entfernen", "Retirer des favoris", "取消收藏", "お気に入りから削除"),
+    "В избранное" to t("Add to favorites", "Zu Favoriten", "Ajouter aux favoris", "加入收藏", "お気に入りに追加"),
+    "Добавить в плейлист" to t("Add to playlist", "Zur Playlist hinzufügen", "Ajouter à la playlist", "加入播放列表", "プレイリストに追加"),
+    "Убрать из плейлиста" to t("Remove from playlist", "Aus der Playlist entfernen", "Retirer de la playlist", "从播放列表移除", "プレイリストから削除"),
+
+    
+    "ОТКРЫВАЮ ПАПКУ…" to t("OPENING FOLDER…", "ORDNER WIRD GEÖFFNET…", "OUVERTURE DU DOSSIER…", "正在打开文件夹…", "フォルダを開いています…"),
+    "ОБНОВЛЯЮ" to t("UPDATING", "AKTUALISIERE", "MISE À JOUR", "更新中", "更新中"),
+    "ЧИТАЮ ПАПКУ" to t("READING FOLDER", "ORDNER WIRD GELESEN", "LECTURE DU DOSSIER", "正在读取文件夹", "フォルダを読み込み中"),
+    "СОХРАНЯЮ В БИБЛИОТЕКУ…" to t("SAVING TO LIBRARY…", "SPEICHERN IN BIBLIOTHEK…", "ENREGISTREMENT DANS LA BIBLIOTHÈQUE…", "正在保存到音乐库…", "ライブラリに保存中…"),
+    "В этой папке не нашлось поддерживаемых аудиофайлов." to t("No supported audio files found in this folder.", "In diesem Ordner wurden keine unterstützten Audiodateien gefunden.", "Aucun fichier audio pris en charge dans ce dossier.", "此文件夹中没有支持的音频文件。", "このフォルダに対応する音声ファイルがありません。"),
+    "ГОТОВО" to t("DONE", "FERTIG", "TERMINÉ", "完成", "完了"),
+    "Библиотека обновлена" to t("Library updated", "Bibliothek aktualisiert", "Bibliothèque mise à jour", "音乐库已更新", "ライブラリを更新しました"),
+    "Новых треков нет — всё уже в библиотеке" to t("No new tracks — everything is already in the library", "Keine neuen Titel — alles ist bereits in der Bibliothek", "Aucun nouveau morceau — tout est déjà dans la bibliothèque", "没有新曲目——一切已在音乐库中", "新しい曲はありません — すべてライブラリにあります"),
+    "Не удалось прочитать папку" to t("Couldn't read the folder", "Ordner konnte nicht gelesen werden", "Impossible de lire le dossier", "无法读取文件夹", "フォルダを読み込めませんでした"),
+    "Сначала выберите папку с музыкой" to t("Choose a music folder first", "Wählen Sie zuerst einen Musikordner", "Choisissez d'abord un dossier de musique", "请先选择音乐文件夹", "先に音楽フォルダを選んでください"),
+    "Дождитесь окончания сканирования" to t("Wait for the scan to finish", "Warten Sie, bis der Scan abgeschlossen ist", "Attendez la fin du scan", "请等待扫描完成", "スキャンの完了をお待ちください"),
+    "В библиотеке пока нет треков" to t("No tracks in the library yet", "Noch keine Titel in der Bibliothek", "Pas encore de morceaux dans la bibliothèque", "音乐库中还没有曲目", "ライブラリにまだ曲がありません"),
+    "Нет интернета — обложки обновить не получится" to t("No internet — covers can't be updated", "Kein Internet — Cover können nicht aktualisiert werden", "Pas d'internet — impossible de mettre à jour les pochettes", "没有网络——无法更新封面", "ネットワークがありません — カバーを更新できません"),
+    "Все обложки уже на месте" to t("All covers are already in place", "Alle Cover sind bereits vorhanden", "Toutes les pochettes sont déjà là", "所有封面都已就位", "すべてのカバーが揃っています"),
+    "Не удалось найти обложки — проверьте интернет или попробуйте позже" to t("Couldn't find covers — check your connection or try later", "Cover konnten nicht gefunden werden — prüfen Sie die Verbindung oder versuchen Sie es später", "Impossible de trouver des pochettes — vérifiez la connexion ou réessayez plus tard", "无法找到封面——请检查网络或稍后再试", "カバーが見つかりません — 接続を確認するか後でもう一度お試しください"),
+    "Убрано из избранного" to t("Removed from favorites", "Aus Favoriten entfernt", "Retiré des favoris", "已取消收藏", "お気に入りから削除しました"),
+    "У плейлиста должно быть название" to t("The playlist needs a name", "Die Playlist braucht einen Namen", "La playlist doit avoir un nom", "播放列表需要名称", "プレイリストに名前が必要です"),
+    "Не удалось создать плейлист" to t("Couldn't create the playlist", "Playlist konnte nicht erstellt werden", "Impossible de créer la playlist", "无法创建播放列表", "プレイリストを作成できませんでした"),
+    "Не удалось удалить плейлист" to t("Couldn't delete the playlist", "Playlist konnte nicht gelöscht werden", "Impossible de supprimer la playlist", "无法删除播放列表", "プレイリストを削除できませんでした"),
+    "Трек уже в этом плейлисте" to t("Track is already in this playlist", "Titel ist bereits in dieser Playlist", "Le morceau est déjà dans cette playlist", "曲目已在此播放列表中", "この曲はすでにプレイリストにあります"),
+    "Не удалось добавить трек" to t("Couldn't add the track", "Titel konnte nicht hinzugefügt werden", "Impossible d'ajouter le morceau", "无法添加曲目", "曲を追加できませんでした"),
+    "Трек убран из плейлиста" to t("Track removed from playlist", "Titel aus der Playlist entfernt", "Morceau retiré de la playlist", "曲目已从播放列表移除", "曲をプレイリストから削除しました"),
+    "Не удалось убрать трек" to t("Couldn't remove the track", "Titel konnte nicht entfernt werden", "Impossible de retirer le morceau", "无法移除曲目", "曲を削除できませんでした"),
+    "Музыка" to t("Music", "Musik", "Musique", "音乐", "音楽"),
+    "Без названия" to t("Untitled", "Ohne Titel", "Sans titre", "无标题", "無題"),
+    "НЕИЗВЕСТНЫЙ ИСПОЛНИТЕЛЬ" to t("UNKNOWN ARTIST", "UNBEKANNTER KÜNSTLER", "ARTISTE INCONNU", "未知艺术家", "不明なアーティスト"),
+    "Не удалось открыть папку" to t("Couldn't open the folder", "Ordner konnte nicht geöffnet werden", "Impossible d'ouvrir le dossier", "无法打开文件夹", "フォルダを開けませんでした"),
+    "Ошибка воспроизведения" to t("Playback error", "Wiedergabefehler", "Erreur de lecture", "播放错误", "再生エラー"),
+    "Не удалось подключить плеер" to t("Couldn't connect the player", "Player konnte nicht verbunden werden", "Impossible de connecter le lecteur", "无法连接播放器", "プレイヤーに接続できませんでした"),
+    "Нет соединения" to t("No connection", "Keine Verbindung", "Pas de connexion", "无连接", "接続なし"),
+    "Отменено" to t("Cancelled", "Abgebrochen", "Annulé", "已取消", "キャンセルされました"),
+    "♪ интро ♪" to t("♪ intro ♪", "♪ Intro ♪", "♪ intro ♪", "♪ 前奏 ♪", "♪ イントロ ♪"),
+    "♪ отыгрыш ♪" to t("♪ break ♪", "♪ Break ♪", "♪ break ♪", "♪ 间奏 ♪", "♪ 間奏 ♪"),
+    "плейлист" to t("playlist", "Playlist", "playlist", "播放列表", "プレイリスト"),
+    "Неизвестный исполнитель" to t("Unknown artist", "Unbekannter Künstler", "Artiste inconnu", "未知艺术家", "不明なアーティスト"),
+
+    
+    "PIXTONE читает MP3, M4A, FLAC, WAV, OGG и OPUS вместе с тегами и встроенными обложками. Обложки, вставленные сайтами-складчиками, заменяются настоящими (Genius, Deezer, iTunes) при добавлении новых треков — всю библиотеку можно обновить кнопкой ниже. Доступ к папке сохраняется между запусками." to t(
+        "PIXTONE reads MP3, M4A, FLAC, WAV, OGG and OPUS with tags and embedded covers. Covers inserted by download sites are replaced with real ones (Genius, Deezer, iTunes) when new tracks are added — the whole library can be refreshed with the button below. Folder access persists between launches.",
+        "PIXTONE liest MP3, M4A, FLAC, WAV, OGG und OPUS mit Tags und eingebetteten Covern. Von Download-Seiten eingefügte Cover werden beim Hinzufügen neuer Titel durch echte ersetzt (Genius, Deezer, iTunes) — die gesamte Bibliothek lässt sich mit der Schaltfläche unten aktualisieren. Der Ordnerzugriff bleibt zwischen Starts erhalten.",
+        "PIXTONE lit les MP3, M4A, FLAC, WAV, OGG et OPUS avec leurs tags et pochettes intégrées. Les pochettes ajoutées par les sites de téléchargement sont remplacées par de vraies (Genius, Deezer, iTunes) lors de l'ajout de nouveaux morceaux — toute la bibliothèque peut être actualisée avec le bouton ci-dessous. L'accès au dossier est conservé entre les lancements.",
+        "PIXTONE 可读取 MP3、M4A、FLAC、WAV、OGG 和 OPUS 及其标签和内嵌封面。添加新曲目时，下载网站插入的封面会被真实封面（Genius、Deezer、iTunes）替换——可用下方按钮刷新整个音乐库。文件夹访问权限在重启后保留。",
+        "PIXTONE は MP3、M4A、FLAC、WAV、OGG、OPUS をタグと埋め込みカバーごと読み込みます。新しい曲を追加すると、ダウンロードサイトが入れたカバーは本物（Genius、Deezer、iTunes）に置き換わります — 下のボタンでライブラリ全体を更新できます。フォルダへのアクセスは起動後も保持されます。",
+    ),
+    "PIXTONE — плеер, который вы запустите снова. Он умеет читать вашу папку с MP3 и хранить музыку только на этом устройстве." to t(
+        "PIXTONE is a player you'll launch again. It reads your MP3 folder and keeps music only on this device.",
+        "PIXTONE ist ein Player, den Sie wieder starten werden. Er liest Ihren MP3-Ordner und speichert Musik nur auf diesem Gerät.",
+        "PIXTONE est un lecteur que vous relancerez. Il lit votre dossier MP3 et garde la musique uniquement sur cet appareil.",
+        "PIXTONE 是一个你会再次启动的播放器。它能读取你的 MP3 文件夹，音乐仅保存在本设备上。",
+        "PIXTONE は、また起動したくなるプレイヤーです。MP3 フォルダを読み込み、音楽はこのデバイスだけに保存します。",
+    ),
+    "Сочетания точек, общая сегментация и цветные акценты привносят свежий взгляд на привычное и ставшее классикой единение чёрного и белого цветов в вопросе дизайна приложения. Шрифты Doto, Pixelify Sans и Space Grotesk распространяются по SIL Open Font License." to t(
+        "The combination of dots, shared segmentation and colored accents brings a fresh take on the familiar, classic union of black and white in app design. Doto, Pixelify Sans and Space Grotesk are distributed under the SIL Open Font License.",
+        "Die Kombination aus Punkten, gemeinsamer Segmentierung und farbigen Akzenten bringt einen frischen Blick auf die vertraute, klassische Verbindung von Schwarz und Weiß im App-Design. Doto, Pixelify Sans und Space Grotesk stehen unter der SIL Open Font License.",
+        "La combinaison de points, d'une segmentation commune et d'accents colorés apporte un regard neuf sur l'union familière et classique du noir et du blanc dans le design d'application. Doto, Pixelify Sans et Space Grotesk sont distribués sous SIL Open Font License.",
+        "圆点的组合、整体的分段与彩色点缀，为应用设计中经典的黑白组合带来新鲜视角。Doto、Pixelify Sans 和 Space Grotesk 字体按 SIL Open Font License 分发。",
+        "ドットの組み合わせ、統一されたセグメンテーション、カラーアクセントが、アプリデザインにおける定番の黒と白の組み合わせに新たな視点をもたらします。Doto、Pixelify Sans、Space Grotesk は SIL Open Font License で配布されています。",
+    ),
+)
+
+private val RULES: List<Rule> = listOf(
+    r(
+        "^ПРОСМОТРЕНО: (\\d+)(.*)$",
+        "SCANNED: %1%2",
+        "GEPRÜFT: %1%2",
+        "ANALYSÉS : %1%2",
+        "已浏览: %1%2",
+        "確認済み: %1%2",
+    ),
+    r(
+        "^(\\d+) ТРЕКОВ · (\\d+) В ИЗБРАННОМ$",
+        "%1 TRACKS · %2 FAVORITES",
+        "%1 TITEL · %2 FAVORITEN",
+        "%1 MORCEAUX · %2 FAVORIS",
+        "%1 首 · %2 收藏",
+        "%1 曲 · %2 お気に入り",
+    ),
+    r(
+        "^(\\d+) ТРЕКОВ · (\\d+) В ИЗБРАННОМ · (.+)$",
+        "%1 TRACKS · %2 FAVORITES · %3",
+        "%1 TITEL · %2 FAVORITEN · %3",
+        "%1 MORCEAUX · %2 FAVORIS · %3",
+        "%1 首 · %2 收藏 · %3",
+        "%1 曲 · %2 お気に入り · %3",
+    ),
+    r(
+        "^(\\d+) ТРЕКОВ · СОБРАНО ВРУЧНУЮ$",
+        "%1 TRACKS · HAND-PICKED",
+        "%1 TITEL · HANDVERLESEN",
+        "%1 MORCEAUX · SÉLECTIONNÉS",
+        "%1 首 · 手动收藏",
+        "%1 曲 · 手動選択",
+    ),
+    r(
+        "^(\\d+) ТРЕКОВ$",
+        "%1 TRACKS",
+        "%1 TITEL",
+        "%1 MORCEAUX",
+        "%1 首",
+        "%1 曲",
+    ),
+    r(
+        "^РЕЗУЛЬТАТЫ: (\\d+)$",
+        "RESULTS: %1",
+        "ERGEBNISSE: %1",
+        "RÉSULTATS : %1",
+        "结果: %1",
+        "結果: %1",
+    ),
+    r(
+        "^ОБНОВЛЯЮ ОБЛОЖКИ: (\\d+)/(\\d+)$",
+        "UPDATING COVERS: %1/%2",
+        "COVER AKTUALISIEREN: %1/%2",
+        "MISE À JOUR DES POCHETTES : %1/%2",
+        "正在更新封面: %1/%2",
+        "カバーを更新中: %1/%2",
+    ),
+    r(
+        "^Добавлено треков: (\\d+)$",
+        "Tracks added: %1",
+        "Titel hinzugefügt: %1",
+        "Morceaux ajoutés : %1",
+        "已添加曲目: %1",
+        "追加された曲: %1",
+    ),
+    r(
+        "^Обложки обновлены: (\\d+)$",
+        "Covers updated: %1",
+        "Cover aktualisiert: %1",
+        "Pochettes mises à jour : %1",
+        "封面已更新: %1",
+        "更新されたカバー: %1",
+    ),
+    r(
+        "^В БИБЛИОТЕКЕ: (\\d+)$",
+        "IN LIBRARY: %1",
+        "IN DER BIBLIOTHEK: %1",
+        "DANS LA BIBLIOTHÈQUE : %1",
+        "音乐库: %1",
+        "ライブラリ: %1",
+    ),
+    r(
+        "^ИЗБРАННОЕ: (\\d+)$",
+        "FAVORITES: %1",
+        "FAVORITEN: %1",
+        "FAVORIS : %1",
+        "收藏: %1",
+        "お気に入り: %1",
+    ),
+    r(
+        "^«(.+)» в избранном$",
+        "“%1” added to favorites",
+        "“%1” zu Favoriten hinzugefügt",
+        "« %1 » ajouté aux favoris",
+        "已收藏“%1”",
+        "「%1」をお気に入りに追加しました",
+    ),
+    r(
+        "^Плейлист «(.+)» создан$",
+        "Playlist “%1” created",
+        "Playlist “%1” erstellt",
+        "Playlist « %1 » créée",
+        "已创建播放列表“%1”",
+        "プレイリスト「%1」を作成しました",
+    ),
+    r(
+        "^Плейлист «(.+)» удалён$",
+        "Playlist “%1” deleted",
+        "Playlist “%1” gelöscht",
+        "Playlist « %1 » supprimée",
+        "已删除播放列表“%1”",
+        "プレイリスト「%1」を削除しました",
+    ),
+    r(
+        "^«(.+)» → (.+)$",
+        "“%1” → %2",
+        "“%1” → %2",
+        "« %1 » → %2",
+        "“%1” → %2",
+        "「%1」→ %2",
+    ),
+    r(
+        "^Текущая папка: «(.+)»\\. Можно выбрать другую\\.$",
+        "Current folder: “%1”. You can choose another.",
+        "Aktueller Ordner: „%1“. Sie können einen anderen wählen.",
+        "Dossier actuel : « %1 ». Vous pouvez en choisir un autre.",
+        "当前文件夹：“%1”。可以选择其他文件夹。",
+        "現在のフォルダ:「%1」。別のフォルダも選べます。",
+    ),
+    r(
+        "^ПЛЕЙЛИСТ / (\\d+)$",
+        "PLAYLIST / %1",
+        "PLAYLIST / %1",
+        "PLAYLIST / %1",
+        "播放列表 / %1",
+        "プレイリスト / %1",
+    ),
+    r(
+        "^«(.+)» будет удалён\\. Треки останутся в библиотеке\\.$",
+        "“%1” will be deleted. Tracks stay in your library.",
+        "„%1“ wird gelöscht. Die Titel bleiben in der Bibliothek.",
+        "« %1 » sera supprimée. Les morceaux restent dans la bibliothèque.",
+        "“%1”将被删除。曲目会保留在音乐库中。",
+        "「%1」は削除されます。曲はライブラリに残ります。",
+    ),
+)
