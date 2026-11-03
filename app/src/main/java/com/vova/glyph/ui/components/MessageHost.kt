@@ -41,13 +41,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlin.math.roundToInt
 
-
-
-
-
-
-
-
 @Composable
 fun GlyphMessageHost(
     messages: Flow<String>,
@@ -60,7 +53,7 @@ fun GlyphMessageHost(
         var id = 0L
         messages.collect { text ->
             current = Message(++id, text)
-            
+
             finished.receive()
         }
     }
@@ -90,13 +83,12 @@ private fun AnimatedMessage(text: String, onFinished: () -> Unit) {
     var finished by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
-        
         progress.animateTo(1f, tween(FADE_IN_MS, easing = LinearOutSlowInEasing))
         delay(HOLD_MS)
-        
+
         val snapshot = runCatching { layer.toImageBitmap() }.getOrNull()
         pixelLevels = snapshot?.let { buildPixelLevels(it) }.orEmpty()
-        
+
         progress.animateTo(2f, tween(PIXELATE_MS, easing = LinearEasing))
         if (!finished) {
             finished = true
@@ -145,7 +137,6 @@ private fun AnimatedMessage(text: String, onFinished: () -> Unit) {
     }
 }
 
- 
 private fun DrawScope.drawPixelated(levels: List<ImageBitmap>, t: Float) {
     val index = (t * levels.size).toInt().coerceIn(0, levels.lastIndex)
     val image = levels[index]
@@ -159,7 +150,6 @@ private fun DrawScope.drawPixelated(levels: List<ImageBitmap>, t: Float) {
     )
 }
 
- 
 private fun buildPixelLevels(source: ImageBitmap): List<ImageBitmap> {
     val original = source.asAndroidBitmap()
     val bitmap = if (original.config == Bitmap.Config.HARDWARE) {

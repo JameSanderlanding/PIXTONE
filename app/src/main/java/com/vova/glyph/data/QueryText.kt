@@ -1,31 +1,19 @@
 package com.vova.glyph.data
 
- 
 private val ARTIST_TITLE_SPLIT = Regex("\\s+[-–—|]\\s+")
-
-
-
-
-
-
-
 
 internal fun cleanText(raw: String): String {
     val cleaned = raw
-        .replace(Regex("\\([^)]*\\)"), " ")      
-        .replace(Regex("\\[[^\\]]*\\]"), " ")    
-        .replace(Regex("（[^）]*）"), " ")         
-        .replace(Regex("【[^】]*】"), " ")         
+        .replace(Regex("\\([^)]*\\)"), " ")
+        .replace(Regex("\\[[^\\]]*\\]"), " ")
+        .replace(Regex("（[^）]*）"), " ")
+        .replace(Regex("【[^】]*】"), " ")
         .replace(Regex("(?i)\\s+-\\s+(remaster(ed)?|official.*|lyrics?|audio|video|mv|clip)$"), " ")
         .replace(Regex("\\s+"), " ")
         .trim()
-    
+
     return cleaned.ifBlank { raw.replace(Regex("\\s+"), " ").trim() }
 }
-
-
-
-
 
 internal fun cleanTitleForSearch(raw: String): String =
     cleanText(raw)
@@ -33,17 +21,8 @@ internal fun cleanTitleForSearch(raw: String): String =
         .replace(Regex("\\s+"), " ")
         .trim()
 
-
-
-
-
 internal fun cleanArtistForSearch(raw: String): String =
     cleanText(raw.replace('_', ' '))
-
-
-
-
-
 
 internal fun transliteratedCandidate(artist: String, title: String): Pair<String, String>? {
     val artistNeeds = hasLatinLetters(artist) && !hasCyrillicLetters(artist)
@@ -55,11 +34,6 @@ internal fun transliteratedCandidate(artist: String, title: String): Pair<String
     val newArtist = if (artistNeeds) transliterateToCyrillic(artist) else artist
     return newArtist to newTitle
 }
-
-
-
-
-
 
 internal fun buildSearchCandidatesWithTranslit(
     artist: String,
@@ -76,10 +50,6 @@ private fun hasLatinLetters(value: String): Boolean =
 private fun hasCyrillicLetters(value: String): Boolean =
     value.any { it in 'а'..'я' || it in 'А'..'Я' || it == 'ё' || it == 'Ё' }
 
-
-
-
-
 private fun transliterateToCyrillic(value: String): String {
     val lower = value.lowercase()
     val out = StringBuilder(lower.length)
@@ -92,7 +62,6 @@ private fun transliterateToCyrillic(value: String): String {
                 if (index + length > lower.length) continue
                 val chunk = lower.substring(index, index + length)
                 val russian = when {
-                    
                     chunk == "c" ->
                         if (index + 1 < lower.length && lower[index + 1] in "eiy") "ц" else "к"
 
@@ -117,7 +86,6 @@ private fun transliterateToCyrillic(value: String): String {
         .replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
 }
 
- 
 private val TRANSLIT: Map<String, String> = mapOf(
     "shch" to "щ",
     "sch" to "щ",
@@ -167,7 +135,6 @@ private val TRANSLIT: Map<String, String> = mapOf(
     "z" to "з",
 )
 
- 
 internal fun splitArtistTitle(value: String): Pair<String, String>? {
     val match = ARTIST_TITLE_SPLIT.find(value) ?: return null
     val left = value.substring(0, match.range.first).trim()
@@ -175,13 +142,6 @@ internal fun splitArtistTitle(value: String): Pair<String, String>? {
     if (left.isBlank() || right.isBlank()) return null
     return left to right
 }
-
-
-
-
-
-
-
 
 internal fun buildSearchCandidates(artist: String, title: String): List<Pair<String, String>> {
     val result = LinkedHashSet<Pair<String, String>>()
@@ -204,17 +164,12 @@ internal fun buildSearchCandidates(artist: String, title: String): List<Pair<Str
         add(artistSplit.first, artistSplit.second)
     }
 
-    
     if (titleSplit != null) {
         add(titleSplit.second, titleSplit.first)
     }
 
     return result.toList()
 }
-
-
-
-
 
 internal fun matchScore(candidate: String, wanted: String, weight: Int): Int {
     val a = artistKey(candidate)
@@ -227,28 +182,16 @@ internal fun matchScore(candidate: String, wanted: String, weight: Int): Int {
     }
 }
 
- 
 private fun artistKey(value: String): String =
     value.lowercase()
         .replace('_', ' ')
         .replace(Regex("\\s+"), " ")
         .trim()
 
- 
 internal const val UNKNOWN_ARTIST = "Неизвестный исполнитель"
 
- 
 internal fun isUnknownArtist(value: String): Boolean =
     value.isBlank() || value.trim().equals(UNKNOWN_ARTIST, ignoreCase = true)
-
-
-
-
-
-
-
-
-
 
 internal fun resultScore(
     candidateArtist: String,
@@ -271,17 +214,8 @@ internal fun resultScore(
     return titleScore + artistScore
 }
 
- 
 internal fun titlesMatch(candidate: String, wanted: String): Boolean =
     titleMatchScore(candidate, wanted) > 0
-
-
-
-
-
-
-
-
 
 private fun titleMatchScore(candidate: String, wanted: String): Int {
     val a = titleKey(candidate)
@@ -301,7 +235,6 @@ private fun titleKey(value: String): String =
         .replace('ё', 'е')
         .replace(Regex("[^\\p{L}\\p{N}]+"), "")
 
- 
 private fun editDistance(a: String, b: String, limit: Int): Int {
     if (kotlin.math.abs(a.length - b.length) > limit) return limit + 1
     var previous = IntArray(b.length + 1) { it }

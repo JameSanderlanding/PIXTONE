@@ -25,7 +25,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.MaterialTheme
-import com.vova.glyph.ui.components.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -47,14 +46,15 @@ import com.vova.glyph.data.Track
 import com.vova.glyph.ui.components.CreatePlaylistDialog
 import com.vova.glyph.ui.components.DotSpinner
 import com.vova.glyph.ui.components.EmptyState
-import com.vova.glyph.ui.components.LyricsDialog
 import com.vova.glyph.ui.components.Glyph
 import com.vova.glyph.ui.components.GlyphButton
 import com.vova.glyph.ui.components.GlyphCover
 import com.vova.glyph.ui.components.GlyphIcon
+import com.vova.glyph.ui.components.LyricsDialog
 import com.vova.glyph.ui.components.MicroLabel
 import com.vova.glyph.ui.components.ScreenHeader
 import com.vova.glyph.ui.components.SectionHeader
+import com.vova.glyph.ui.components.Text
 import com.vova.glyph.ui.components.TrackRow
 import com.vova.glyph.ui.theme.DotoFamily
 import com.vova.glyph.ui.theme.GlyphBlack
@@ -88,7 +88,6 @@ fun LibraryScreen(vm: MainViewModel) {
     var lyricsTrack by remember { mutableStateOf<Track?>(null) }
     var lyricsCompletionBase by remember { mutableStateOf(0L) }
 
-    
     LaunchedEffect(playerState.completionCount) {
         val track = lyricsTrack ?: return@LaunchedEffect
         if (!showLyrics || playerState.completionCount <= lyricsCompletionBase) return@LaunchedEffect
@@ -456,5 +455,3 @@ private fun LibraryScanCard(status: String, found: Int) {
         }
     }
 }
-
-

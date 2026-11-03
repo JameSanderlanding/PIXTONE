@@ -6,7 +6,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 
- 
 enum class AppLanguage(val code: String, val nativeName: String) {
     RU("ru", "Русский"),
     ZH("zh", "中文"),
@@ -22,7 +21,6 @@ enum class AppLanguage(val code: String, val nativeName: String) {
     }
 }
 
- 
 object LangController {
     private var prefs: SharedPreferences? = null
 
@@ -43,15 +41,10 @@ object LangController {
     }
 }
 
-
-
-
-
 fun tr(text: String): String {
     val language = LangController.language
     if (language == AppLanguage.RU || text.isEmpty()) return text
-    
-    
+
     if (!text.containsCyrillic()) return text
     return translate(text, language)
 }

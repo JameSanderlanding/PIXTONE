@@ -17,11 +17,11 @@ class MusicScanner(
     private val appContext = context.applicationContext
 
     data class ScanResult(
-         
+
         val added: List<Track>,
         val scannedFiles: Int,
         val folderName: String,
-         
+
         val newCount: Int = 0,
     )
 
@@ -43,8 +43,7 @@ class MusicScanner(
             coroutineContext.ensureActive()
             scanned++
             val uriString = doc.uri.toString()
-            
-            
+
             if (existing.containsKey(uriString)) {
                 onProgress(scanned, result.size, doc.name.orEmpty())
                 continue

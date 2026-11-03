@@ -8,11 +8,7 @@ import android.database.sqlite.SQLiteOpenHelper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-
-
-
 class GlyphDb(context: Context) : SQLiteOpenHelper(context, "glyph.db", null, 10) {
-
     override fun onCreate(db: SQLiteDatabase) {
         db.execSQL(
             """
@@ -65,57 +61,39 @@ class GlyphDb(context: Context) : SQLiteOpenHelper(context, "glyph.db", null, 10
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
         if (oldVersion < 2) createLyricsTable(db)
         if (oldVersion < 3) {
-            
-            
             db.execSQL("UPDATE tracks SET artwork = NULL WHERE artwork LIKE '%net_%'")
         }
         if (oldVersion in 2..3) {
-            
-            
             db.execSQL("ALTER TABLE lyrics ADD COLUMN found INTEGER NOT NULL DEFAULT 1")
         }
         if (oldVersion < 5) {
-            
-            
             db.execSQL("ALTER TABLE tracks ADD COLUMN genre TEXT")
         }
         if (oldVersion < 6) {
-            
             db.execSQL("ALTER TABLE tracks ADD COLUMN genre_checked INTEGER NOT NULL DEFAULT 0")
-            
+
             db.execSQL(
                 "UPDATE tracks SET genre_checked = 1 WHERE genre IS NOT NULL AND TRIM(genre) != ''"
             )
         }
         if (oldVersion < 7) {
-            
-            
             db.execSQL(
                 "UPDATE tracks SET genre = NULL, genre_checked = 0 WHERE source = 'LOCAL'"
             )
         }
         if (oldVersion < 8) {
-            
-            
-            
             db.execSQL(
                 "UPDATE tracks SET genre_checked = 0 " +
                     "WHERE source = 'LOCAL' AND (genre IS NULL OR TRIM(genre) = '')"
             )
         }
         if (oldVersion < 9) {
-            
-            
             db.execSQL(
                 "UPDATE tracks SET genre_checked = 0 " +
                     "WHERE source = 'LOCAL' AND (genre IS NULL OR TRIM(genre) = '')"
             )
         }
     }
-
-    
-
-
 
     private fun createLyricsTable(db: SQLiteDatabase) {
         db.execSQL(
@@ -203,7 +181,6 @@ class GlyphDb(context: Context) : SQLiteOpenHelper(context, "glyph.db", null, 10
         writableDatabase.update("tracks", values, "id = ?", arrayOf(trackId.toString()))
     }
 
-     
     suspend fun updateArtwork(trackId: Long, artwork: String?) = withContext(Dispatchers.IO) {
         val values = ContentValues().apply {
             if (artwork == null) putNull("artwork") else put("artwork", artwork)
@@ -211,7 +188,6 @@ class GlyphDb(context: Context) : SQLiteOpenHelper(context, "glyph.db", null, 10
         writableDatabase.update("tracks", values, "id = ?", arrayOf(trackId.toString()))
     }
 
-     
     suspend fun lyricsFor(trackId: Long): CachedLyrics? = withContext(Dispatchers.IO) {
         readableDatabase.query(
             "lyrics", arrayOf("plain", "synced", "found", "fetched_at"),
@@ -229,7 +205,6 @@ class GlyphDb(context: Context) : SQLiteOpenHelper(context, "glyph.db", null, 10
         }
     }
 
-     
     suspend fun saveLyrics(trackId: Long, result: LyricsResult) = withContext(Dispatchers.IO) {
         val values = ContentValues().apply {
             put("track_id", trackId)
@@ -242,10 +217,6 @@ class GlyphDb(context: Context) : SQLiteOpenHelper(context, "glyph.db", null, 10
             "lyrics", null, values, SQLiteDatabase.CONFLICT_REPLACE
         )
     }
-
-    
-
-
 
     suspend fun saveLyricsMissing(trackId: Long) = withContext(Dispatchers.IO) {
         val values = ContentValues().apply {

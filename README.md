@@ -165,4 +165,5 @@ Released under the [MIT License](LICENSE).
 ---
 
 Made by [JameSanderlanding](https://github.com/JameSanderlanding)
+
 Special thanks to Angelina and Timofey

@@ -15,7 +15,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
-import com.vova.glyph.ui.components.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -37,6 +36,7 @@ import com.vova.glyph.ui.components.Hairline
 import com.vova.glyph.ui.components.MicroLabel
 import com.vova.glyph.ui.components.ScreenHeader
 import com.vova.glyph.ui.components.SectionHeader
+import com.vova.glyph.ui.components.Text
 import com.vova.glyph.ui.components.TrackRow
 import com.vova.glyph.ui.theme.GlyphDim
 import com.vova.glyph.ui.theme.GlyphGray
@@ -84,7 +84,6 @@ fun FavoritesScreen(vm: MainViewModel) {
             }
         }
         item {
-            
             Row(
                 Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 18.dp),
                 horizontalArrangement = Arrangement.spacedBy(5.dp),

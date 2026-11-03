@@ -91,14 +91,13 @@ class MainViewModel(
     private val _lyricsTrackId = MutableStateFlow<Long?>(null)
     val lyricsTrackId = _lyricsTrackId.asStateFlow()
 
-     
     private val _artworkStatus = MutableStateFlow<String?>(null)
     val artworkStatus = _artworkStatus.asStateFlow()
 
     private var artworkJob: Job? = null
-     
+
     private var pendingCoverIds: MutableSet<Long> = mutableSetOf()
-     
+
     private var pendingCoversManual = false
 
     private val _message = MutableSharedFlow<String>(extraBufferCapacity = 8)
@@ -134,8 +133,6 @@ class MainViewModel(
             }
         }
     }
-
-    
 
     fun skipOnboarding() {
         prefs.onboardingDone = true
@@ -188,7 +185,7 @@ class MainViewModel(
                         else -> "Новых треков нет — всё уже в библиотеке"
                     }
                 )
-                
+
                 if (result.newCount > 0) {
                     val addedUris = result.added.mapTo(HashSet()) { it.uri }
                     val newIds = repo.tracks.value
@@ -216,31 +213,15 @@ class MainViewModel(
         onFolderPicked(uri, fromOnboarding = false)
     }
 
-    
-
-    
-
-
-
-
-
-
-
-
-
-
-
     private fun refreshCovers(ids: Set<Long>? = null, manual: Boolean = false) {
         if (ids.isNullOrEmpty() && !manual) return
 
         if (artworkJob?.isActive == true) {
-            
             if (manual) pendingCoversManual = true
             ids?.let { pendingCoverIds += it }
             return
         }
 
-        
         if (manual) pendingCoversManual = true else ids?.let { pendingCoverIds += it }
 
         artworkJob = viewModelScope.launch {
@@ -257,7 +238,6 @@ class MainViewModel(
         }
     }
 
-     
     fun refreshAllCovers() {
         if (_scanning.value) {
             notify("Дождитесь окончания сканирования")
@@ -282,20 +262,13 @@ class MainViewModel(
         refreshCovers(manual = true)
     }
 
-     
     private suspend fun runArtworkPass(ids: Set<Long>, manual: Boolean) {
-        
-        
-        
         val preferGenius = !container.geniusGate.isBlocked
         val pending = repo.tracks.value.filter { track ->
             when {
-                
-                
-                
                 manual -> track.source == Track.SOURCE_LOCAL &&
                     !container.artworkStore.hasArtwork(track.artwork)
-                
+
                 else -> track.id in ids &&
                     container.artworkStore.needsRemoteCover(track.artwork, preferGenius)
             }
@@ -314,9 +287,6 @@ class MainViewModel(
             for (track in pending) {
                 launch {
                     semaphore.withPermit {
-                        
-                        
-                        
                         if (networkErrors.get() >= MAX_NETWORK_ERRORS && !hasInternet()) {
                             val done = processed.incrementAndGet()
                             _artworkStatus.value = "ОБНОВЛЯЮ ОБЛОЖКИ: $done/$total"
@@ -334,7 +304,7 @@ class MainViewModel(
                                 if (track.artwork != path) {
                                     container.artworkStore.deleteReplacedArt(track.artwork)
                                 }
-                                
+
                                 if (updated.incrementAndGet() % 4 == 0) {
                                     runCatching { repo.refresh() }
                                 }
@@ -342,10 +312,8 @@ class MainViewModel(
                         } catch (e: CancellationException) {
                             throw e
                         } catch (_: IOException) {
-                            
                             networkErrors.incrementAndGet()
                         } catch (_: Exception) {
-                            
                         }
                         val done = processed.incrementAndGet()
                         _artworkStatus.value = "ОБНОВЛЯЮ ОБЛОЖКИ: $done/$total"
@@ -360,7 +328,6 @@ class MainViewModel(
         if (count > 0) {
             notify("Обложки обновлены: $count")
         } else if (manual) {
-            
             notify("Не удалось найти обложки — проверьте интернет или попробуйте позже")
         }
     }
@@ -373,8 +340,6 @@ class MainViewModel(
         return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
             capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
     }
-
-    
 
     fun selectTab(tab: Tab) {
         _tab.value = tab
@@ -425,8 +390,6 @@ class MainViewModel(
         }
     }
 
-    
-
     fun playTracks(tracksToPlay: List<Track>, startIndex: Int, openPlayer: Boolean = false) {
         if (tracksToPlay.isEmpty()) return
         player.playQueue(tracksToPlay, startIndex)
@@ -438,7 +401,6 @@ class MainViewModel(
     fun previous() = player.previous()
     fun seekTo(positionMs: Long) = player.seekTo(positionMs)
 
-     
     fun seekToLine(positionMs: Long) {
         player.seekTo(positionMs)
         if (!playerState.value.isPlaying) player.togglePlayPause()
@@ -447,21 +409,10 @@ class MainViewModel(
     fun toggleShuffle() = player.toggleShuffle()
     fun cycleRepeat() = player.cycleRepeat()
 
-    
-
     fun fetchLyrics(track: Track) {
         if (_lyricsTrackId.value == track.id && (_lyrics.value != null || _lyricsLoading.value)) return
         viewModelScope.launch { loadLyrics(track) }
     }
-
-    
-
-
-
-
-
-
-
 
     private suspend fun loadLyrics(track: Track) {
         _lyricsTrackId.value = track.id
@@ -469,9 +420,6 @@ class MainViewModel(
         _lyrics.value = null
         _syncedLyrics.value = emptyList()
 
-        
-        
-        
         val cached = runCatching { repo.cachedLyrics(track.id) }.getOrNull()
         val cachedHasText = cached != null &&
             (cached.plain != null || cached.synced.isNotEmpty())
@@ -492,7 +440,7 @@ class MainViewModel(
 
             if (result != null) {
                 runCatching { repo.saveLyrics(track.id, result) }
-                
+
                 if (_lyricsTrackId.value == track.id) {
                     _lyrics.value = result.plain
                     _syncedLyrics.value = result.synced
@@ -501,15 +449,11 @@ class MainViewModel(
                 return
             }
 
-            
             val blockLeft = container.geniusGate.blockedForMs
             if (blockLeft <= 0L || blockLeft > MAX_LYRICS_RETRY_MS) break
             if (waited >= MAX_LYRICS_RETRY_MS) break
             if (_lyricsTrackId.value != track.id) return
 
-            
-            
-            
             val pause = minOf(blockLeft + 500L, MAX_LYRICS_RETRY_MS - waited)
             delay(pause)
             waited += pause
@@ -530,16 +474,12 @@ class MainViewModel(
         _lyricsLoading.value = false
     }
 
-    
-
     fun toggleFavorite(track: Track) {
         viewModelScope.launch {
             val favorite = runCatching { repo.toggleFavorite(track.id) }.getOrNull() ?: return@launch
             notify(if (favorite) "«${track.title}» в избранном" else "Убрано из избранного")
         }
     }
-
-    
 
     fun openPlaylist(id: Long) {
         _openPlaylistId.value = id
@@ -616,15 +556,9 @@ class MainViewModel(
     }
 
     private companion object {
-         
         const val COVER_WORKERS = 4
 
-         
         const val MAX_NETWORK_ERRORS = 4
-
-        
-
-
 
         const val MAX_LYRICS_RETRY_MS = 4 * 60_000L
     }

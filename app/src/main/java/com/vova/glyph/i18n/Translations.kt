@@ -1,11 +1,5 @@
 package com.vova.glyph.i18n
 
-
-
-
-
-
-
 internal fun translate(text: String, language: AppLanguage): String {
     DICT[text]?.let { return it.of(language) }
     for (rule in RULES) {
@@ -70,7 +64,7 @@ private fun r(
 ) = Rule(Regex(pattern), en, de, fr, zh, ja)
 
 private val DICT: Map<String, Tr> = mapOf(
-    
+
     "БИБЛИОТЕКА" to t("LIBRARY", "BIBLIOTHEK", "BIBLIOTHÈQUE", "音乐库", "ライブラリ"),
     "ИЗБРАННОЕ" to t("FAVORITES", "FAVORITEN", "FAVORIS", "收藏", "お気に入り"),
     "НАСТРОЙКИ" to t("SETTINGS", "EINSTELLUNGEN", "RÉGLAGES", "设置", "設定"),
@@ -101,7 +95,6 @@ private val DICT: Map<String, Tr> = mapOf(
     "Библиотека" to t("Library", "Bibliothek", "Bibliothèque", "音乐库", "ライブラリ"),
     "Избранное" to t("Favorites", "Favoriten", "Favoris", "收藏", "お気に入り"),
 
-    
     "ПЛЕЙЛИСТЫ" to t("PLAYLISTS", "WIEDERGABELISTEN", "PLAYLISTS", "播放列表", "プレイリスト"),
     "СОЗДАТЬ" to t("CREATE", "ERSTELLEN", "CRÉER", "创建", "作成"),
     "ВСЕ ТРЕКИ" to t("ALL TRACKS", "ALLE TITEL", "TOUS LES MORCEAUX", "全部曲目", "すべての曲"),
@@ -116,7 +109,6 @@ private val DICT: Map<String, Tr> = mapOf(
     "Создать плейлист" to t("Create playlist", "Playlist erstellen", "Créer une playlist", "创建播放列表", "プレイリストを作成"),
     "ОБЛОЖКА · ОПИСАНИЕ" to t("COVER · DESCRIPTION", "COVER · BESCHREIBUNG", "POCHETTE · DESCRIPTION", "封面 · 描述", "カバー · 説明"),
 
-    
     "СЛУШАТЬ ВСЁ" to t("PLAY ALL", "ALLE ABSPIELEN", "TOUT ÉCOUTER", "全部播放", "すべて再生"),
     "НА УСТРОЙСТВЕ" to t("ON DEVICE", "AUF DEM GERÄT", "SUR L'APPAREIL", "本机", "デバイス内"),
     "ВАША КОЛЛЕКЦИЯ" to t("YOUR COLLECTION", "IHRE SAMMLUNG", "VOTRE COLLECTION", "你的收藏", "あなたのコレクション"),
@@ -124,7 +116,6 @@ private val DICT: Map<String, Tr> = mapOf(
     "Отмечайте треки сердцем в библиотеке." to t("Heart tracks in your library.", "Markieren Sie Titel in der Bibliothek mit dem Herz.", "Ajoutez des cœurs aux morceaux dans la bibliothèque.", "在音乐库中用爱心标记曲目。", "ライブラリでハートを付けてください。"),
     "ОТКРЫТЬ БИБЛИОТЕКУ" to t("OPEN LIBRARY", "BIBLIOTHEK ÖFFNEN", "OUVRIR LA BIBLIOTHÈQUE", "打开音乐库", "ライブラリを開く"),
 
-    
     "Папка с музыкой и данные приложения. Всё хранится только на этом устройстве." to t("Music folder and app data. Everything stays on this device.", "Musikordner und App-Daten. Alles bleibt auf diesem Gerät.", "Dossier musical et données de l'application. Tout reste sur cet appareil.", "音乐文件夹和应用数据。全部仅保存在本设备上。", "音楽フォルダとアプリデータ。すべてこのデバイスに保存されます。"),
     "ЛОКАЛЬНАЯ МУЗЫКА" to t("LOCAL MUSIC", "LOKALE MUSIK", "MUSIQUE LOCALE", "本地音乐", "ローカル音楽"),
     "ТЕКУЩАЯ ПАПКА" to t("CURRENT FOLDER", "AKTUELLER ORDNER", "DOSSIER ACTUEL", "当前文件夹", "現在のフォルダ"),
@@ -188,7 +179,6 @@ private val DICT: Map<String, Tr> = mapOf(
     "ЗЕЛЁНЫЙ" to t("GREEN", "GRÜN", "VERT", "绿", "緑"),
     "СИНИЙ" to t("BLUE", "BLAU", "BLEU", "蓝", "青"),
 
-    
     "НОВЫЙ ПЛЕЙЛИСТ" to t("NEW PLAYLIST", "NEUE PLAYLIST", "NOUVELLE PLAYLIST", "新建播放列表", "新しいプレイリスト"),
     "Обложка плейлиста" to t("Playlist cover", "Playlist-Cover", "Pochette de la playlist", "播放列表封面", "プレイリストのカバー"),
     "ОБЛОЖКА" to t("COVER", "COVER", "POCHETTE", "封面", "カバー"),
@@ -213,7 +203,6 @@ private val DICT: Map<String, Tr> = mapOf(
     "Повторить" to t("Retry", "Wiederholen", "Réessayer", "重试", "再試行"),
     "Закрыть" to t("Close", "Schließen", "Fermer", "关闭", "閉じる"),
 
-    
     "ПЕРВЫЙ ЗАПУСК / 00" to t("FIRST LAUNCH / 00", "ERSTER START / 00", "PREMIER LANCEMENT / 00", "首次启动 / 00", "初回起動 / 00"),
     "ЗНАКОМСТВО" to t("INTRO", "VORSTELLUNG", "INTRODUCTION", "初见", "はじめに"),
     "ГДЕ ТВОЯ\nМУЗЫКА?" to t("WHERE IS\nYOUR MUSIC?", "WO IST\nDEINE MUSIK?", "OÙ EST\nTA MUSIQUE ?", "你的音乐\n在哪里？", "あなたの音楽は\nどこ？"),
@@ -229,7 +218,6 @@ private val DICT: Map<String, Tr> = mapOf(
     "ТРЕКОВ" to t("TRACKS", "TITEL", "MORCEAUX", "首", "曲"),
     "Не закрывайте приложение. Большая фонотека может занять несколько минут." to t("Don't close the app. A large library may take a few minutes.", "Schließen Sie die App nicht. Eine große Bibliothek kann einige Minuten dauern.", "Ne fermez pas l'application. Une grande bibliothèque peut prendre quelques minutes.", "请勿关闭应用。大型音乐库可能需要几分钟。", "アプリを閉じないでください。大きなライブラリは数分かかることがあります。"),
 
-    
     "Удалить плейлист" to t("Delete playlist", "Playlist löschen", "Supprimer la playlist", "删除播放列表", "プレイリストを削除"),
     "СОЗДАНО В PIXTONE" to t("CREATED IN PIXTONE", "IN PIXTONE ERSTELLT", "CRÉÉ DANS PIXTONE", "在 PIXTONE 中创建", "PIXTONE で作成"),
     "СЛУШАТЬ" to t("LISTEN", "ANHÖREN", "ÉCOUTER", "播放", "再生"),
@@ -250,13 +238,11 @@ private val DICT: Map<String, Tr> = mapOf(
     "Плейлистов пока нет. Создайте первый — добавьте название, описание и обложку." to t("No playlists yet. Create the first one — add a name, description and cover.", "Noch keine Playlists. Erstellen Sie die erste — mit Name, Beschreibung und Cover.", "Pas encore de playlist. Créez la première — nom, description et pochette.", "还没有播放列表。创建第一个——添加名称、描述和封面。", "プレイリストはまだありません。最初の一つを作成 — 名前、説明、カバーを追加。"),
     "Новый плейлист" to t("New playlist", "Neue Playlist", "Nouvelle playlist", "新建播放列表", "新しいプレイリスト"),
 
-    
     "Убрать из избранного" to t("Remove from favorites", "Aus Favoriten entfernen", "Retirer des favoris", "取消收藏", "お気に入りから削除"),
     "В избранное" to t("Add to favorites", "Zu Favoriten", "Ajouter aux favoris", "加入收藏", "お気に入りに追加"),
     "Добавить в плейлист" to t("Add to playlist", "Zur Playlist hinzufügen", "Ajouter à la playlist", "加入播放列表", "プレイリストに追加"),
     "Убрать из плейлиста" to t("Remove from playlist", "Aus der Playlist entfernen", "Retirer de la playlist", "从播放列表移除", "プレイリストから削除"),
 
-    
     "ОТКРЫВАЮ ПАПКУ…" to t("OPENING FOLDER…", "ORDNER WIRD GEÖFFNET…", "OUVERTURE DU DOSSIER…", "正在打开文件夹…", "フォルダを開いています…"),
     "ОБНОВЛЯЮ" to t("UPDATING", "AKTUALISIERE", "MISE À JOUR", "更新中", "更新中"),
     "ЧИТАЮ ПАПКУ" to t("READING FOLDER", "ORDNER WIRD GELESEN", "LECTURE DU DOSSIER", "正在读取文件夹", "フォルダを読み込み中"),
@@ -293,7 +279,6 @@ private val DICT: Map<String, Tr> = mapOf(
     "плейлист" to t("playlist", "Playlist", "playlist", "播放列表", "プレイリスト"),
     "Неизвестный исполнитель" to t("Unknown artist", "Unbekannter Künstler", "Artiste inconnu", "未知艺术家", "不明なアーティスト"),
 
-    
     "PIXTONE читает MP3, M4A, FLAC, WAV, OGG и OPUS вместе с тегами и встроенными обложками. Обложки, вставленные сайтами-складчиками, заменяются настоящими (Genius, Deezer, iTunes) при добавлении новых треков — всю библиотеку можно обновить кнопкой ниже. Доступ к папке сохраняется между запусками." to t(
         "PIXTONE reads MP3, M4A, FLAC, WAV, OGG and OPUS with tags and embedded covers. Covers inserted by download sites are replaced with real ones (Genius, Deezer, iTunes) when new tracks are added — the whole library can be refreshed with the button below. Folder access persists between launches.",
         "PIXTONE liest MP3, M4A, FLAC, WAV, OGG und OPUS mit Tags und eingebetteten Covern. Von Download-Seiten eingefügte Cover werden beim Hinzufügen neuer Titel durch echte ersetzt (Genius, Deezer, iTunes) — die gesamte Bibliothek lässt sich mit der Schaltfläche unten aktualisieren. Der Ordnerzugriff bleibt zwischen Starts erhalten.",

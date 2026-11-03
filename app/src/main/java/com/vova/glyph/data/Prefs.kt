@@ -18,7 +18,6 @@ class Prefs(context: Context) {
         get() = sp.getString("folder_name", null)
         set(value) = sp.edit().putString("folder_name", value).apply()
 
-     
     var shuffle: Boolean
         get() = sp.getBoolean("shuffle", false)
         set(value) = sp.edit().putBoolean("shuffle", value).apply()

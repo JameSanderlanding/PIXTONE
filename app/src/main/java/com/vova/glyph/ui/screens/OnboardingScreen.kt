@@ -26,7 +26,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
-import com.vova.glyph.ui.components.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -46,6 +45,7 @@ import com.vova.glyph.ui.components.Glyph
 import com.vova.glyph.ui.components.GlyphButton
 import com.vova.glyph.ui.components.GlyphIcon
 import com.vova.glyph.ui.components.MicroLabel
+import com.vova.glyph.ui.components.Text
 import com.vova.glyph.ui.theme.DotoFamily
 import com.vova.glyph.ui.theme.GlyphBlack
 import com.vova.glyph.ui.theme.GlyphDim

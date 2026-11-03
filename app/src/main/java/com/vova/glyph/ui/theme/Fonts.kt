@@ -10,7 +10,6 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import com.vova.glyph.R
 
- 
 val DotoBaseFamily = FontFamily(
     Font(R.font.doto, FontWeight.Normal),
     Font(R.font.doto, FontWeight.Medium),
@@ -29,7 +28,6 @@ val GroteskBaseFamily = FontFamily(
     Font(R.font.space_grotesk, FontWeight.Bold),
 )
 
- 
 enum class AppFont(
     val id: String,
     val title: String,
@@ -47,16 +45,11 @@ enum class AppFont(
     }
 }
 
- 
 enum class FontRole(val label: String) {
     BODY("ОСНОВНОЙ ШРИФТ"),
     DISPLAY("ЗАГОЛОВКИ"),
     BRAND("АКЦЕНТНЫЙ ШРИФТ"),
 }
-
-
-
-
 
 object FontController {
     private var prefs: SharedPreferences? = null

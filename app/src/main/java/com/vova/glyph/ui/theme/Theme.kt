@@ -11,8 +11,6 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
-
-
 val GlyphBlack: Color get() = ThemeController.palette.background
 val GlyphSurface: Color get() = ThemeController.palette.surface
 val GlyphSurfaceHigh: Color get() = ThemeController.palette.surfaceHigh
@@ -21,7 +19,6 @@ val GlyphGray: Color get() = ThemeController.palette.gray
 val GlyphDim: Color get() = ThemeController.palette.dim
 val GlyphLine: Color get() = ThemeController.palette.line
 val GlyphRed: Color get() = ThemeController.palette.accent
-
 
 val DotoFamily: FontFamily get() = FontController.brand.family
 val PixelFamily: FontFamily get() = FontController.display.family
@@ -120,7 +117,6 @@ private fun buildTypography(display: FontFamily, body: FontFamily): Typography =
 
 @Composable
 fun GlyphTheme(content: @Composable () -> Unit) {
-    
     val palette = ThemeController.palette
     val displayFont = FontController.display
     val bodyFont = FontController.body

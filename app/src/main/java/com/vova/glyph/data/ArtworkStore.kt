@@ -20,11 +20,6 @@ class ArtworkStore(context: Context) {
         file.absolutePath
     }.getOrNull()
 
-    
-
-
-
-
     fun saveNetworkArt(bytes: ByteArray, key: String, source: String): String? = runCatching {
         val file = File(artDir, "net_${source}_$key.jpg")
         val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
@@ -51,12 +46,6 @@ class ArtworkStore(context: Context) {
         file.absolutePath
     }.getOrNull()
 
-    
-
-
-
-
-
     fun needsRemoteCover(path: String?, preferGenius: Boolean = true): Boolean {        if (path.isNullOrBlank()) return true
         if (path.startsWith("http://") || path.startsWith("https://")) return false
         val name = File(path).name
@@ -65,17 +54,12 @@ class ArtworkStore(context: Context) {
         return name.startsWith("net_deezer_") || name.startsWith("net_itunes_")
     }
 
-    
-
-
-
     fun hasArtwork(path: String?): Boolean {
         if (path.isNullOrBlank()) return false
         if (path.startsWith("http://") || path.startsWith("https://")) return true
         return File(path).exists()
     }
 
-     
     fun deleteReplacedArt(path: String?) {
         if (path.isNullOrBlank()) return
         val file = File(path)
@@ -108,7 +92,6 @@ class ArtworkStore(context: Context) {
     }
 
     private companion object {
-         
         const val MAX_ART_SIDE = 640
     }
 }

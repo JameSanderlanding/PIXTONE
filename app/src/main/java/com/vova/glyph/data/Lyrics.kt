@@ -1,25 +1,14 @@
 package com.vova.glyph.data
 
- 
 data class LyricLine(
     val timeMs: Long,
     val text: String,
-     
+
     val instrumental: Boolean = false,
 )
 
- 
 const val INTRO_MARKER = "♪ интро ♪"
 const val GAP_MARKER = "♪ отыгрыш ♪"
-
-
-
-
-
-
-
-
-
 
 fun withGapMarkers(
     lines: List<LyricLine>,
@@ -39,7 +28,6 @@ fun withGapMarkers(
         if (previous != null && !previous.instrumental &&
             line.timeMs - previous.timeMs >= minGapMs
         ) {
-            
             val at = (previous.timeMs + 2_500L).coerceAtMost(line.timeMs - 500L)
             if (at > previous.timeMs) result += LyricLine(at, GAP_MARKER, instrumental = true)
         }
@@ -57,18 +45,10 @@ fun withGapMarkers(
     return result
 }
 
- 
 data class LyricsResult(
     val plain: String?,
     val synced: List<LyricLine> = emptyList(),
 )
-
-
-
-
-
-
-
 
 data class CachedLyrics(
     val plain: String?,
@@ -77,7 +57,6 @@ data class CachedLyrics(
     val fetchedAt: Long = 0L,
 )
 
- 
 fun List<LyricLine>.toLrc(): String = joinToString("\n") { line ->
     val minutes = line.timeMs / 60_000
     val seconds = (line.timeMs % 60_000) / 1_000
@@ -86,10 +65,6 @@ fun List<LyricLine>.toLrc(): String = joinToString("\n") { line ->
 }
 
 private val LRC_TIME = Regex("\\[(\\d{1,3}):(\\d{1,2})(?:[.:](\\d{1,3}))?]")
-
-
-
-
 
 fun parseLrc(lrc: String): List<LyricLine> {
     if (lrc.isBlank()) return emptyList()
@@ -115,7 +90,6 @@ fun parseLrc(lrc: String): List<LyricLine> {
     return result.sortedBy { it.timeMs }
 }
 
- 
 fun activeLineIndex(lines: List<LyricLine>, positionMs: Long): Int {
     if (lines.isEmpty()) return -1
     var low = 0

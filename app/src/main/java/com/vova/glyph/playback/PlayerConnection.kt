@@ -38,9 +38,9 @@ data class PlayerUiState(
     val hasNext: Boolean = false,
     val hasPrevious: Boolean = false,
     val error: String? = null,
-     
+
     val completedTrackId: Long? = null,
-     
+
     val completionCount: Long = 0,
 )
 
@@ -53,13 +53,8 @@ class PlayerConnection(private val context: Context) {
     private var controller: MediaController? = null
     private var controllerFuture: ListenableFuture<MediaController>? = null
 
-    
-
-
-
     private var originalItems: List<MediaItem> = emptyList()
 
-     
     private var shuffleEnabled: Boolean = prefs.shuffle
 
     private val _state = MutableStateFlow(PlayerUiState(shuffle = prefs.shuffle))
@@ -116,9 +111,7 @@ class PlayerConnection(private val context: Context) {
                 runCatching { future.get() }
                     .onSuccess { connected ->
                         controller = connected
-                        
-                        
-                        
+
                         connected.shuffleModeEnabled = false
                         connected.addListener(listener)
                         updateState(connected)
@@ -142,8 +135,7 @@ class PlayerConnection(private val context: Context) {
         val items = tracks.map { track -> track.toMediaItem() }
         originalItems = items
         val start = items[startIndex.coerceIn(0, items.lastIndex)]
-        
-        
+
         val ordered = if (shuffleEnabled) shuffleKeepingFirst(items, start.mediaId) else items
         val index = ordered.indexOfFirst { it.mediaId == start.mediaId }.coerceAtLeast(0)
         player.setMediaItems(ordered, index, 0L)
@@ -167,8 +159,7 @@ class PlayerConnection(private val context: Context) {
         val player = controller ?: return
         when {
             player.hasNextMediaItem() -> player.seekToNext()
-            
-            
+
             shuffleEnabled && originalItems.size > 1 -> {
                 startRandomRound(player)
                 return
@@ -191,20 +182,11 @@ class PlayerConnection(private val context: Context) {
         updateState(player)
     }
 
-    
-
-
-
-
-
-
     fun toggleShuffle() {
         val player = controller ?: return
         shuffleEnabled = !shuffleEnabled
         prefs.shuffle = shuffleEnabled
 
-        
-        
         if (originalItems.isEmpty()) {
             originalItems = (0 until player.mediaItemCount).map { player.getMediaItemAt(it) }
         }
@@ -242,18 +224,12 @@ class PlayerConnection(private val context: Context) {
         _state.update { it.copy(error = null) }
     }
 
-     
     private fun shuffleKeepingFirst(items: List<MediaItem>, firstId: String?): List<MediaItem> {
         if (items.size < 2) return items
         val first = items.firstOrNull { it.mediaId == firstId }
             ?: return items.shuffled()
         return listOf(first) + items.filter { it.mediaId != firstId }.shuffled()
     }
-
-    
-
-
-
 
     private fun applyOrder(
         player: Player,
@@ -270,11 +246,10 @@ class PlayerConnection(private val context: Context) {
         if (wasPlaying) player.play()
     }
 
-     
     private fun startRandomRound(player: Player) {
         val lastId = player.currentMediaItem?.mediaId
         var ordered = originalItems.shuffled()
-        
+
         if (ordered.size > 1 && ordered.first().mediaId == lastId) {
             ordered = ordered.drop(1) + ordered.first()
         }
@@ -286,8 +261,7 @@ class PlayerConnection(private val context: Context) {
         val duration = player.duration
         val position = player.currentPosition.coerceAtLeast(0)
         _state.update { old ->
-            
-            
+
             val looped = old.durationMs > 0 &&
                 old.positionMs >= old.durationMs - LOOP_DETECT_MARGIN_MS &&
                 position < old.positionMs - LOOP_DETECT_BACKSTEP_MS
@@ -320,8 +294,6 @@ class PlayerConnection(private val context: Context) {
             .setArtist(artist)
             .setAlbumTitle(album.ifBlank { null })
             .apply {
-                
-                
                 if (localArt != null) {
                     setArtworkUri(localArt)
                 } else if (remoteArt != null) {
@@ -337,7 +309,6 @@ class PlayerConnection(private val context: Context) {
             .build()
     }
 
-     
     private fun localArtUri(path: String): Uri? = runCatching {
         val file = File(path)
         if (!file.exists() || file.length() <= 0) return null
@@ -345,8 +316,6 @@ class PlayerConnection(private val context: Context) {
     }.getOrNull()
 }
 
- 
 private const val LOOP_DETECT_MARGIN_MS = 1_500L
 
- 
 private const val LOOP_DETECT_BACKSTEP_MS = 1_000L

@@ -28,8 +28,8 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
@@ -279,7 +279,7 @@ fun LyricsDialog(
         else -> lyrics
     }
     val useSynced = syncedLines.isNotEmpty()
-    
+
     val displayLines = remember(syncedLines, durationMs) {
         if (useSynced) withGapMarkers(syncedLines, durationMs) else emptyList()
     }
@@ -392,11 +392,6 @@ fun LyricsDialog(
     }
 }
 
-
-
-
-
-
 @Composable
 private fun SyncedLyricsView(
     lines: List<LyricLine>,
@@ -409,7 +404,6 @@ private fun SyncedLyricsView(
         if (positionMs == null) -1 else activeLineIndex(lines, positionMs)
     }
 
-    
     var followPlayback by remember { mutableStateOf(true) }
     val isDragged by listState.interactionSource.collectIsDraggedAsState()
     LaunchedEffect(isDragged) {
@@ -423,7 +417,6 @@ private fun SyncedLyricsView(
 
     LaunchedEffect(activeIndex, followPlayback) {
         if (activeIndex >= 0 && followPlayback) {
-            
             val target = (activeIndex - 2).coerceAtLeast(0)
             listState.animateScrollToItem(target)
         }
@@ -490,7 +483,6 @@ private fun SyncedLyricsView(
     }
 }
 
- 
 @Composable
 private fun LazyLyricsScrollbar(
     state: LazyListState,
@@ -547,7 +539,6 @@ private fun LazyLyricsScrollbar(
     }
 }
 
- 
 @Composable
 private fun LyricsScrollbar(
     state: ScrollState,

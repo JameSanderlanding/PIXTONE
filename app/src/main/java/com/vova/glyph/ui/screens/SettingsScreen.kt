@@ -393,7 +393,6 @@ private fun ThemeSettingsPage(
     )
 }
 
- 
 @Composable
 private fun ThemeEditorPage(
     onCancel: () -> Unit,

@@ -9,20 +9,6 @@ import org.json.JSONObject
 import java.io.IOException
 import java.util.concurrent.TimeUnit
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 class CoverRepository(
     private val artworkStore: ArtworkStore,
     private val geniusGate: GeniusGate,
@@ -32,8 +18,6 @@ class CoverRepository(
         .callTimeout(25, TimeUnit.SECONDS)
         .build(),
 ) {
-
-     
     suspend fun downloadCover(artist: String, title: String, key: String): String? =
         withContext(Dispatchers.IO) {
             val candidates = buildSearchCandidatesWithTranslit(
@@ -44,14 +28,10 @@ class CoverRepository(
 
             var geniusAttempts = 0
             for ((candidateArtist, candidateTitle) in candidates) {
-                
-                
-                
                 for ((source, find) in SOURCES) {
                     if (source == GENIUS) {
                         if (geniusAttempts >= MAX_GENIUS_ATTEMPTS) continue
-                        
-                        
+
                         if (isUnknownArtist(candidateArtist)) continue
                         geniusAttempts++
                     }
@@ -64,14 +44,11 @@ class CoverRepository(
             null
         }
 
-     
     private val SOURCES: List<Pair<String, (String, String) -> String?>> = listOf(
         GENIUS to ::geniusCoverUrl,
         "deezer" to ::deezerCoverUrl,
         "itunes" to ::itunesCoverUrl,
     )
-
-    
 
     private fun geniusCoverUrl(artist: String, title: String): String? {
         val query = listOf(artist, title).filter { it.isNotBlank() }.joinToString(" ")
@@ -101,7 +78,7 @@ class CoverRepository(
                     artist,
                     title,
                 )
-                
+
                 if (score == 0) continue
                 if (score > bestScore) {
                     bestScore = score
@@ -111,12 +88,6 @@ class CoverRepository(
         }
         return best
     }
-
-    
-
-    
-
-
 
     private fun deezerCoverUrl(artist: String, title: String): String? {
         val query = listOf(artist, title).filter { it.isNotBlank() }.joinToString(" ")
@@ -153,8 +124,6 @@ class CoverRepository(
         return best
     }
 
-    
-
     private fun itunesCoverUrl(artist: String, title: String): String? =
         itunesCoverUrl(artist, title, country = null)
             ?: itunesCoverUrl(artist, title, country = "RU")
@@ -187,22 +156,18 @@ class CoverRepository(
             if (score == 0) continue
             if (score > bestScore) {
                 bestScore = score
-                
+
                 best = art.replace("100x100bb", "600x600bb")
             }
         }
         return best
     }
 
-    
-
     private fun get(url: String, browser: Boolean = false): String? {
         repeat(ATTEMPTS) { attempt ->
             if (browser) {
-                
                 if (geniusGate.isBlocked) return null
-                
-                
+
                 val paused = geniusGate.coversPauseLeftMs
                 if (paused > 0L) {
                     if (paused > MAX_COVER_PAUSE_WAIT_MS) return null
@@ -223,7 +188,7 @@ class CoverRepository(
             val response = runCatching {
                 client.newCall(builder.build()).execute()
             }.getOrElse { error ->
-                
+
                 throw IOException("Нет соединения", error)
             }
 
@@ -231,12 +196,10 @@ class CoverRepository(
                 if (r.isSuccessful) return r.body?.string()
                 val code = r.code
                 if (browser && (code == 429 || code == 403)) {
-                    
-                    
                     geniusGate.block(code)
                     return null
                 }
-                
+
                 if (code >= 500 && attempt < ATTEMPTS - 1) {
                     runCatching { Thread.sleep(BACKOFF_MS[attempt]) }
                     return@repeat
@@ -247,7 +210,6 @@ class CoverRepository(
         return null
     }
 
-     
     private fun downloadImage(url: String): ByteArray? {
         val request = Request.Builder()
             .url(url)
@@ -261,13 +223,11 @@ class CoverRepository(
                 if (body.contentLength() > MAX_BYTES) return null
                 val bytes = body.bytes()
                 if (bytes.size.toLong() !in MIN_BYTES..MAX_BYTES) return null
-                
+
                 if (!looksLikeImage(bytes)) return null
                 bytes
             }
         } catch (_: IOException) {
-            
-            
             null
         }
     }
@@ -287,23 +247,14 @@ class CoverRepository(
         const val MIN_BYTES = 1_024L
         const val MAX_BYTES = 4_000_000L
 
-         
         const val GENIUS = "genius"
 
-         
         const val MAX_GENIUS_ATTEMPTS = 1
-
-        
-
-
-
 
         const val MAX_COVER_PAUSE_WAIT_MS = 22_000L
 
-         
         const val ATTEMPTS = 3
 
-         
         val BACKOFF_MS = longArrayOf(1_500L, 4_000L)
 
         const val APP_UA = "Pixtone Music Player/1.0 (Android)"

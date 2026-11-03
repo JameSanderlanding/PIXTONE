@@ -26,21 +26,6 @@ import java.io.IOException
 import java.util.concurrent.TimeUnit
 import kotlin.coroutines.resume
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 class LyricsRepository(
     private val geniusGate: GeniusGate,
     private val client: OkHttpClient = OkHttpClient.Builder()
@@ -49,7 +34,6 @@ class LyricsRepository(
         .callTimeout(15, TimeUnit.SECONDS)
         .build(),
 ) {
-
     suspend fun fetchLyrics(artist: String, title: String): LyricsResult? =
         withContext(Dispatchers.IO) {
             val candidates = buildSearchCandidatesWithTranslit(
@@ -86,15 +70,8 @@ class LyricsRepository(
                     }?.let { channel.send(it) }
                 }
                 val geniusJob = launch {
-                    
-                    
-                    
-                    
-                    
                     geniusGate.pauseCovers(LYRICS_COVER_PAUSE_MS)
                     try {
-                        
-                        
                         delay(GENIUS_HEAD_START_MS)
                         safeFetch {
                             for ((a, t) in candidates) {
@@ -108,8 +85,6 @@ class LyricsRepository(
                 }
                 val jobs = listOf(exactJob, searchJob, ovhJob, geniusJob)
 
-                
-                
                 val closer = launch {
                     jobs.joinAll()
                     channel.close()
@@ -122,7 +97,6 @@ class LyricsRepository(
 
                     if (first.synced.isNotEmpty()) return@coroutineScope first
 
-                    
                     val deadline = System.currentTimeMillis() + SYNC_GRACE_MS
                     while (true) {
                         val left = deadline - System.currentTimeMillis()
@@ -134,19 +108,10 @@ class LyricsRepository(
                     }
                     first
                 } finally {
-                    
-                    
                     jobs.forEach { it.cancel() }
                 }
             }
         }
-
-    
-
-
-
-
-
 
     private fun getAttempts(candidates: List<Pair<String, String>>): List<Pair<String, String>> {
         val result = LinkedHashSet<Pair<String, String>>()
@@ -170,8 +135,6 @@ class LyricsRepository(
         if (first.isNotBlank()) result += first
         return result.toList()
     }
-
-    
 
     private suspend fun lrclibGet(artist: String, title: String): LyricsResult? {
         if (artist.isBlank()) return null
@@ -211,9 +174,9 @@ class LyricsRepository(
                 wantedArtist,
                 wantedTitle,
             )
-            
+
             if (score == 0) continue
-            
+
             if (candidate.synced.isNotEmpty()) score += 1
 
             if (score > bestScore) {
@@ -241,8 +204,6 @@ class LyricsRepository(
         return parseLrc(json.optString("syncedLyrics", ""))
     }
 
-    
-
     private suspend fun lyricsOvh(artist: String, title: String): LyricsResult? {
         if (artist.isBlank()) return null
         val url = "https://api.lyrics.ovh/v1".toHttpUrl().newBuilder()
@@ -256,8 +217,6 @@ class LyricsRepository(
         val text = json.optString("lyrics", "").takeIf { it.isNotBlank() } ?: return null
         return LyricsResult(text, emptyList())
     }
-
-    
 
     private suspend fun genius(artist: String, title: String): LyricsResult? {
         val searchUrl = "https://genius.com/api/search/multi".toHttpUrl().newBuilder()
@@ -296,7 +255,7 @@ class LyricsRepository(
                     wantedArtist,
                     wantedTitle,
                 )
-                
+
                 if (score == 0) continue
                 if (score > bestScore) {
                     bestScore = score
@@ -328,12 +287,6 @@ class LyricsRepository(
         return builder.toString().trim().takeIf { it.isNotBlank() }
     }
 
-    
-
-    
-
-
-
     private suspend fun safeFetch(block: suspend () -> LyricsResult?): LyricsResult? =
         try {
             block()
@@ -346,7 +299,6 @@ class LyricsRepository(
     private suspend fun get(url: String, browser: Boolean = false): String? {
         repeat(ATTEMPTS) { attempt ->
             if (browser) {
-                
                 if (geniusGate.isBlocked) return null
                 geniusGate.awaitSuspend()
             }
@@ -363,7 +315,6 @@ class LyricsRepository(
             val response = try {
                 client.newCall(builder.build()).await()
             } catch (e: IOException) {
-                
                 if (!currentCoroutineContext().isActive) throw CancellationException("Отменено", e)
                 return null
             }
@@ -372,11 +323,10 @@ class LyricsRepository(
                 if (r.isSuccessful) return r.body?.string()
                 val code = r.code
                 if (browser && (code == 429 || code == 403)) {
-                    
                     geniusGate.block(code)
                     return null
                 }
-                
+
                 if (code >= 500 && attempt < ATTEMPTS - 1) {
                     delay(BACKOFF_MS[attempt])
                     return@repeat
@@ -386,10 +336,6 @@ class LyricsRepository(
         }
         return null
     }
-
-    
-
-
 
     private suspend fun Call.await(): Response = suspendCancellableCoroutine { cont ->
         cont.invokeOnCancellation { runCatching { cancel() } }
@@ -410,25 +356,18 @@ class LyricsRepository(
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
                 "(KHTML, like Gecko) Chrome/124.0 Safari/537.36"
 
-         
         const val ATTEMPTS = 2
 
-         
         val BACKOFF_MS = longArrayOf(1_200L)
 
-         
         const val MAX_GET_ATTEMPTS = 8
 
-         
         const val GENIUS_HEAD_START_MS = 600L
 
-         
         const val LYRICS_COVER_PAUSE_MS = 20_000L
 
-         
         const val FIRST_RESULT_TIMEOUT_MS = 30_000L
 
-         
         const val SYNC_GRACE_MS = 1_500L
     }
 }

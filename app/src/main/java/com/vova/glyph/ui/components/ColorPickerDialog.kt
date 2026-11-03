@@ -50,7 +50,6 @@ import com.vova.glyph.ui.theme.GlyphSurface
 import com.vova.glyph.ui.theme.GlyphWhite
 import kotlin.math.roundToInt
 
- 
 @Composable
 fun ColorPickerDialog(
     title: String,

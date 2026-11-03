@@ -22,7 +22,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
-import com.vova.glyph.ui.components.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -49,6 +48,7 @@ import com.vova.glyph.ui.components.GlyphIcon
 import com.vova.glyph.ui.components.LyricsDialog
 import com.vova.glyph.ui.components.MicroLabel
 import com.vova.glyph.ui.components.SegmentedProgress
+import com.vova.glyph.ui.components.Text
 import com.vova.glyph.ui.components.formatDuration
 import com.vova.glyph.ui.theme.DotoFamily
 import com.vova.glyph.ui.theme.GlyphBlack
@@ -388,7 +388,6 @@ fun PlayerOverlay(vm: MainViewModel) {
     }
 
     if (showLyrics && current != null) {
-        
         LaunchedEffect(playerState.completionCount) {
             if (playerState.completionCount > lyricsCompletionBase) {
                 showLyrics = false
@@ -515,5 +514,3 @@ private fun GlyphCorners(modifier: Modifier = Modifier) {
         drawLine(color, androidx.compose.ui.geometry.Offset(size.width - u, size.height - u), androidx.compose.ui.geometry.Offset(size.width - u, size.height - u - len), w)
     }
 }
-
-

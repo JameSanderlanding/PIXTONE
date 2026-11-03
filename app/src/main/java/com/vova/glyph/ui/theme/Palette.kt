@@ -10,7 +10,6 @@ import androidx.compose.ui.graphics.toArgb
 import org.json.JSONArray
 import org.json.JSONObject
 
- 
 data class ThemePalette(
     val background: Color,
     val surface: Color,
@@ -44,7 +43,6 @@ data class ThemePalette(
     }
 }
 
- 
 enum class ColorSlot(val label: String) {
     BACKGROUND("ФОН"),
     SURFACE("ПОВЕРХНОСТЬ"),
@@ -147,10 +145,6 @@ val ThemePresets: List<ThemePreset> = listOf(
     ),
 )
 
-
-
-
-
 object ThemeController {
     private var prefs: SharedPreferences? = null
 
@@ -160,11 +154,9 @@ object ThemeController {
     var presetId by mutableStateOf(ThemePresets.first().id)
         private set
 
-     
     var customPresets by mutableStateOf<List<ThemePreset>>(emptyList())
         private set
 
-     
     private var draftPalette: ThemePalette? = null
     private var draftPresetId: String? = null
     private var draftEditingId: String? = null
@@ -205,7 +197,6 @@ object ThemeController {
         applyPreset(ThemePresets.first())
     }
 
-     
     fun startDraft() {
         if (draftPalette != null) return
         draftPalette = palette
@@ -223,12 +214,10 @@ object ThemeController {
         presetId = preset.id
     }
 
-     
     fun setDraftColor(slot: ColorSlot, color: Color) {
         palette = palette.with(slot, color)
     }
 
-     
     fun cancelDraft() {
         draftPalette?.let { palette = it }
         draftPresetId?.let { presetId = it }
@@ -237,7 +226,6 @@ object ThemeController {
         draftEditingId = null
     }
 
-     
     fun saveDraft(name: String) {
         val trimmed = name.trim().ifBlank { "PRESET" }
         val editingId = draftEditingId
