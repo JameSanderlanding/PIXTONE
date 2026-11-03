@@ -20,7 +20,7 @@ enum class Glyph {
     Heart, HeartFilled,
     Search, Library, Chat, Settings, Close, Plus, Check,
     Back, Download, More, Shuffle, Repeat, RepeatOne,
-    Folder, Sparkle, Trash, Text,
+    Folder, Sparkle, Trash, Text, Pencil,
 }
 
 @Composable
@@ -231,6 +231,18 @@ fun GlyphIcon(
                 }, fill = false, close = false)
                 line(10.5f, 9.5f, 11f, 17f)
                 line(13.5f, 9.5f, 13f, 17f)
+            }
+
+            Glyph.Pencil -> {
+                path({
+                    moveTo(4.5f * u, 19.5f * u)
+                    lineTo(8f * u, 18.5f * u)
+                    lineTo(19f * u, 7.5f * u)
+                    lineTo(16.5f * u, 5f * u)
+                    lineTo(5.5f * u, 16f * u)
+                }, fill = false)
+                line(15f, 6.5f, 17.5f, 9f)
+                line(8f, 18.5f, 9.5f, 20f)
             }
         }
     }

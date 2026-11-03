@@ -167,6 +167,9 @@ object ThemeController {
      
     private var draftPalette: ThemePalette? = null
     private var draftPresetId: String? = null
+    private var draftEditingId: String? = null
+
+    val isEditingDraft: Boolean get() = draftEditingId != null
 
     val presetName: String
         get() = allPresets().firstOrNull { it.id == presetId }?.name ?: ThemePresets.first().name
@@ -207,6 +210,17 @@ object ThemeController {
         if (draftPalette != null) return
         draftPalette = palette
         draftPresetId = presetId
+        draftEditingId = null
+    }
+
+    fun startEdit(preset: ThemePreset) {
+        if (draftPalette == null) {
+            draftPalette = palette
+            draftPresetId = presetId
+        }
+        draftEditingId = preset.id
+        palette = preset.palette
+        presetId = preset.id
     }
 
      
@@ -220,19 +234,34 @@ object ThemeController {
         draftPresetId?.let { presetId = it }
         draftPalette = null
         draftPresetId = null
+        draftEditingId = null
     }
 
      
     fun saveDraft(name: String) {
-        val created = ThemePreset(
-            id = "custom_${System.currentTimeMillis()}",
-            name = name.trim().ifBlank { "PRESET" },
-            palette = palette,
-        )
-        customPresets = customPresets + created
-        presetId = created.id
+        val trimmed = name.trim().ifBlank { "PRESET" }
+        val editingId = draftEditingId
+        if (editingId != null) {
+            customPresets = customPresets.map { preset ->
+                if (preset.id == editingId) {
+                    preset.copy(name = trimmed, palette = palette)
+                } else {
+                    preset
+                }
+            }
+            presetId = editingId
+        } else {
+            val created = ThemePreset(
+                id = "custom_${System.currentTimeMillis()}",
+                name = trimmed,
+                palette = palette,
+            )
+            customPresets = customPresets + created
+            presetId = created.id
+        }
         draftPalette = null
         draftPresetId = null
+        draftEditingId = null
         save()
         saveCustomPresets()
     }

@@ -18,7 +18,7 @@ PIXTONE plays the music stored on your device. No account, no cloud, no ads, no 
 
 | Lyrics | Themes |
 |---|---|
-| ![Lyrics](docs/screenshots/10_lyrics_en.png) | ![Themes](docs/screenshots/06_themes_en.png) |
+| ![Lyrics](docs/screenshots/10_lyrics_en.png) | ![Themes](docs/screenshots/exemp.jpg) |
 
 | Playlist | Create playlist |
 |---|---|
@@ -165,3 +165,4 @@ Released under the [MIT License](LICENSE).
 ---
 
 Made by [JameSanderlanding](https://github.com/JameSanderlanding)
+Special thanks to Angelina and Timofey

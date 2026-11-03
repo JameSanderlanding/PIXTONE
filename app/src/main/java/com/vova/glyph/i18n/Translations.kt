@@ -164,6 +164,7 @@ private val DICT: Map<String, Tr> = mapOf(
     "ПРЕСЕТЫ" to t("PRESETS", "VORGABEN", "PRÉRÉGLAGES", "预设", "プリセット"),
     "СОЗДАТЬ ПРЕСЕТ" to t("CREATE PRESET", "PRESET ERSTELLEN", "CRÉER UN PRÉSET", "创建预设", "プリセットを作成"),
     "НОВЫЙ ПРЕСЕТ" to t("NEW PRESET", "NEUES PRESET", "NOUVEAU PRÉSET", "新建预设", "新しいプリセット"),
+    "РЕДАКТИРОВАТЬ ПРЕСЕТ" to t("EDIT PRESET", "PRESET BEARBEITEN", "MODIFIER LE PRÉSET", "编辑预设", "プリセットを編集"),
     "НАЗВАНИЕ ПРЕСЕТА" to t("PRESET NAME", "PRESET-NAME", "NOM DU PRÉSET", "预设名称", "プリセット名"),
     "МОЙ ПРЕСЕТ" to t("MY PRESET", "MEIN PRESET", "MON PRÉSET", "我的预设", "マイプリセット"),
     "ПАЛИТРА" to t("PALETTE", "PALETTE", "PALETTE", "配色", "パレット"),

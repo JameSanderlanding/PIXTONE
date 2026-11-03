@@ -109,6 +109,7 @@ fun SettingsScreen(vm: MainViewModel) {
                         ThemeController.startDraft()
                         page = SettingsPage.THEME_EDITOR
                     },
+                    onEditPreset = { page = SettingsPage.THEME_EDITOR },
                 )
                 SettingsPage.THEME_EDITOR -> ThemeEditorPage(
                     onCancel = {
@@ -351,6 +352,7 @@ private fun SettingsMain(
 private fun ThemeSettingsPage(
     onBack: () -> Unit,
     onCreatePreset: () -> Unit,
+    onEditPreset: () -> Unit,
 ) {
     val presets = ThemeController.allPresets()
 
@@ -369,6 +371,14 @@ private fun ThemeSettingsPage(
                 preset = preset,
                 selected = ThemeController.presetId == preset.id,
                 onClick = { ThemeController.applyPreset(preset) },
+                onEdit = if (ThemeController.customPresets.any { it.id == preset.id }) {
+                    {
+                        ThemeController.startEdit(preset)
+                        onEditPreset()
+                    }
+                } else {
+                    null
+                },
             )
         }
     }
@@ -391,11 +401,22 @@ private fun ThemeEditorPage(
 ) {
     var editing by remember { mutableStateOf<ColorSlot?>(null) }
     val palette = ThemeController.palette
-    var name by remember {
-        mutableStateOf(tr("МОЙ ПРЕСЕТ") + " " + (ThemeController.customPresets.size + 1))
+    val editingPreset = if (ThemeController.isEditingDraft) {
+        ThemeController.customPresets.firstOrNull { it.id == ThemeController.presetId }
+    } else {
+        null
+    }
+    var name by remember(editingPreset?.id) {
+        mutableStateOf(
+            editingPreset?.name
+                ?: (tr("МОЙ ПРЕСЕТ") + " " + (ThemeController.customPresets.size + 1)),
+        )
     }
 
-    SettingsPageHeader(title = "НОВЫЙ ПРЕСЕТ", onBack = onCancel)
+    SettingsPageHeader(
+        title = if (editingPreset != null) "РЕДАКТИРОВАТЬ ПРЕСЕТ" else "НОВЫЙ ПРЕСЕТ",
+        onBack = onCancel,
+    )
     Spacer(Modifier.height(7.dp))
     Text(
         "Настройте цвета и сохраните пресет.",
@@ -719,6 +740,7 @@ private fun PresetRow(
     preset: ThemePreset,
     selected: Boolean,
     onClick: () -> Unit,
+    onEdit: (() -> Unit)? = null,
 ) {
     val shape = RoundedCornerShape(2.dp)
     Row(
@@ -741,6 +763,22 @@ private fun PresetRow(
             style = MaterialTheme.typography.labelLarge.copy(color = GlyphWhite, fontSize = 10.sp),
             modifier = Modifier.weight(1f),
         )
+        if (onEdit != null) {
+            Box(
+                Modifier
+                    .size(28.dp)
+                    .clickable(onClick = onEdit),
+                contentAlignment = Alignment.Center,
+            ) {
+                GlyphIcon(
+                    glyph = Glyph.Pencil,
+                    tint = GlyphGray,
+                    modifier = Modifier.size(14.dp),
+                    stroke = 1.5.dp,
+                )
+            }
+            Spacer(Modifier.width(6.dp))
+        }
         Box(
             Modifier
                 .size(7.dp)
