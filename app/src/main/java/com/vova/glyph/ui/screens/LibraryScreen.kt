@@ -135,7 +135,12 @@ fun LibraryScreen(vm: MainViewModel) {
         }
         item { Spacer(Modifier.height(18.dp)) }
         if (scanning) {
-            item { LibraryScanCard(status = scanStatus, found = scanFound) }
+            item {
+                LibraryScanCard(
+                    status = scanStatus,
+                    found = scanFound,
+                )
+            }
         } else {
             item {
                 LibrarySearchField(

@@ -75,9 +75,11 @@ import kotlinx.coroutines.delay
 fun CoverUpdateDialog(
     onFindMissing: () -> Unit,
     onUpdateAll: () -> Unit,
+    onResetDefaults: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     val shape = RoundedCornerShape(2.dp)
+    val maxHeight = (LocalConfiguration.current.screenHeightDp * 0.8f).dp
     Dialog(onDismissRequest = onDismiss) {
         Surface(
             modifier = Modifier
@@ -86,7 +88,12 @@ fun CoverUpdateDialog(
             color = GlyphSurface,
             shape = shape,
         ) {
-            Column(Modifier.padding(20.dp)) {
+            Column(
+                Modifier
+                    .heightIn(max = maxHeight)
+                    .verticalScroll(rememberScrollState())
+                    .padding(20.dp),
+            ) {
                 MicroLabel("ОБЛОЖКИ", color = GlyphRed)
                 Spacer(Modifier.height(14.dp))
                 CoverOptionCard(
@@ -99,6 +106,14 @@ fun CoverUpdateDialog(
                     title = "ВСЕ ОБЛОЖКИ",
                     body = "Перекачать обложки для всех треков библиотеки.",
                     onClick = onUpdateAll,
+                )
+                Spacer(Modifier.height(10.dp))
+                CoverOptionCard(
+                    title = "ОБЛОЖКИ ПО УМОЛЧАНИЮ",
+                    body = "Вернуть обложки, встроенные в файлы песен.",
+                    onClick = onResetDefaults,
+                    buttonText = "ВЕРНУТЬ ПО УМОЛЧАНИЮ",
+                    filled = false,
                 )
                 Spacer(Modifier.height(16.dp))
                 GlyphButton(
@@ -117,6 +132,8 @@ private fun CoverOptionCard(
     title: String,
     body: String,
     onClick: () -> Unit,
+    buttonText: String = "ОБНОВИТЬ ОБЛОЖКИ",
+    filled: Boolean = true,
 ) {
     val shape = RoundedCornerShape(2.dp)
     Column(
@@ -136,8 +153,9 @@ private fun CoverOptionCard(
         )
         Spacer(Modifier.height(10.dp))
         GlyphButton(
-            text = "ОБНОВИТЬ ОБЛОЖКИ",
+            text = buttonText,
             onClick = onClick,
+            filled = filled,
             modifier = Modifier.fillMaxWidth(),
         )
     }
