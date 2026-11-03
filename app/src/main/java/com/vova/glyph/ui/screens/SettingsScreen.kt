@@ -337,7 +337,7 @@ private fun SettingsMain(
     Spacer(Modifier.height(14.dp))
 
     SettingsSection(number = "03", title = "О ПРИЛОЖЕНИИ") {
-        InfoRow("ВЕРСИЯ", "1.0.0")
+        InfoRow("ВЕРСИЯ", "1.0.1")
         Spacer(Modifier.height(9.dp))
         InfoRow("СБОРКА", "PIXTONE / LOCAL-FIRST")
         Spacer(Modifier.height(9.dp))

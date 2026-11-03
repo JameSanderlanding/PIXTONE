@@ -41,7 +41,7 @@
 | Картинки | Coil |
 | Сборка | Gradle 9.6, AGP 9.4.1, JDK 21 |
 | SDK | minSdk 26, targetSdk 37, compileSdk 37 |
-| versionCode / versionName | 1 / 1.0.0 |
+| versionCode / versionName | 1 / 1.0.1 |
 | Лицензия | MIT |
 
 ---
@@ -372,7 +372,7 @@ PIXTONE/
 Результат:
 
 ```
-app/build/outputs/apk/debug/Pixtone-1.0.0.apk
+app/build/outputs/apk/debug/Pixtone-1.0.1.apk
 ```
 
 Полезные команды:
