@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -65,6 +66,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.vova.glyph.data.Album
 import com.vova.glyph.data.Playlist
 import com.vova.glyph.data.Track
 import com.vova.glyph.ui.theme.DotoFamily
@@ -886,12 +888,46 @@ fun MiniPlayer(
 }
 
 @Composable
+fun AlbumCard(
+    album: Album,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+    ) {
+        GlyphCover(
+            artwork = album.artwork,
+            seed = album.name + album.artist,
+            modifier = Modifier.fillMaxWidth().aspectRatio(1f),
+        )
+        Spacer(Modifier.height(9.dp))
+        Text(
+            album.name,
+            style = MaterialTheme.typography.titleSmall.copy(color = GlyphWhite),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Spacer(Modifier.height(2.dp))
+        Text(
+            if (album.unknown) "${album.trackCount} ТРЕКОВ" else album.artist.uppercase(),
+            style = MaterialTheme.typography.labelSmall.copy(color = GlyphDim, fontSize = 8.sp),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+@Composable
 fun GlyphBottomNav(
     selected: com.vova.glyph.Tab,
     onSelect: (com.vova.glyph.Tab) -> Unit,
 ) {
     val items = listOf(
         Triple(com.vova.glyph.Tab.LIBRARY, Glyph.Library, "БИБЛИОТЕКА"),
+        Triple(com.vova.glyph.Tab.ALBUMS, Glyph.Album, "АЛЬБОМЫ"),
         Triple(com.vova.glyph.Tab.FAVORITES, Glyph.Heart, "ИЗБРАННОЕ"),
     )
     Column(Modifier.fillMaxWidth().background(GlyphBlack)) {

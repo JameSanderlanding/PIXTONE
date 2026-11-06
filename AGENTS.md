@@ -150,6 +150,8 @@ PIXTONE/
 | `components/LicenseTextDialog.kt` | просмотр текста лицензии из assets |
 | `components/GlyphIcons.kt` | векторные иконки `Glyph.*` (Canvas) |
 | `screens/LibraryScreen.kt` | библиотека, поиск, плейлисты, сканирование |
+| `screens/AlbumsScreen.kt` | сетка альбомов, собранных из тегов |
+| `screens/AlbumDetailScreen.kt` | треки альбома, удаление альбома из приложения |
 | `screens/FavoritesScreen.kt` | избранное |
 | `screens/PlayerOverlay.kt` | полноэкранный плеер |
 | `screens/PlaylistDetailScreen.kt` | плейлист, добавление/удаление треков |
@@ -219,7 +221,20 @@ PIXTONE/
 6. Ручное обновление обложек в настройках ищет только треки без реальной обложки.
 7. Пока ищется текст, поиск обложек временно уступает Genius.
 
-### 4.6 Плейлисты
+### 4.6 Альбомы
+
+- Отдельной таблицы нет: альбомы вычисляются из `tracks.album` при каждом изменении библиотеки.
+- `Albums.group(tracks)` группирует по паре «альбом + исполнитель» (регистр не важен).
+- Треки без тега альбома попадают в один виртуальный альбом «Без альбома» (`Albums.UNKNOWN_KEY`), он всегда последний в списке.
+- Обложка альбома — первая непустая обложка его треков; длительность — сумма длительностей.
+- Вкладка `Tab.ALBUMS` показывает сетку (2 колонки); тап открывает `AlbumDetailScreen`.
+- Удаление альбома (`MainViewModel.deleteAlbum`) убирает **только записи из приложения**:
+  - `GlyphDb.deleteTracks()` в одной транзакции чистит `playlist_tracks`, `lyrics` и `tracks`;
+  - файлы на устройстве не трогаются, повторный скан папки вернёт треки;
+  - обложки удаляются через `ArtworkStore.deleteReplacedArt()`;
+  - если играл трек из этого альбома, плеер останавливается.
+
+### 4.7 Плейлисты
 
 - Хранятся в `playlists` и `playlist_tracks`.
 - `playlist_tracks.position` задаёт порядок.
@@ -227,7 +242,7 @@ PIXTONE/
 - Обложка плейлиста копируется в `files/covers/` через `ArtworkStore.copyPlaylistCover()`.
 - Сообщение о добавлении конкретного трека в плейлист намеренно не показывается; показывается только «уже в плейлисте» и ошибки.
 
-### 4.7 Темы и шрифты
+### 4.8 Темы и шрифты
 
 - `ThemeController` — синглтон с Compose-состоянием:
   - `palette` (8 цветов);
@@ -244,7 +259,7 @@ PIXTONE/
 - `FontController` хранит выбранный шрифт для трёх ролей: body, display, brand.
 - Доступные шрифты: Doto, Pixelify Sans, Space Grotesk, системный.
 
-### 4.8 Языки
+### 4.9 Языки
 
 - Языки: RU, EN, DE, FR, ZH, JA.
 - Исходные строки в коде — **русские**.
@@ -258,7 +273,7 @@ PIXTONE/
 - Кастомный `Text` дополнительно помнит результат перевода через `remember(text, language)`, чтобы рекомпозиция строки не запускала перевод заново.
 - `LangController.select()` сохраняет язык и мгновенно перерисовывает UI.
 
-### 4.9 Сообщения
+### 4.10 Сообщения
 
 - `MainViewModel.notify()` эмитит строку в `SharedFlow`.
 - `GlyphMessageHost` показывает сообщения по одному.
@@ -299,10 +314,11 @@ PIXTONE/
 ## 6. UI и навигация
 
 - Одна Activity, навигация — это состояние в `MainViewModel`:
-  - `Tab.LIBRARY` / `Tab.FAVORITES`;
+  - `Tab.LIBRARY` / `Tab.ALBUMS` / `Tab.FAVORITES`;
   - `showPlayer`;
   - `showSettings`;
   - `openPlaylistId`;
+  - `openAlbumKey`;
   - `onboardingVisible`.
 - `GlyphRoot` собирает экран из этих состояний; Navigation Compose не используется.
 - Настройки — это внутренние страницы `SettingsPage`: MAIN, THEME, THEME_EDITOR, FONTS, LANGUAGE, LICENSES.

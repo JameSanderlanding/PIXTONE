@@ -9,6 +9,8 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.vova.glyph.data.Album
+import com.vova.glyph.data.Albums
 import com.vova.glyph.data.LyricLine
 import com.vova.glyph.data.Playlist
 import com.vova.glyph.data.Track
@@ -38,6 +40,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 enum class Tab(val title: String) {
     LIBRARY("БИБЛИОТЕКА"),
+    ALBUMS("АЛЬБОМЫ"),
     FAVORITES("ИЗБРАННОЕ"),
 }
 
@@ -113,6 +116,20 @@ class MainViewModel(
 
     private val _playlistTracks = MutableStateFlow<List<Track>>(emptyList())
     val playlistTracks = _playlistTracks.asStateFlow()
+
+    val albums: StateFlow<List<Album>> = repo.tracks.map { Albums.group(it) }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    private val _openAlbumKey = MutableStateFlow<String?>(null)
+    val openAlbumKey = _openAlbumKey.asStateFlow()
+
+    val openAlbum: StateFlow<Album?> = combine(_openAlbumKey, albums) { key, list ->
+        list.firstOrNull { it.key == key }
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    val albumTracks: StateFlow<List<Track>> = combine(_openAlbumKey, repo.tracks) { key, list ->
+        if (key == null) emptyList() else Albums.tracksOf(list, key)
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     val openPlaylist: StateFlow<Playlist?> = combine(_openPlaylistId, repo.playlists) { id, list ->
         list.firstOrNull { it.id == id }
@@ -371,6 +388,9 @@ class MainViewModel(
         if (tab != Tab.LIBRARY || _openPlaylistId.value != null) {
             closePlaylist()
         }
+        if (tab != Tab.ALBUMS || _openAlbumKey.value != null) {
+            closeAlbum()
+        }
     }
 
     fun openPlayer() {
@@ -403,6 +423,11 @@ class MainViewModel(
 
             _openPlaylistId.value != null -> {
                 closePlaylist()
+                true
+            }
+
+            _openAlbumKey.value != null -> {
+                closeAlbum()
                 true
             }
 
@@ -516,6 +541,33 @@ class MainViewModel(
     fun closePlaylist() {
         _openPlaylistId.value = null
         _playlistTracks.value = emptyList()
+    }
+
+    fun openAlbum(key: String) {
+        _openAlbumKey.value = key
+    }
+
+    fun closeAlbum() {
+        _openAlbumKey.value = null
+    }
+
+    fun deleteAlbum(album: Album) {
+        viewModelScope.launch {
+            val tracks = Albums.tracksOf(repo.tracks.value, album.key)
+            if (tracks.isEmpty()) {
+                notify("В альбоме нет треков")
+                return@launch
+            }
+            val ids = tracks.mapTo(HashSet()) { it.id }
+            if (playerState.value.trackId in ids) player.stop()
+            runCatching { repo.deleteTracks(ids) }
+                .onSuccess {
+                    tracks.forEach { container.artworkStore.deleteReplacedArt(it.artwork) }
+                    if (_openAlbumKey.value == album.key) closeAlbum()
+                    notify("Альбом «${album.name}» убран из приложения")
+                }
+                .onFailure { notify(it.message ?: "Не удалось убрать альбом") }
+        }
     }
 
     fun createPlaylist(name: String, description: String, coverUri: Uri?) {

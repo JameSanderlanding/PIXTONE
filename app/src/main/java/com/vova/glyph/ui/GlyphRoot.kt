@@ -30,6 +30,8 @@ import com.vova.glyph.data.Track
 import com.vova.glyph.ui.components.GlyphBottomNav
 import com.vova.glyph.ui.components.GlyphMessageHost
 import com.vova.glyph.ui.components.MiniPlayer
+import com.vova.glyph.ui.screens.AlbumDetailScreen
+import com.vova.glyph.ui.screens.AlbumsScreen
 import com.vova.glyph.ui.screens.FavoritesScreen
 import com.vova.glyph.ui.screens.LibraryScreen
 import com.vova.glyph.ui.screens.OnboardingScreen
@@ -45,6 +47,7 @@ fun GlyphRoot(vm: MainViewModel) {
     val showPlayer by vm.showPlayer.collectAsStateWithLifecycle()
     val showSettings by vm.showSettings.collectAsStateWithLifecycle()
     val openPlaylistId by vm.openPlaylistId.collectAsStateWithLifecycle()
+    val openAlbumKey by vm.openAlbumKey.collectAsStateWithLifecycle()
     val currentTrack by vm.currentTrack.collectAsStateWithLifecycle()
     val playerState by vm.playerState.collectAsStateWithLifecycle()
 
@@ -66,7 +69,7 @@ fun GlyphRoot(vm: MainViewModel) {
     }
 
     val canGoBack = showPlayer || showSettings || openPlaylistId != null ||
-        tab != Tab.LIBRARY
+        openAlbumKey != null || tab != Tab.LIBRARY
 
     BackHandler(enabled = canGoBack) {
         vm.handleBack()
@@ -91,6 +94,14 @@ fun GlyphRoot(vm: MainViewModel) {
                                 PlaylistDetailScreen(vm)
                             } else {
                                 LibraryScreen(vm)
+                            }
+                        }
+
+                        Tab.ALBUMS -> {
+                            if (openAlbumKey != null) {
+                                AlbumDetailScreen(vm)
+                            } else {
+                                AlbumsScreen(vm)
                             }
                         }
 

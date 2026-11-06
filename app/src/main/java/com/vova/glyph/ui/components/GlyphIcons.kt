@@ -20,7 +20,7 @@ enum class Glyph {
     Heart, HeartFilled,
     Search, Library, Chat, Settings, Close, Plus, Check,
     Back, Download, More, Shuffle, Repeat, RepeatOne,
-    Folder, Sparkle, Trash, Text, Pencil,
+    Folder, Sparkle, Trash, Text, Pencil, Album,
 }
 
 @Composable
@@ -231,6 +231,12 @@ fun GlyphIcon(
                 }, fill = false, close = false)
                 line(10.5f, 9.5f, 11f, 17f)
                 line(13.5f, 9.5f, 13f, 17f)
+            }
+
+            Glyph.Album -> {
+                strokeCircle(12f, 12f, 8.5f)
+                strokeCircle(12f, 12f, 2.2f, fill = true)
+                strokeCircle(12f, 12f, 6.2f)
             }
 
             Glyph.Pencil -> {

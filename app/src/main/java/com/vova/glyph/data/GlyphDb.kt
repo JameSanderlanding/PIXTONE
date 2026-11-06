@@ -188,6 +188,24 @@ class GlyphDb(context: Context) : SQLiteOpenHelper(context, "glyph.db", null, 10
         writableDatabase.update("tracks", values, "id = ?", arrayOf(trackId.toString()))
     }
 
+    suspend fun deleteTracks(ids: List<Long>) = withContext(Dispatchers.IO) {
+        if (ids.isEmpty()) return@withContext
+        val db = writableDatabase
+        db.beginTransaction()
+        try {
+            ids.chunked(DELETE_CHUNK).forEach { chunk ->
+                val placeholders = chunk.joinToString(",") { "?" }
+                val args = chunk.map { it.toString() }.toTypedArray()
+                db.delete("playlist_tracks", "track_id IN ($placeholders)", args)
+                db.delete("lyrics", "track_id IN ($placeholders)", args)
+                db.delete("tracks", "id IN ($placeholders)", args)
+            }
+            db.setTransactionSuccessful()
+        } finally {
+            db.endTransaction()
+        }
+    }
+
     suspend fun lyricsFor(trackId: Long): CachedLyrics? = withContext(Dispatchers.IO) {
         readableDatabase.query(
             "lyrics", arrayOf("plain", "synced", "found", "fetched_at"),
@@ -338,5 +356,9 @@ class GlyphDb(context: Context) : SQLiteOpenHelper(context, "glyph.db", null, 10
     private fun Cursor.nullableString(column: String): String? {
         val index = getColumnIndexOrThrow(column)
         return if (isNull(index)) null else getString(index)
+    }
+
+    private companion object {
+        const val DELETE_CHUNK = 500
     }
 }

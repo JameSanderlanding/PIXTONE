@@ -58,7 +58,7 @@ fun FavoritesScreen(vm: MainViewModel) {
     ) {
         item {
             ScreenHeader(
-                index = "02",
+                index = "03",
                 title = "Избранное",
                 subtitle = "${favorites.size} ТРЕКОВ · СОБРАНО ВРУЧНУЮ",
                 onSettings = vm::openSettings,
