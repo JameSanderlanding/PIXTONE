@@ -168,7 +168,7 @@ private fun SettingsMain(
         Spacer(Modifier.weight(1f))
         Box(Modifier.size(5.dp).background(GlyphRed, CircleShape))
         Spacer(Modifier.width(7.dp))
-        MicroLabel("03", color = GlyphDim)
+        MicroLabel("04", color = GlyphDim)
     }
     Spacer(Modifier.height(16.dp))
     Text(
