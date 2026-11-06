@@ -12,7 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -137,8 +137,11 @@ fun FavoritesScreen(vm: MainViewModel) {
                 )
             }
         } else {
-            items(favorites, key = { it.id }) { track ->
-                val index = favorites.indexOfFirst { it.id == track.id }
+            itemsIndexed(
+                items = favorites,
+                key = { _, track -> track.id },
+                contentType = { _, _ -> "track" },
+            ) { index, track ->
                 TrackRow(
                     track = track,
                     isCurrent = currentTrack?.id == track.id,

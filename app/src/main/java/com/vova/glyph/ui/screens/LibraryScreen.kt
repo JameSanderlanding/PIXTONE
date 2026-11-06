@@ -167,7 +167,11 @@ fun LibraryScreen(vm: MainViewModel) {
                     item(key = "create") {
                         CreatePlaylistCard(onClick = { showCreate = true })
                     }
-                    items(playlists, key = { it.id }) { playlist ->
+                    items(
+                        items = playlists,
+                        key = { it.id },
+                        contentType = { "playlist" },
+                    ) { playlist ->
                         PlaylistCard(playlist = playlist, onClick = { vm.openPlaylist(playlist.id) })
                     }
                 }
@@ -217,7 +221,11 @@ fun LibraryScreen(vm: MainViewModel) {
                     )
                 }
             } else {
-                itemsIndexed(filtered, key = { _, track -> track.id }) { index, track ->
+                itemsIndexed(
+                    items = filtered,
+                    key = { _, track -> track.id },
+                    contentType = { _, _ -> "track" },
+                ) { index, track ->
                     TrackRow(
                         track = track,
                         isCurrent = currentTrack?.id == track.id,

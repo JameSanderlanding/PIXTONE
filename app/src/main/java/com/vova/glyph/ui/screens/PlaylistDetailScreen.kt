@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -182,15 +183,16 @@ fun PlaylistDetailScreen(vm: MainViewModel) {
                 )
             }
         } else {
-            items(tracks, key = { it.id }) { track ->
+            itemsIndexed(
+                items = tracks,
+                key = { _, track -> track.id },
+                contentType = { _, _ -> "track" },
+            ) { index, track ->
                 TrackRow(
                     track = track,
                     isCurrent = currentTrack?.id == track.id,
                     isPlaying = playerState.isPlaying && currentTrack?.id == track.id,
-                    onClick = {
-                        val index = tracks.indexOfFirst { it.id == track.id }
-                        vm.playTracks(tracks, index)
-                    },
+                    onClick = { vm.playTracks(tracks, index) },
                     onFavorite = { vm.toggleFavorite(track) },
                     onRemove = { vm.removeTrackFromPlaylist(currentPlaylist.id, track) },
                 )
@@ -260,7 +262,11 @@ private fun AddTracksSheet(
                 )
             } else {
                 LazyColumn(Modifier.heightIn(max = 460.dp)) {
-                    items(allTracks, key = { it.id }) { track ->
+                    items(
+                        items = allTracks,
+                        key = { it.id },
+                        contentType = { "track" },
+                    ) { track ->
                         val added = track.id in existingIds
                         Row(
                             Modifier
