@@ -64,9 +64,6 @@ fun PlayerOverlay(vm: MainViewModel) {
     val track by vm.currentTrack.collectAsStateWithLifecycle()
     val playerState by vm.playerState.collectAsStateWithLifecycle()
     val playlists by vm.playlists.collectAsStateWithLifecycle()
-    val lyrics by vm.lyrics.collectAsStateWithLifecycle()
-    val syncedLyrics by vm.syncedLyrics.collectAsStateWithLifecycle()
-    val lyricsLoading by vm.lyricsLoading.collectAsStateWithLifecycle()
     var showPlaylists by remember { mutableStateOf(false) }
     var showLyrics by remember { mutableStateOf(false) }
     var lyricsCompletionBase by remember { mutableStateOf(0L) }
@@ -111,17 +108,6 @@ fun PlayerOverlay(vm: MainViewModel) {
                     },
                 )
                 return@Column
-            }
-
-            val duration = if (playerState.durationMs > 0) {
-                playerState.durationMs
-            } else {
-                current.durationMs
-            }
-            val progress = if (duration > 0) {
-                (playerState.positionMs.toFloat() / duration).coerceIn(0f, 1f)
-            } else {
-                0f
             }
 
             Box(
@@ -219,34 +205,7 @@ fun PlayerOverlay(vm: MainViewModel) {
 
             Spacer(Modifier.height(20.dp))
 
-            SegmentedProgress(
-                progress = progress,
-                onSeek = { fraction ->
-                    if (duration > 0) vm.seekTo((fraction * duration).toLong())
-                },
-                segments = 48,
-            )
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    formatDuration(playerState.positionMs),
-                    style = androidx.compose.ui.text.TextStyle(
-                        fontFamily = DotoFamily,
-                        fontSize = 10.sp,
-                        color = GlyphGray,
-                        letterSpacing = 0.5.sp,
-                    ),
-                )
-                Spacer(Modifier.weight(1f))
-                Text(
-                    formatDuration(duration),
-                    style = androidx.compose.ui.text.TextStyle(
-                        fontFamily = DotoFamily,
-                        fontSize = 10.sp,
-                        color = GlyphDim,
-                        letterSpacing = 0.5.sp,
-                    ),
-                )
-            }
+            PlayerProgressBlock(vm = vm, trackDurationMs = current.durationMs)
 
             Spacer(Modifier.height(12.dp))
 
@@ -388,27 +347,85 @@ fun PlayerOverlay(vm: MainViewModel) {
     }
 
     if (showLyrics && current != null) {
-        LaunchedEffect(playerState.completionCount) {
-            if (playerState.completionCount > lyricsCompletionBase) {
-                showLyrics = false
-                vm.clearLyrics()
-            }
-        }
-        LyricsDialog(
+        PlayerLyricsDialog(
+            vm = vm,
             track = current,
-            lyrics = lyrics,
-            syncedLines = syncedLyrics,
-            positionMs = playerState.positionMs,
-            durationMs = playerState.durationMs,
-            onSeek = vm::seekToLine,
-            loading = lyricsLoading,
-            onRetry = { vm.fetchLyrics(current) },
-            onDismiss = {
+            completionCount = playerState.completionCount,
+            completionBase = lyricsCompletionBase,
+            onClose = {
                 showLyrics = false
                 vm.clearLyrics()
             },
         )
     }
+}
+
+@Composable
+private fun PlayerProgressBlock(vm: MainViewModel, trackDurationMs: Long) {
+    val progress by vm.progress.collectAsStateWithLifecycle()
+    val duration = if (progress.durationMs > 0) progress.durationMs else trackDurationMs
+    val fraction = if (duration > 0) {
+        (progress.positionMs.toFloat() / duration).coerceIn(0f, 1f)
+    } else {
+        0f
+    }
+
+    SegmentedProgress(
+        progress = fraction,
+        onSeek = { value -> if (duration > 0) vm.seekTo((value * duration).toLong()) },
+        segments = 48,
+    )
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            formatDuration(progress.positionMs),
+            style = androidx.compose.ui.text.TextStyle(
+                fontFamily = DotoFamily,
+                fontSize = 10.sp,
+                color = GlyphGray,
+                letterSpacing = 0.5.sp,
+            ),
+        )
+        Spacer(Modifier.weight(1f))
+        Text(
+            formatDuration(duration),
+            style = androidx.compose.ui.text.TextStyle(
+                fontFamily = DotoFamily,
+                fontSize = 10.sp,
+                color = GlyphDim,
+                letterSpacing = 0.5.sp,
+            ),
+        )
+    }
+}
+
+@Composable
+private fun PlayerLyricsDialog(
+    vm: MainViewModel,
+    track: Track,
+    completionCount: Long,
+    completionBase: Long,
+    onClose: () -> Unit,
+) {
+    val lyrics by vm.lyrics.collectAsStateWithLifecycle()
+    val syncedLyrics by vm.syncedLyrics.collectAsStateWithLifecycle()
+    val lyricsLoading by vm.lyricsLoading.collectAsStateWithLifecycle()
+    val progress by vm.progress.collectAsStateWithLifecycle()
+
+    LaunchedEffect(completionCount) {
+        if (completionCount > completionBase) onClose()
+    }
+
+    LyricsDialog(
+        track = track,
+        lyrics = lyrics,
+        syncedLines = syncedLyrics,
+        positionMs = progress.positionMs,
+        durationMs = progress.durationMs,
+        onSeek = vm::seekToLine,
+        loading = lyricsLoading,
+        onRetry = { vm.fetchLyrics(track) },
+        onDismiss = onClose,
+    )
 }
 
 @Composable

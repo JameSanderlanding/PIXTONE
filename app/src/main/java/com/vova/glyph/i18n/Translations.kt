@@ -1,13 +1,25 @@
 package com.vova.glyph.i18n
 
+import android.util.LruCache
+
 internal fun translate(text: String, language: AppLanguage): String {
     DICT[text]?.let { return it.of(language) }
+    ruleCache.get(text)?.let { return it }
     for (rule in RULES) {
         val match = rule.regex.matchEntire(text) ?: continue
-        return rule.apply(language, match)
+        return rule.apply(language, match).also { ruleCache.put(text, it) }
     }
+    ruleCache.put(text, text)
     return text
 }
+
+internal fun clearTranslationCache() {
+    ruleCache.evictAll()
+}
+
+private val ruleCache = LruCache<String, String>(RULE_CACHE_SIZE)
+
+private const val RULE_CACHE_SIZE = 512
 
 private data class Tr(
     val en: String,

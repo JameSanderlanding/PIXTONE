@@ -16,6 +16,7 @@ import com.vova.glyph.data.Prefs
 import com.vova.glyph.data.Track
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,14 +26,13 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.io.File
+import kotlin.math.abs
 
 data class PlayerUiState(
     val connected: Boolean = false,
     val trackId: Long? = null,
     val isPlaying: Boolean = false,
     val isBuffering: Boolean = false,
-    val positionMs: Long = 0,
-    val durationMs: Long = 0,
     val shuffle: Boolean = false,
     val repeatMode: Int = Player.REPEAT_MODE_OFF,
     val hasNext: Boolean = false,
@@ -42,6 +42,11 @@ data class PlayerUiState(
     val completedTrackId: Long? = null,
 
     val completionCount: Long = 0,
+)
+
+data class PlayerProgress(
+    val positionMs: Long = 0,
+    val durationMs: Long = 0,
 )
 
 class PlayerConnection(private val context: Context) {
@@ -59,6 +64,17 @@ class PlayerConnection(private val context: Context) {
 
     private val _state = MutableStateFlow(PlayerUiState(shuffle = prefs.shuffle))
     val state: StateFlow<PlayerUiState> = _state.asStateFlow()
+
+    private val _progress = MutableStateFlow(PlayerProgress())
+    val progress: StateFlow<PlayerProgress> = _progress.asStateFlow()
+
+    private var progressUpdates: Job? = null
+
+    private var lastPositionMs: Long = 0L
+
+    private var lastDurationMs: Long = 0L
+
+    private var pendingSeekMs: Long? = null
 
     private val listener = object : Player.Listener {
         override fun onEvents(player: Player, events: Player.Events) {
@@ -85,15 +101,57 @@ class PlayerConnection(private val context: Context) {
 
     init {
         scope.launch {
+            _progress.subscriptionCount.collect { listeners ->
+                if (listeners > 0) startProgressUpdates() else stopProgressUpdates()
+            }
+        }
+    }
+
+    private fun startProgressUpdates() {
+        if (progressUpdates?.isActive == true) return
+        progressUpdates = scope.launch {
             while (isActive) {
                 val player = controller
-                if (
-                    player != null &&
-                    (player.isPlaying || player.playbackState == Player.STATE_BUFFERING)
-                ) {
-                    updateState(player)
-                }
-                delay(500)
+                if (player != null) refreshProgress(player)
+                delay(if (player?.isPlaying == true) PROGRESS_ACTIVE_MS else PROGRESS_IDLE_MS)
+            }
+        }
+    }
+
+    private fun stopProgressUpdates() {
+        progressUpdates?.cancel()
+        progressUpdates = null
+        lastPositionMs = 0L
+        lastDurationMs = 0L
+    }
+
+    private fun refreshProgress(player: Player, detectLoop: Boolean = true) {
+        val reported = player.currentPosition.coerceAtLeast(0)
+        val seekTarget = pendingSeekMs
+        val position = if (seekTarget != null && abs(reported - seekTarget) > SEEK_ACK_TOLERANCE_MS) {
+            seekTarget
+        } else {
+            pendingSeekMs = null
+            reported
+        }
+        val rawDuration = player.duration
+        val duration = if (rawDuration > 0 && rawDuration != C.TIME_UNSET) rawDuration else 0L
+
+        val looped = detectLoop && lastDurationMs > 0 &&
+            lastPositionMs >= lastDurationMs - LOOP_DETECT_MARGIN_MS &&
+            position < lastPositionMs - LOOP_DETECT_BACKSTEP_MS
+
+        lastPositionMs = position
+        lastDurationMs = duration
+
+        _progress.value = PlayerProgress(positionMs = position, durationMs = duration)
+
+        if (looped) {
+            _state.update { old ->
+                old.copy(
+                    completedTrackId = old.trackId,
+                    completionCount = old.completionCount + 1,
+                )
             }
         }
     }
@@ -141,7 +199,11 @@ class PlayerConnection(private val context: Context) {
         player.setMediaItems(ordered, index, 0L)
         player.prepare()
         player.play()
+        lastPositionMs = 0L
+        lastDurationMs = 0L
+        pendingSeekMs = null
         updateState(player)
+        refreshProgress(player, detectLoop = false)
     }
 
     fun togglePlayPause() {
@@ -153,6 +215,7 @@ class PlayerConnection(private val context: Context) {
             player.play()
         }
         updateState(player)
+        refreshProgress(player, detectLoop = false)
     }
 
     fun next() {
@@ -166,19 +229,30 @@ class PlayerConnection(private val context: Context) {
             }
             else -> player.seekTo(0, 0L)
         }
+        pendingSeekMs = null
         updateState(player)
+        refreshProgress(player, detectLoop = false)
     }
 
     fun previous() {
         val player = controller ?: return
         if (player.hasPreviousMediaItem()) player.seekToPrevious()
         else player.seekTo(0, 0L)
+        pendingSeekMs = null
         updateState(player)
+        refreshProgress(player, detectLoop = false)
     }
 
     fun seekTo(positionMs: Long) {
         val player = controller ?: return
-        player.seekTo(positionMs.coerceAtLeast(0))
+        val target = positionMs.coerceAtLeast(0)
+        pendingSeekMs = target
+        player.seekTo(target)
+        lastPositionMs = target
+        _progress.value = PlayerProgress(
+            positionMs = target,
+            durationMs = _progress.value.durationMs,
+        )
         updateState(player)
     }
 
@@ -216,6 +290,7 @@ class PlayerConnection(private val context: Context) {
     }
 
     fun stop() {
+        pendingSeekMs = null
         controller?.stop()
         updateState(controller)
     }
@@ -258,26 +333,16 @@ class PlayerConnection(private val context: Context) {
 
     private fun updateState(player: Player?) {
         if (player == null) return
-        val duration = player.duration
-        val position = player.currentPosition.coerceAtLeast(0)
         _state.update { old ->
-
-            val looped = old.durationMs > 0 &&
-                old.positionMs >= old.durationMs - LOOP_DETECT_MARGIN_MS &&
-                position < old.positionMs - LOOP_DETECT_BACKSTEP_MS
             old.copy(
                 connected = true,
                 trackId = player.currentMediaItem?.mediaId?.toLongOrNull(),
                 isPlaying = player.isPlaying,
                 isBuffering = player.playbackState == Player.STATE_BUFFERING,
-                positionMs = position,
-                durationMs = if (duration > 0 && duration != C.TIME_UNSET) duration else 0,
                 shuffle = shuffleEnabled,
                 repeatMode = player.repeatMode,
                 hasNext = player.hasNextMediaItem(),
                 hasPrevious = player.hasPreviousMediaItem(),
-                completedTrackId = if (looped) old.trackId else old.completedTrackId,
-                completionCount = old.completionCount + if (looped) 1 else 0,
             )
         }
     }
@@ -315,6 +380,12 @@ class PlayerConnection(private val context: Context) {
         FileProvider.getUriForFile(appContext, "${appContext.packageName}.artprovider", file)
     }.getOrNull()
 }
+
+private const val PROGRESS_ACTIVE_MS = 500L
+
+private const val PROGRESS_IDLE_MS = 1_000L
+
+private const val SEEK_ACK_TOLERANCE_MS = 700L
 
 private const val LOOP_DETECT_MARGIN_MS = 1_500L
 

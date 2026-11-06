@@ -2,6 +2,7 @@ package com.vova.glyph.ui.components
 
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextLayoutResult
@@ -13,6 +14,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.TextUnit
+import com.vova.glyph.i18n.LangController
 import com.vova.glyph.i18n.tr
 import androidx.compose.material3.Text as MaterialText
 
@@ -36,8 +38,9 @@ fun Text(
     onTextLayout: ((TextLayoutResult) -> Unit)? = null,
     style: TextStyle = LocalTextStyle.current,
 ) {
+    val localized = remember(text, LangController.language) { tr(text) }
     MaterialText(
-        text = tr(text),
+        text = localized,
         modifier = modifier,
         color = color,
         fontSize = fontSize,

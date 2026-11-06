@@ -12,6 +12,7 @@ import androidx.lifecycle.viewModelScope
 import com.vova.glyph.data.LyricLine
 import com.vova.glyph.data.Playlist
 import com.vova.glyph.data.Track
+import com.vova.glyph.playback.PlayerProgress
 import com.vova.glyph.playback.PlayerUiState
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -52,6 +53,7 @@ class MainViewModel(
     val favorites = repo.favorites
     val playlists = repo.playlists
     val playerState: StateFlow<PlayerUiState> = player.state
+    val progress: StateFlow<PlayerProgress> = player.progress
 
     private val _tab = MutableStateFlow(Tab.LIBRARY)
     val tab = _tab.asStateFlow()

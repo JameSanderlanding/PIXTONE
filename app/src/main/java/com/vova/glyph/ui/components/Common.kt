@@ -43,6 +43,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -410,6 +411,10 @@ fun SegmentedProgress(
     activeColor: Color = GlyphWhite,
     inactiveColor: Color = GlyphLine,
 ) {
+    val currentOnSeek by rememberUpdatedState(onSeek)
+    val scrub = remember { ScrubState() }
+    val shown = (scrub.fraction ?: progress).coerceIn(0f, 1f)
+
     Canvas(
         modifier
             .fillMaxWidth()
@@ -417,14 +422,25 @@ fun SegmentedProgress(
             .then(
                 if (onSeek != null) {
                     Modifier
-                        .pointerInput(onSeek) {
+                        .pointerInput(Unit) {
                             detectTapGestures { offset ->
-                                onSeek((offset.x / size.width).coerceIn(0f, 1f))
+                                scrub.move(seekFraction(offset.x, size.width), currentOnSeek, true)
+                                scrub.finish()
                             }
                         }
-                        .pointerInput(onSeek) {
-                            detectHorizontalDragGestures { change, _ ->
-                                onSeek((change.position.x / size.width).coerceIn(0f, 1f))
+                        .pointerInput(Unit) {
+                            detectHorizontalDragGestures(
+                                onDragStart = { offset ->
+                                    scrub.move(seekFraction(offset.x, size.width), currentOnSeek, true)
+                                },
+                                onDragEnd = { scrub.finish() },
+                                onDragCancel = { scrub.finish() },
+                            ) { change, _ ->
+                                scrub.move(
+                                    seekFraction(change.position.x, size.width),
+                                    currentOnSeek,
+                                    false,
+                                )
                             }
                         }
                 } else Modifier
@@ -434,7 +450,7 @@ fun SegmentedProgress(
         val segmentWidth = ((size.width - gap * (segments - 1)) / segments).coerceAtLeast(1f)
         val barHeight = 10.dp.toPx()
         val top = (size.height - barHeight) / 2f
-        val filled = (progress.coerceIn(0f, 1f) * segments).toInt()
+        val filled = (shown * segments).toInt()
         for (i in 0 until segments) {
             val x = i * (segmentWidth + gap)
             drawRoundRect(
@@ -445,6 +461,35 @@ fun SegmentedProgress(
             )
         }
     }
+}
+
+private class ScrubState {
+    var fraction by mutableStateOf<Float?>(null)
+        private set
+
+    private var lastSeekAt = 0L
+
+    fun move(value: Float, onSeek: ((Float) -> Unit)?, force: Boolean) {
+        fraction = value
+        if (onSeek == null) return
+        val now = System.currentTimeMillis()
+        if (!force && now - lastSeekAt < SEEK_INTERVAL_MS) return
+        lastSeekAt = now
+        onSeek(value)
+    }
+
+    fun finish() {
+        fraction = null
+    }
+
+    private companion object {
+        const val SEEK_INTERVAL_MS = 100L
+    }
+}
+
+private fun seekFraction(x: Float, width: Int): Float {
+    if (width <= 0) return 0f
+    return (x / width).coerceIn(0f, 1f)
 }
 
 @Composable
@@ -617,6 +662,8 @@ fun TrackRow(
     divider: Boolean = true,
 ) {
     var menuOpen by remember { mutableStateOf(false) }
+    val coverSeed = remember(track.title, track.artist) { track.title + track.artist }
+    val durationLabel = remember(track.durationMs) { formatDuration(track.durationMs) }
     Column {
         Row(
             Modifier
@@ -629,7 +676,7 @@ fun TrackRow(
                 Box {
                     GlyphCover(
                         artwork = track.artwork,
-                        seed = track.title + track.artist,
+                        seed = coverSeed,
                         modifier = Modifier.size(50.dp),
                     )
                     if (isCurrent) {
@@ -674,7 +721,7 @@ fun TrackRow(
             }
             Spacer(Modifier.width(8.dp))
             Text(
-                formatDuration(track.durationMs),
+                durationLabel,
                 style = TextStyle(
                     fontFamily = DotoFamily,
                     fontSize = 10.sp,

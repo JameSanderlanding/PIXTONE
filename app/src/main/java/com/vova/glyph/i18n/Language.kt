@@ -33,10 +33,12 @@ object LangController {
             .getSharedPreferences("glyph_language", Context.MODE_PRIVATE)
         prefs = sp
         language = AppLanguage.fromCode(sp.getString("language", null))
+        clearTranslationCache()
     }
 
     fun select(value: AppLanguage) {
         language = value
+        clearTranslationCache()
         prefs?.edit()?.putString("language", value.code)?.apply()
     }
 }
