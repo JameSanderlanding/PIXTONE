@@ -110,7 +110,8 @@ PIXTONE/
 | `Models.kt` | `Track`, `Playlist`, `displayArtist` |
 | `MusicRepository.kt` | обёртка над БД + StateFlow: tracks/favorites/playlists; refresh, favorites, playlists |
 | `GlyphDb.kt` | SQLiteOpenHelper, схема и все SQL-запросы |
-| `MusicScanner.kt` | обход папки через SAF (`DocumentFile`), чтение тегов и встроенных обложек |
+| `MusicScanner.kt` | обход папки через SAF (`DocumentFile`), параллельное чтение тегов и встроенных обложек |
+| `AudioFormats.kt` | список поддерживаемых аудио-расширений и проверка по имени файла |
 | `ArtworkStore.kt` | сохранение/удаление обложек, `needsRemoteCover`, `hasArtwork` |
 | `CoverRepository.kt` | поиск обложек: Genius → Deezer → iTunes |
 | `LyricsRepository.kt` | поиск текстов: LRCLIB → lyrics.ovh → Genius; парсинг LRC |
@@ -124,7 +125,7 @@ PIXTONE/
 | Файл | Что делает |
 |---|---|
 | `PlaybackService.kt` | `MediaSessionService`, ExoPlayer, session activity |
-| `PlayerConnection.kt` | подключение к сервису, очередь, shuffle, repeat, состояние `PlayerUiState`, `completionCount` |
+| `PlayerConnection.kt` | подключение к сервису, очередь, shuffle, repeat, состояние `PlayerUiState`, прогресс `PlayerProgress`, `completionCount` |
 
 ### `i18n/`
 
@@ -173,12 +174,13 @@ PIXTONE/
 ### 4.2 Сканирование папки
 
 1. Пользователь выбирает папку через SAF (`OpenDocumentTree`), URI сохраняется в `Prefs`.
-2. `MusicScanner.scan()` рекурсивно обходит `DocumentFile`, фильтрует аудио по расширениям.
-3. Для каждого файла `MediaMetadataRetriever` читает title/artist/album/duration и `embeddedPicture`.
+2. `MusicScanner.scan()` рекурсивно обходит `DocumentFile`, фильтрует аудио по расширениям (`AudioFormats`).
+3. Метаданные новых файлов читаются параллельно: 4 воркера под `Semaphore`, каждый файл через свой `MediaMetadataRetriever` (title/artist/album/duration/`embeddedPicture`).
 4. Встроенная обложка сохраняется через `ArtworkStore.saveEmbeddedArt()`.
-5. `MusicRepository.addLocalTracks()` делает upsert в таблицу `tracks`.
-6. Затем `MainViewModel.refreshCovers()` подтягивает настоящие обложки для новых треков.
-7. Во время сканирования UI показывает карточку со спиннером и счётчиком найденных треков.
+5. Порядок треков в результате сохраняется порядком обхода, прогресс отдаётся в UI не чаще, чем раз в `PROGRESS_INTERVAL_MS`.
+6. `MusicRepository.addLocalTracks()` делает upsert в таблицу `tracks`.
+7. Затем `MainViewModel.refreshCovers()` подтягивает настоящие обложки для новых треков.
+8. Во время сканирования UI показывает карточку со спиннером и счётчиком найденных треков.
 
 Важно: при повторном сканировании существующие треки не перечитываются; добавляются только новые URI.
 
@@ -187,9 +189,12 @@ PIXTONE/
 1. `MainViewModel.playTracks()` передаёт список и стартовый индекс в `PlayerConnection`.
 2. `PlayerConnection` строит очередь `MediaItem` и управляет ExoPlayer через `MediaController`.
 3. `PlaybackService` держит `ExoPlayer` и `MediaSession`, отдаёт метаданные и обложку в системный плеер.
-4. `PlayerConnection` каждые 500 мс обновляет `PlayerUiState`: позиция, длительность, очередь, repeat/shuffle.
-5. Shuffle реализован вручную перестановкой очереди.
-6. При завершении трека увеличивается `completionCount` и запоминается `completedTrackId` — на это опирается автозакрытие текста.
+4. Состояние разделено на два потока:
+   - `PlayerUiState` (`state`) — структурное: трек, play/pause, buffering, очередь, repeat/shuffle, ошибки, `completionCount`. Меняется только от событий плеера.
+   - `PlayerProgress` (`progress`) — позиция и длительность. Тикает раз в 500 мс во время игры и раз в 1 с на паузе, но **только пока есть подписчик** (`subscriptionCount`), поэтому в фоне таймер останавливается.
+5. Высокочастотный `progress` читают только те композаблы, которым он нужен (`MiniPlayerBar`, `PlayerProgressBlock`, диалоги текста). Списки и навигация подписаны только на `state`, иначе они бы перерисовывались дважды в секунду.
+6. Shuffle реализован вручную перестановкой очереди.
+7. При завершении трека увеличивается `completionCount` и запоминается `completedTrackId` — на это опирается автозакрытие текста. Завершение определяется `STATE_ENDED` и детектом перескока позиции в начало (repeat/shuffle).
 
 ### 4.4 Тексты песен
 
@@ -395,6 +400,9 @@ Android Studio: открыть корень проекта, использова
 - Состояние — `StateFlow`/`SharedFlow` + Compose state; без LiveData.
 - ViewModel не держит Android View, но имеет `Application` и `AppContainer`.
 - Сетевые и файловые операции — на `Dispatchers.IO`.
+- Высокочастотное состояние (`PlayerProgress`) читать только в листовых композаблах; в списках и навигации — только `PlayerUiState`.
+- Массовое чтение метаданных — параллельно с ограничением (`Semaphore`), прогресс в UI — с троттлингом.
+- В lazy-списках указывать `key` и `contentType`; индекс элемента брать из `itemsIndexed`, а не через `indexOfFirst`.
 - Ошибки не должны ронять UI: `runCatching`, `safeFetch`, fallback-источники.
 - Новые строки — по-русски, переводы — в `Translations.kt`.
 - Не использовать `androidx.compose.material3.Text` напрямую в UI.
