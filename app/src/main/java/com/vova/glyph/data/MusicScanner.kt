@@ -5,9 +5,13 @@ import android.media.MediaMetadataRetriever
 import android.net.Uri
 import androidx.documentfile.provider.DocumentFile
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import java.io.File
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.coroutines.coroutineContext
 
 class MusicScanner(
@@ -36,29 +40,50 @@ class MusicScanner(
         val docs = mutableListOf<DocumentFile>()
         collectAudio(root, docs, 0, coroutineContext)
 
-        val result = mutableListOf<Track>()
-        var scanned = 0
-        var newCount = 0
-        for (doc in docs) {
-            coroutineContext.ensureActive()
-            scanned++
-            val uriString = doc.uri.toString()
+        val pending = docs.filterNot { existing.containsKey(it.uri.toString()) }
+        val scanned = AtomicInteger(docs.size - pending.size)
+        val found = AtomicInteger(0)
+        val results = arrayOfNulls<Track>(pending.size)
+        val reportLock = Mutex()
+        var lastReportAt = 0L
 
-            if (existing.containsKey(uriString)) {
-                onProgress(scanned, result.size, doc.name.orEmpty())
-                continue
+        suspend fun report(force: Boolean, name: String) {
+            reportLock.withLock {
+                val now = System.currentTimeMillis()
+                if (!force && now - lastReportAt < PROGRESS_INTERVAL_MS) return
+                lastReportAt = now
+                onProgress(scanned.get(), found.get(), name)
             }
-            onProgress(scanned, result.size, doc.name.orEmpty())
-            val track = readTrack(doc) ?: continue
-            result += track
-            newCount++
         }
-        onProgress(scanned, result.size, "")
+
+        val lanes = minOf(METADATA_WORKERS, pending.size)
+        coroutineScope {
+            repeat(lanes) { lane ->
+                launch {
+                    var index = lane
+                    while (index < pending.size) {
+                        coroutineContext.ensureActive()
+                        val doc = pending[index]
+                        val track = runCatching { readTrack(doc) }.getOrNull()
+                        if (track != null) {
+                            results[index] = track
+                            found.incrementAndGet()
+                        }
+                        scanned.incrementAndGet()
+                        report(force = false, name = doc.name.orEmpty())
+                        index += lanes
+                    }
+                }
+            }
+        }
+
+        val added = results.filterNotNull()
+        report(force = true, name = "")
         ScanResult(
-            added = result,
+            added = added,
             scannedFiles = docs.size,
             folderName = root.name?.takeIf { it.isNotBlank() } ?: "Музыка",
-            newCount = newCount,
+            newCount = added.size,
         )
     }
 
@@ -76,15 +101,10 @@ class MusicScanner(
                 if (!child.name.orEmpty().startsWith(".")) {
                     collectAudio(child, out, depth + 1, coroutineContext)
                 }
-            } else if (child.isFile && isAudio(child.name.orEmpty())) {
+            } else if (child.isFile && AudioFormats.isAudio(child.name.orEmpty())) {
                 out += child
             }
         }
-    }
-
-    private fun isAudio(name: String): Boolean {
-        val ext = name.substringAfterLast('.', "").lowercase()
-        return ext in setOf("mp3", "m4a", "flac", "wav", "ogg", "opus", "aac")
     }
 
     private fun readTrack(doc: DocumentFile): Track? {
@@ -127,5 +147,11 @@ class MusicScanner(
         } finally {
             runCatching { retriever.release() }
         }
+    }
+
+    private companion object {
+        const val METADATA_WORKERS = 4
+
+        const val PROGRESS_INTERVAL_MS = 120L
     }
 }
