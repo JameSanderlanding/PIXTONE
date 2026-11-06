@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.vova.glyph.MainViewModel
 import com.vova.glyph.Tab
+import com.vova.glyph.data.Track
 import com.vova.glyph.ui.components.GlyphBottomNav
 import com.vova.glyph.ui.components.GlyphMessageHost
 import com.vova.glyph.ui.components.MiniPlayer
@@ -97,14 +98,10 @@ fun GlyphRoot(vm: MainViewModel) {
                     }
                 }
                 currentTrack?.let { track ->
-                    MiniPlayer(
+                    MiniPlayerBar(
+                        vm = vm,
                         track = track,
                         isPlaying = playerState.isPlaying,
-                        positionMs = playerState.positionMs,
-                        durationMs = playerState.durationMs,
-                        onOpen = vm::openPlayer,
-                        onToggle = vm::togglePlayPause,
-                        onNext = vm::next,
                     )
                 }
                 Box(Modifier.navigationBarsPadding()) {
@@ -140,4 +137,23 @@ fun GlyphRoot(vm: MainViewModel) {
                 ),
         )
     }
+}
+
+@Composable
+private fun MiniPlayerBar(
+    vm: MainViewModel,
+    track: Track,
+    isPlaying: Boolean,
+) {
+    val progress by vm.progress.collectAsStateWithLifecycle()
+
+    MiniPlayer(
+        track = track,
+        isPlaying = isPlaying,
+        positionMs = progress.positionMs,
+        durationMs = progress.durationMs,
+        onOpen = vm::openPlayer,
+        onToggle = vm::togglePlayPause,
+        onNext = vm::next,
+    )
 }

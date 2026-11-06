@@ -76,9 +76,6 @@ fun LibraryScreen(vm: MainViewModel) {
     val scanning by vm.scanning.collectAsStateWithLifecycle()
     val scanStatus by vm.scanStatus.collectAsStateWithLifecycle()
     val scanFound by vm.scanFound.collectAsStateWithLifecycle()
-    val lyrics by vm.lyrics.collectAsStateWithLifecycle()
-    val syncedLyrics by vm.syncedLyrics.collectAsStateWithLifecycle()
-    val lyricsLoading by vm.lyricsLoading.collectAsStateWithLifecycle()
 
     var query by remember { mutableStateOf("") }
     var showCreate by remember { mutableStateOf(false) }
@@ -276,16 +273,11 @@ fun LibraryScreen(vm: MainViewModel) {
 
     if (showLyrics) {
         lyricsTrack?.let { track ->
-            LyricsDialog(
+            LibraryLyricsDialog(
+                vm = vm,
                 track = track,
-                lyrics = lyrics,
-                syncedLines = syncedLyrics,
-                positionMs = if (currentTrack?.id == track.id) playerState.positionMs else null,
-                durationMs = if (currentTrack?.id == track.id) playerState.durationMs else 0L,
-                onSeek = if (currentTrack?.id == track.id) vm::seekToLine else null,
-                loading = lyricsLoading,
-                onRetry = { vm.fetchLyrics(track) },
-                onDismiss = {
+                isCurrent = currentTrack?.id == track.id,
+                onClose = {
                     showLyrics = false
                     lyricsTrack = null
                     vm.clearLyrics()
@@ -293,6 +285,31 @@ fun LibraryScreen(vm: MainViewModel) {
             )
         }
     }
+}
+
+@Composable
+private fun LibraryLyricsDialog(
+    vm: MainViewModel,
+    track: Track,
+    isCurrent: Boolean,
+    onClose: () -> Unit,
+) {
+    val lyrics by vm.lyrics.collectAsStateWithLifecycle()
+    val syncedLyrics by vm.syncedLyrics.collectAsStateWithLifecycle()
+    val lyricsLoading by vm.lyricsLoading.collectAsStateWithLifecycle()
+    val progress by vm.progress.collectAsStateWithLifecycle()
+
+    LyricsDialog(
+        track = track,
+        lyrics = lyrics,
+        syncedLines = syncedLyrics,
+        positionMs = if (isCurrent) progress.positionMs else null,
+        durationMs = if (isCurrent) progress.durationMs else 0L,
+        onSeek = if (isCurrent) vm::seekToLine else null,
+        loading = lyricsLoading,
+        onRetry = { vm.fetchLyrics(track) },
+        onDismiss = onClose,
+    )
 }
 
 @Composable
