@@ -87,6 +87,19 @@ class MusicScanner(
         )
     }
 
+    suspend fun embeddedArtworkFor(uri: String): String? = withContext(Dispatchers.IO) {
+        val retriever = MediaMetadataRetriever()
+        try {
+            retriever.setDataSource(appContext, Uri.parse(uri))
+            val bytes = retriever.embeddedPicture ?: return@withContext null
+            artworkStore.saveEmbeddedArt(bytes, artworkStore.keyFor(uri))
+        } catch (_: Throwable) {
+            null
+        } finally {
+            runCatching { retriever.release() }
+        }
+    }
+
     private suspend fun collectAudio(
         dir: DocumentFile,
         out: MutableList<DocumentFile>,

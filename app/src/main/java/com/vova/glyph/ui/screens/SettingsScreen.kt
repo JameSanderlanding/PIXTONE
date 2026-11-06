@@ -45,6 +45,8 @@ import com.vova.glyph.i18n.AppLanguage
 import com.vova.glyph.i18n.LangController
 import com.vova.glyph.i18n.tr
 import com.vova.glyph.ui.components.ColorPickerDialog
+import com.vova.glyph.ui.components.ConfirmDialog
+import com.vova.glyph.ui.components.CoverUpdateDialog
 import com.vova.glyph.ui.components.DotGrid
 import com.vova.glyph.ui.components.DotSpinner
 import com.vova.glyph.ui.components.Glyph
@@ -139,8 +141,11 @@ private fun SettingsMain(
     val scanStatus by vm.scanStatus.collectAsStateWithLifecycle()
     val scanFound by vm.scanFound.collectAsStateWithLifecycle()
     val artworkStatus by vm.artworkStatus.collectAsStateWithLifecycle()
+    val coverPaused by vm.coverPaused.collectAsStateWithLifecycle()
     val tracks by vm.tracks.collectAsStateWithLifecycle()
     val favoritesList by vm.favorites.collectAsStateWithLifecycle()
+    var showCoverDialog by remember { mutableStateOf(false) }
+    var showResetCoversConfirm by remember { mutableStateOf(false) }
 
     val folderPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocumentTree()
@@ -252,6 +257,21 @@ private fun SettingsMain(
                             fontSize = 20.sp,
                         ),
                     )
+                } else {
+                    Spacer(Modifier.width(8.dp))
+                    Box(
+                        Modifier
+                            .clickable {
+                                if (coverPaused) vm.resumeCoverRefresh() else vm.pauseCoverRefresh()
+                            }
+                            .padding(4.dp),
+                    ) {
+                        MicroLabel(
+                            if (coverPaused) "ПРОДОЛЖИТЬ" else "ПРИОСТАНОВИТЬ",
+                            color = GlyphRed,
+                            fontSize = 8,
+                        )
+                    }
                 }
             }
         }
@@ -265,20 +285,19 @@ private fun SettingsMain(
                 modifier = Modifier.weight(1f),
             )
             GlyphButton(
-                text = "СКАНИРОВАТЬ",
-                onClick = vm::rescanFolder,
+                text = "ОБЛОЖКИ",
+                onClick = { showCoverDialog = true },
                 filled = false,
-                enabled = !scanning && !folderName.isNullOrBlank(),
+                enabled = !scanning && artworkStatus == null && tracks.isNotEmpty(),
                 modifier = Modifier.weight(1f),
             )
         }
         Spacer(Modifier.height(9.dp))
         GlyphButton(
-            text = if (artworkStatus != null) "ОБНОВЛЯЮ ОБЛОЖКИ…" else "ОБНОВИТЬ ОБЛОЖКИ",
-            onClick = vm::refreshAllCovers,
+            text = "СКАНИРОВАТЬ",
+            onClick = vm::rescanFolder,
             filled = false,
-            enabled = !scanning && artworkStatus == null && tracks.isNotEmpty(),
-            leading = Glyph.Download,
+            enabled = !scanning && !folderName.isNullOrBlank(),
             modifier = Modifier.fillMaxWidth(),
         )
         Spacer(Modifier.height(11.dp))
@@ -318,7 +337,7 @@ private fun SettingsMain(
     Spacer(Modifier.height(14.dp))
 
     SettingsSection(number = "03", title = "О ПРИЛОЖЕНИИ") {
-        InfoRow("ВЕРСИЯ", "1.0.0")
+        InfoRow("ВЕРСИЯ", "1.0.1")
         Spacer(Modifier.height(9.dp))
         InfoRow("СБОРКА", "PIXTONE / LOCAL-FIRST")
         Spacer(Modifier.height(9.dp))
@@ -345,6 +364,38 @@ private fun SettingsMain(
         MicroLabel("PIXTONE · ЛИЧНЫЙ ПЛЕЕР", color = GlyphDim, fontSize = 8)
         Spacer(Modifier.weight(1f))
         MicroLabel("СДЕЛАНО ДЛЯ МУЗЫКИ", color = GlyphDim, fontSize = 8)
+    }
+
+    if (showCoverDialog) {
+        CoverUpdateDialog(
+            onFindMissing = {
+                showCoverDialog = false
+                vm.findMissingCovers()
+            },
+            onUpdateAll = {
+                showCoverDialog = false
+                vm.refreshAllCovers()
+            },
+            onResetDefaults = {
+                showCoverDialog = false
+                showResetCoversConfirm = true
+            },
+            onDismiss = { showCoverDialog = false },
+        )
+    }
+
+    if (showResetCoversConfirm) {
+        ConfirmDialog(
+            title = "Восстановить исходные обложки?",
+            message = "Скачанные обложки будут заменены обложками из файлов песен.",
+            confirmText = "Восстановить",
+            destructive = true,
+            onConfirm = {
+                showResetCoversConfirm = false
+                vm.resetCovers()
+            },
+            onDismiss = { showResetCoversConfirm = false },
+        )
     }
 }
 

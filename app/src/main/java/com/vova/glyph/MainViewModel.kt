@@ -33,6 +33,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import java.io.IOException
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 
 enum class Tab(val title: String) {
@@ -98,9 +99,11 @@ class MainViewModel(
 
     private var artworkJob: Job? = null
 
-    private var pendingCoverIds: MutableSet<Long> = mutableSetOf()
+    private val _coverPaused = MutableStateFlow(false)
+    val coverPaused = _coverPaused.asStateFlow()
 
-    private var pendingCoversManual = false
+    private var activeCoverTracks: List<Track> = emptyList()
+    private var coverRemainingIds: MutableSet<Long> = ConcurrentHashMap.newKeySet()
 
     private val _message = MutableSharedFlow<String>(extraBufferCapacity = 8)
     val messages: SharedFlow<String> = _message.asSharedFlow()
@@ -169,7 +172,6 @@ class MainViewModel(
                 }
                 prefs.folderName = result.folderName
                 _folderName.value = result.folderName
-                _scanStatus.value = "СОХРАНЯЮ В БИБЛИОТЕКУ…"
                 if (result.scannedFiles == 0) {
                     val error = "В этой папке не нашлось поддерживаемых аудиофайлов."
                     if (fromOnboarding) _onboardingError.value = error else notify(error)
@@ -188,13 +190,6 @@ class MainViewModel(
                     }
                 )
 
-                if (result.newCount > 0) {
-                    val addedUris = result.added.mapTo(HashSet()) { it.uri }
-                    val newIds = repo.tracks.value
-                        .filter { it.uri in addedUris }
-                        .mapTo(HashSet()) { it.id }
-                    refreshCovers(ids = newIds)
-                }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -215,32 +210,15 @@ class MainViewModel(
         onFolderPicked(uri, fromOnboarding = false)
     }
 
-    private fun refreshCovers(ids: Set<Long>? = null, manual: Boolean = false) {
-        if (ids.isNullOrEmpty() && !manual) return
-
-        if (artworkJob?.isActive == true) {
-            if (manual) pendingCoversManual = true
-            ids?.let { pendingCoverIds += it }
-            return
-        }
-
-        if (manual) pendingCoversManual = true else ids?.let { pendingCoverIds += it }
-
-        artworkJob = viewModelScope.launch {
-            do {
-                val requestManual = pendingCoversManual
-                val requestIds = pendingCoverIds.toSet()
-                pendingCoversManual = false
-                pendingCoverIds = mutableSetOf()
-
-                if (requestManual || requestIds.isNotEmpty()) {
-                    runArtworkPass(ids = requestIds, manual = requestManual)
-                }
-            } while (pendingCoversManual || pendingCoverIds.isNotEmpty())
-        }
+    fun findMissingCovers() {
+        startCoverRefresh(allTracks = false)
     }
 
     fun refreshAllCovers() {
+        startCoverRefresh(allTracks = true)
+    }
+
+    private fun startCoverRefresh(allTracks: Boolean) {
         if (_scanning.value) {
             notify("Дождитесь окончания сканирования")
             return
@@ -253,31 +231,71 @@ class MainViewModel(
             notify("Нет интернета — обложки обновить не получится")
             return
         }
-        val missing = repo.tracks.value.count { track ->
+        if (artworkJob?.isActive == true) return
+        val pending = repo.tracks.value.filter { track ->
             track.source == Track.SOURCE_LOCAL &&
-                !container.artworkStore.hasArtwork(track.artwork)
+                (allTracks || !container.artworkStore.hasArtwork(track.artwork))
         }
-        if (missing == 0) {
-            notify("Все обложки уже на месте")
+        if (pending.isEmpty()) {
+            if (!allTracks) notify("Все обложки уже на месте")
             return
         }
-        refreshCovers(manual = true)
+        activeCoverTracks = pending
+        val remaining = ConcurrentHashMap.newKeySet<Long>()
+        remaining.addAll(pending.map { it.id })
+        coverRemainingIds = remaining
+        _coverPaused.value = false
+        artworkJob = viewModelScope.launch { runArtworkPass(pending, remaining) }
     }
 
-    private suspend fun runArtworkPass(ids: Set<Long>, manual: Boolean) {
-        val preferGenius = !container.geniusGate.isBlocked
-        val pending = repo.tracks.value.filter { track ->
-            when {
-                manual -> track.source == Track.SOURCE_LOCAL &&
-                    !container.artworkStore.hasArtwork(track.artwork)
-
-                else -> track.id in ids &&
-                    container.artworkStore.needsRemoteCover(track.artwork, preferGenius)
-            }
+    fun pauseCoverRefresh() {
+        if (artworkJob?.isActive == true && !_coverPaused.value) {
+            _coverPaused.value = true
+            _artworkStatus.value = "ПРИОСТАНОВЛЕНО"
+            val remaining = coverRemainingIds.toSet()
+            activeCoverTracks = activeCoverTracks.filter { it.id in remaining }
+            artworkJob?.cancel()
         }
-        if (pending.isEmpty() || !hasInternet()) return
+    }
 
-        val total = pending.size
+    fun resumeCoverRefresh() {
+        if (!_coverPaused.value) return
+        val tracks = activeCoverTracks
+        _coverPaused.value = false
+        if (tracks.isEmpty()) {
+            _artworkStatus.value = null
+            return
+        }
+        coverRemainingIds = ConcurrentHashMap.newKeySet()
+        coverRemainingIds.addAll(tracks.map { it.id })
+        val remaining = coverRemainingIds
+        artworkJob = viewModelScope.launch { runArtworkPass(tracks, remaining) }
+    }
+
+    fun resetCovers() {
+        if (_scanning.value) {
+            notify("Дождитесь окончания сканирования")
+            return
+        }
+        if (artworkJob?.isActive == true) return
+        viewModelScope.launch {
+            val tracks = repo.tracks.value.filter { it.source == Track.SOURCE_LOCAL }
+            tracks.forEach { track ->
+                val original = container.scanner.embeddedArtworkFor(track.uri)
+                if (original != track.artwork) {
+                    container.artworkStore.deleteReplacedArt(track.artwork)
+                    runCatching { repo.setArtwork(track.id, original) }
+                }
+            }
+            runCatching { repo.refresh() }
+            notify("Исходные обложки восстановлены")
+        }
+    }
+
+    private suspend fun runArtworkPass(tracks: List<Track>, remaining: MutableSet<Long>) {
+        if (tracks.isEmpty() || !hasInternet()) return
+
+        val total = tracks.size
         _artworkStatus.value = "ОБНОВЛЯЮ ОБЛОЖКИ: 0/$total"
 
         val processed = AtomicInteger(0)
@@ -286,10 +304,11 @@ class MainViewModel(
         val semaphore = Semaphore(COVER_WORKERS)
 
         coroutineScope {
-            for (track in pending) {
+            for (track in tracks) {
                 launch {
                     semaphore.withPermit {
                         if (networkErrors.get() >= MAX_NETWORK_ERRORS && !hasInternet()) {
+                            remaining.remove(track.id)
                             val done = processed.incrementAndGet()
                             _artworkStatus.value = "ОБНОВЛЯЮ ОБЛОЖКИ: $done/$total"
                             return@withPermit
@@ -317,6 +336,7 @@ class MainViewModel(
                             networkErrors.incrementAndGet()
                         } catch (_: Exception) {
                         }
+                        remaining.remove(track.id)
                         val done = processed.incrementAndGet()
                         _artworkStatus.value = "ОБНОВЛЯЮ ОБЛОЖКИ: $done/$total"
                     }
@@ -325,11 +345,14 @@ class MainViewModel(
         }
 
         runCatching { repo.refresh() }
+        activeCoverTracks = emptyList()
+        coverRemainingIds.clear()
+        _coverPaused.value = false
         _artworkStatus.value = null
         val count = updated.get()
         if (count > 0) {
             notify("Обложки обновлены: $count")
-        } else if (manual) {
+        } else {
             notify("Не удалось найти обложки — проверьте интернет или попробуйте позже")
         }
     }

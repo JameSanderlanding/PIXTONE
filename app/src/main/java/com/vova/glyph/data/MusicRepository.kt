@@ -32,7 +32,7 @@ class MusicRepository(private val db: GlyphDb) {
         return added
     }
 
-    suspend fun setArtwork(trackId: Long, artwork: String) {
+    suspend fun setArtwork(trackId: Long, artwork: String?) {
         db.updateArtwork(trackId, artwork)
     }
 

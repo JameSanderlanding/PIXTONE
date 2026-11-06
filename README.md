@@ -57,7 +57,7 @@ PIXTONE plays the music stored on your device. No account, no cloud, no ads, no 
 - **Smart cover art** — Genius, Deezer and iTunes are queried in parallel; scraped covers are replaced with real ones.
 - **Themes** — six built-in presets, a full custom palette editor (8 colors, RGB sliders and HEX input), saved custom presets.
 - **Custom typography** — three font roles (body, headings, accent) can use Doto, Pixelify Sans, Space Grotesk or the system font.
-- **Six languages** — Russian, English, German, French, Chinese and Japanese, switchable at runtime.
+- **Six languages** — Russian, English, German, French, Chinese and Japanese, switchable at runtime. English is enabled by default.
 - **Message queue with pixel dissolve** — every toast can be dismissed with a tap.
 - **Lightweight** — no bundled media, artwork or tracking SDKs, so the app takes very little space and installs instantly.
 - **No telemetry** — no trackers, no crash reporting, no third-party analytics SDKs.
@@ -133,7 +133,7 @@ cd PIXTONE
 The debug APK is produced at:
 
 ```
-app/build/outputs/apk/debug/Pixtone-1.0.0.apk
+app/build/outputs/apk/debug/Pixtone-1.0.1.apk
 ```
 
 `local.properties` with your own `sdk.dir` is ignored by Git.

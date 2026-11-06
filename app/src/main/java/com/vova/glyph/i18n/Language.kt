@@ -17,14 +17,14 @@ enum class AppLanguage(val code: String, val nativeName: String) {
 
     companion object {
         fun fromCode(code: String?): AppLanguage =
-            entries.firstOrNull { it.code == code } ?: RU
+            entries.firstOrNull { it.code == code } ?: EN
     }
 }
 
 object LangController {
     private var prefs: SharedPreferences? = null
 
-    var language by mutableStateOf(AppLanguage.RU)
+    var language by mutableStateOf(AppLanguage.EN)
         private set
 
     fun attach(context: Context) {
