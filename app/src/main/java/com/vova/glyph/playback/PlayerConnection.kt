@@ -26,6 +26,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.io.File
+import kotlin.math.abs
 
 data class PlayerUiState(
     val connected: Boolean = false,
@@ -72,6 +73,8 @@ class PlayerConnection(private val context: Context) {
     private var lastPositionMs: Long = 0L
 
     private var lastDurationMs: Long = 0L
+
+    private var pendingSeekMs: Long? = null
 
     private val listener = object : Player.Listener {
         override fun onEvents(player: Player, events: Player.Events) {
@@ -123,7 +126,14 @@ class PlayerConnection(private val context: Context) {
     }
 
     private fun refreshProgress(player: Player, detectLoop: Boolean = true) {
-        val position = player.currentPosition.coerceAtLeast(0)
+        val reported = player.currentPosition.coerceAtLeast(0)
+        val seekTarget = pendingSeekMs
+        val position = if (seekTarget != null && abs(reported - seekTarget) > SEEK_ACK_TOLERANCE_MS) {
+            seekTarget
+        } else {
+            pendingSeekMs = null
+            reported
+        }
         val rawDuration = player.duration
         val duration = if (rawDuration > 0 && rawDuration != C.TIME_UNSET) rawDuration else 0L
 
@@ -191,6 +201,7 @@ class PlayerConnection(private val context: Context) {
         player.play()
         lastPositionMs = 0L
         lastDurationMs = 0L
+        pendingSeekMs = null
         updateState(player)
         refreshProgress(player, detectLoop = false)
     }
@@ -218,6 +229,7 @@ class PlayerConnection(private val context: Context) {
             }
             else -> player.seekTo(0, 0L)
         }
+        pendingSeekMs = null
         updateState(player)
         refreshProgress(player, detectLoop = false)
     }
@@ -226,15 +238,22 @@ class PlayerConnection(private val context: Context) {
         val player = controller ?: return
         if (player.hasPreviousMediaItem()) player.seekToPrevious()
         else player.seekTo(0, 0L)
+        pendingSeekMs = null
         updateState(player)
         refreshProgress(player, detectLoop = false)
     }
 
     fun seekTo(positionMs: Long) {
         val player = controller ?: return
-        player.seekTo(positionMs.coerceAtLeast(0))
+        val target = positionMs.coerceAtLeast(0)
+        pendingSeekMs = target
+        player.seekTo(target)
+        lastPositionMs = target
+        _progress.value = PlayerProgress(
+            positionMs = target,
+            durationMs = _progress.value.durationMs,
+        )
         updateState(player)
-        refreshProgress(player, detectLoop = false)
     }
 
     fun toggleShuffle() {
@@ -271,6 +290,7 @@ class PlayerConnection(private val context: Context) {
     }
 
     fun stop() {
+        pendingSeekMs = null
         controller?.stop()
         updateState(controller)
     }
@@ -364,6 +384,8 @@ class PlayerConnection(private val context: Context) {
 private const val PROGRESS_ACTIVE_MS = 500L
 
 private const val PROGRESS_IDLE_MS = 1_000L
+
+private const val SEEK_ACK_TOLERANCE_MS = 700L
 
 private const val LOOP_DETECT_MARGIN_MS = 1_500L
 
