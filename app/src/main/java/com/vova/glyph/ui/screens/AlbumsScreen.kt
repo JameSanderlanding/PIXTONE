@@ -49,7 +49,16 @@ fun AlbumsScreen(vm: MainViewModel) {
         if (selectionMode) {
             SelectionBar(
                 selectedCount = selectedKeys.size,
+                allSelected = albums.isNotEmpty() && albums.all { it.key in selectedKeys },
                 onCancel = { clearSelection() },
+                onToggleAll = {
+                    val allKeys = albums.mapTo(HashSet()) { it.key }
+                    selectedKeys = if (allKeys.isNotEmpty() && selectedKeys.containsAll(allKeys)) {
+                        emptySet()
+                    } else {
+                        allKeys
+                    }
+                },
                 onConfirm = {
                     if (selectedKeys.isNotEmpty()) showDeleteConfirm = true
                 },

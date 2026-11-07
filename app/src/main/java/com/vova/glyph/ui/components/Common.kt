@@ -959,7 +959,9 @@ fun MiniPlayer(
 @Composable
 fun SelectionBar(
     selectedCount: Int,
+    allSelected: Boolean,
     onCancel: () -> Unit,
+    onToggleAll: () -> Unit,
     onConfirm: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -979,6 +981,37 @@ fun SelectionBar(
         Spacer(Modifier.width(10.dp))
         MicroLabel("ВЫБРАНО: $selectedCount", color = GlyphRed, fontSize = 9)
         Spacer(Modifier.weight(1f))
+        Box(
+            Modifier
+                .size(34.dp)
+                .clickable(onClick = onToggleAll),
+            contentAlignment = Alignment.Center,
+        ) {
+            Box(
+                Modifier
+                    .size(22.dp)
+                    .background(
+                        if (allSelected) GlyphRed else Color.Transparent,
+                        RoundedCornerShape(2.dp),
+                    )
+                    .border(
+                        1.dp,
+                        if (allSelected) GlyphRed else GlyphLine,
+                        RoundedCornerShape(2.dp),
+                    ),
+                contentAlignment = Alignment.Center,
+            ) {
+                if (allSelected) {
+                    GlyphIcon(
+                        Glyph.Check,
+                        tint = GlyphWhite,
+                        modifier = Modifier.size(13.dp),
+                        stroke = 2.dp,
+                    )
+                }
+            }
+        }
+        Spacer(Modifier.width(8.dp))
         GlyphIconButton(
             glyph = Glyph.Check,
             onClick = onConfirm,

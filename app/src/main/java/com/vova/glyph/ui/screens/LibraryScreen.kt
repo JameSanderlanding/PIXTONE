@@ -217,7 +217,26 @@ fun LibraryScreen(vm: MainViewModel) {
         if (selectionType != null) {
             SelectionBar(
                 selectedCount = selectedIds.size,
+                allSelected = when (selectionType) {
+                    LibrarySelection.TRACK ->
+                        sorted.isNotEmpty() && sorted.all { it.id in selectedIds }
+                    LibrarySelection.PLAYLIST ->
+                        playlists.isNotEmpty() && playlists.all { it.id in selectedIds }
+                    else -> false
+                },
                 onCancel = { clearSelection() },
+                onToggleAll = {
+                    val ids = when (selectionType) {
+                        LibrarySelection.TRACK -> sorted.mapTo(HashSet()) { it.id }
+                        LibrarySelection.PLAYLIST -> playlists.mapTo(HashSet()) { it.id }
+                        else -> emptySet()
+                    }
+                    selectedIds = if (ids.isNotEmpty() && selectedIds.containsAll(ids)) {
+                        emptySet()
+                    } else {
+                        ids
+                    }
+                },
                 onConfirm = { if (selectedIds.isNotEmpty()) showDeleteConfirm = true },
             )
         }
