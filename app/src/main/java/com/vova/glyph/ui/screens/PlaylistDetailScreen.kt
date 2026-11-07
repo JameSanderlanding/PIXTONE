@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -66,44 +67,44 @@ fun PlaylistDetailScreen(vm: MainViewModel) {
 
     val currentPlaylist = playlist ?: return
 
-    LazyColumn(
-        Modifier.fillMaxWidth(),
-        contentPadding = PaddingValues(bottom = 24.dp),
-    ) {
-        item {
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 14.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                GlyphIconButton(
-                    glyph = Glyph.Back,
-                    onClick = vm::closePlaylist,
-                    size = 36.dp,
-                    iconSize = 20.dp,
-                )
-                Spacer(Modifier.width(4.dp))
-                MicroLabel("ПЛЕЙЛИСТ / ${currentPlaylist.trackCount.toString().padStart(2, '0')}", color = GlyphDim)
-                Spacer(Modifier.weight(1f))
-                if (tracks.isNotEmpty()) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(Modifier.size(4.dp).background(com.vova.glyph.ui.theme.GlyphRed, androidx.compose.foundation.shape.CircleShape))
-                        Spacer(Modifier.width(6.dp))
-                        MicroLabel("ЛОКАЛЬНО", color = GlyphDim)
-                    }
+    Column(Modifier.fillMaxSize()) {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            GlyphIconButton(
+                glyph = Glyph.Back,
+                onClick = vm::closePlaylist,
+                size = 36.dp,
+                iconSize = 20.dp,
+            )
+            Spacer(Modifier.width(4.dp))
+            MicroLabel("ПЛЕЙЛИСТ / ${currentPlaylist.trackCount.toString().padStart(2, '0')}", color = GlyphDim)
+            Spacer(Modifier.weight(1f))
+            if (tracks.isNotEmpty()) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(Modifier.size(4.dp).background(com.vova.glyph.ui.theme.GlyphRed, androidx.compose.foundation.shape.CircleShape))
+                    Spacer(Modifier.width(6.dp))
+                    MicroLabel("ЛОКАЛЬНО", color = GlyphDim)
                 }
-                Spacer(Modifier.width(6.dp))
-                GlyphIconButton(
-                    glyph = Glyph.Trash,
-                    onClick = { showDeleteConfirm = true },
-                    size = 32.dp,
-                    iconSize = 16.dp,
-                    tint = GlyphGray,
-                    description = com.vova.glyph.i18n.tr("Удалить плейлист"),
-                )
             }
+            Spacer(Modifier.width(6.dp))
+            GlyphIconButton(
+                glyph = Glyph.Trash,
+                onClick = { showDeleteConfirm = true },
+                size = 32.dp,
+                iconSize = 16.dp,
+                tint = GlyphGray,
+                description = com.vova.glyph.i18n.tr("Удалить плейлист"),
+            )
         }
+
+        LazyColumn(
+            Modifier.fillMaxWidth().weight(1f),
+            contentPadding = PaddingValues(bottom = 24.dp),
+        ) {
         item {
             Row(
                 Modifier.fillMaxWidth().padding(horizontal = 20.dp),
@@ -166,7 +167,13 @@ fun PlaylistDetailScreen(vm: MainViewModel) {
             }
         }
         item { Hairline(Modifier.padding(horizontal = 20.dp)) }
-        item { SectionHeader("01", "ТРЕКИ В ПЛЕЙЛИСТЕ") }
+        stickyHeader(key = "tracks") {
+            SectionHeader(
+                number = "01",
+                title = "ТРЕКИ В ПЛЕЙЛИСТЕ",
+                modifier = Modifier.background(GlyphBlack),
+            )
+        }
         if (tracks.isEmpty()) {
             item {
                 EmptyState(
@@ -198,6 +205,7 @@ fun PlaylistDetailScreen(vm: MainViewModel) {
                     onDelete = { vm.deleteTrack(track) },
                 )
             }
+        }
         }
     }
 
