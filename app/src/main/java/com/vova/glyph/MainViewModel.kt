@@ -644,17 +644,33 @@ class MainViewModel(
     }
 
     fun deleteTrack(track: Track) {
+        deleteTracks(listOf(track.id))
+    }
+
+    fun deleteTracks(ids: Collection<Long>) {
+        if (ids.isEmpty()) return
         viewModelScope.launch {
-            if (playerState.value.trackId == track.id) player.stop()
+            val tracks = repo.tracks.value.filter { it.id in ids }
+            if (tracks.isEmpty()) {
+                notify("Треков для удаления нет")
+                return@launch
+            }
+            if (playerState.value.trackId in ids) player.stop()
             val openPlaylist = _openPlaylistId.value
-            runCatching { repo.deleteTracks(listOf(track.id)) }
+            runCatching { repo.deleteTracks(ids.toList()) }
                 .onSuccess {
-                    container.artworkStore.deleteReplacedArt(track.artwork)
-                    if (_lyricsTrackId.value == track.id) clearLyrics()
+                    tracks.forEach { container.artworkStore.deleteReplacedArt(it.artwork) }
+                    if (_lyricsTrackId.value in ids) clearLyrics()
                     if (openPlaylist != null) {
                         _playlistTracks.value = repo.playlistTracks(openPlaylist)
                     }
-                    notify("Трек «${track.title}» убран из приложения")
+                    notify(
+                        if (tracks.size == 1) {
+                            "Трек «${tracks.first().title}» убран из приложения"
+                        } else {
+                            "Убрано треков: ${tracks.size}"
+                        }
+                    )
                 }
                 .onFailure { notify(it.message ?: "Не удалось убрать трек") }
         }
@@ -681,12 +697,25 @@ class MainViewModel(
     }
 
     fun deletePlaylist(playlist: Playlist) {
+        deletePlaylists(listOf(playlist.id))
+    }
+
+    fun deletePlaylists(ids: Collection<Long>) {
+        if (ids.isEmpty()) return
         viewModelScope.launch {
-            runCatching { repo.deletePlaylist(playlist.id) }
+            val playlists = repo.playlists.value.filter { it.id in ids }
+            if (playlists.isEmpty()) return@launch
+            runCatching { playlists.forEach { repo.deletePlaylist(it.id) } }
                 .onSuccess {
-                    if (_openPlaylistId.value == playlist.id) closePlaylist()
-                    container.artworkStore.deleteCover(playlist.cover)
-                    notify("Плейлист «${playlist.name}» удалён")
+                    if (_openPlaylistId.value in ids) closePlaylist()
+                    playlists.forEach { container.artworkStore.deleteCover(it.cover) }
+                    notify(
+                        if (playlists.size == 1) {
+                            "Плейлист «${playlists.first().name}» удалён"
+                        } else {
+                            "Удалено плейлистов: ${playlists.size}"
+                        }
+                    )
                 }
                 .onFailure { notify(it.message ?: "Не удалось удалить плейлист") }
         }

@@ -1,17 +1,21 @@
 package com.vova.glyph.ui.screens
 
 import android.net.Uri
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -44,6 +48,7 @@ import com.vova.glyph.MainViewModel
 import com.vova.glyph.data.Playlist
 import com.vova.glyph.data.Track
 import com.vova.glyph.ui.components.CreatePlaylistDialog
+import com.vova.glyph.ui.components.ConfirmDialog
 import com.vova.glyph.ui.components.DotSpinner
 import com.vova.glyph.ui.components.EmptyState
 import com.vova.glyph.ui.components.Glyph
@@ -54,6 +59,7 @@ import com.vova.glyph.ui.components.LyricsDialog
 import com.vova.glyph.ui.components.MicroLabel
 import com.vova.glyph.ui.components.ScreenHeader
 import com.vova.glyph.ui.components.SectionHeader
+import com.vova.glyph.ui.components.SelectionBar
 import com.vova.glyph.ui.components.Text
 import com.vova.glyph.ui.components.TrackRow
 import com.vova.glyph.ui.theme.DotoFamily
@@ -64,6 +70,8 @@ import com.vova.glyph.ui.theme.GlyphLine
 import com.vova.glyph.ui.theme.GlyphRed
 import com.vova.glyph.ui.theme.GlyphSurface
 import com.vova.glyph.ui.theme.GlyphWhite
+
+private enum class LibrarySelection { TRACK, PLAYLIST }
 
 @Composable
 fun LibraryScreen(vm: MainViewModel) {
@@ -84,6 +92,22 @@ fun LibraryScreen(vm: MainViewModel) {
     var showLyrics by remember { mutableStateOf(false) }
     var lyricsTrack by remember { mutableStateOf<Track?>(null) }
     var lyricsCompletionBase by remember { mutableStateOf(0L) }
+
+    var selectionType by remember { mutableStateOf<LibrarySelection?>(null) }
+    var selectedIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
+    var showDeleteConfirm by remember { mutableStateOf(false) }
+
+    fun clearSelection() {
+        selectionType = null
+        selectedIds = emptySet()
+    }
+
+    fun toggleSelection(type: LibrarySelection, id: Long) {
+        if (selectionType != type) return
+        selectedIds = if (id in selectedIds) selectedIds - id else selectedIds + id
+    }
+
+    BackHandler(enabled = selectionType != null) { clearSelection() }
 
     LaunchedEffect(playerState.completionCount) {
         val track = lyricsTrack ?: return@LaunchedEffect
@@ -117,10 +141,19 @@ fun LibraryScreen(vm: MainViewModel) {
         }
     }
 
-    LazyColumn(
-        Modifier.fillMaxWidth(),
-        contentPadding = PaddingValues(bottom = 24.dp),
-    ) {
+    Column(Modifier.fillMaxSize()) {
+        if (selectionType != null) {
+            SelectionBar(
+                selectedCount = selectedIds.size,
+                onCancel = { clearSelection() },
+                onConfirm = { if (selectedIds.isNotEmpty()) showDeleteConfirm = true },
+            )
+        }
+
+        LazyColumn(
+            Modifier.fillMaxWidth().weight(1f),
+            contentPadding = PaddingValues(bottom = 24.dp),
+        ) {
         item {
             ScreenHeader(
                 index = "01",
@@ -156,13 +189,15 @@ fun LibraryScreen(vm: MainViewModel) {
                     title = "ПЛЕЙЛИСТЫ",
                     modifier = Modifier.padding(top = 8.dp),
                     action = {
-                        Row(
-                            Modifier.clickable { showCreate = true },
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            GlyphIcon(Glyph.Plus, tint = GlyphWhite, modifier = Modifier.size(12.dp))
-                            Spacer(Modifier.width(5.dp))
-                            MicroLabel("СОЗДАТЬ", color = GlyphWhite)
+                        if (selectionType == null) {
+                            Row(
+                                Modifier.clickable { showCreate = true },
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                GlyphIcon(Glyph.Plus, tint = GlyphWhite, modifier = Modifier.size(12.dp))
+                                Spacer(Modifier.width(5.dp))
+                                MicroLabel("СОЗДАТЬ", color = GlyphWhite)
+                            }
                         }
                     },
                 )
@@ -173,15 +208,35 @@ fun LibraryScreen(vm: MainViewModel) {
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    item(key = "create") {
-                        CreatePlaylistCard(onClick = { showCreate = true })
+                    if (selectionType == null) {
+                        item(key = "create") {
+                            CreatePlaylistCard(onClick = { showCreate = true })
+                        }
                     }
                     items(
                         items = playlists,
                         key = { it.id },
                         contentType = { "playlist" },
                     ) { playlist ->
-                        PlaylistCard(playlist = playlist, onClick = { vm.openPlaylist(playlist.id) })
+                        PlaylistCard(
+                            playlist = playlist,
+                            onClick = {
+                                when (selectionType) {
+                                    LibrarySelection.PLAYLIST ->
+                                        toggleSelection(LibrarySelection.PLAYLIST, playlist.id)
+                                    null -> vm.openPlaylist(playlist.id)
+                                    else -> Unit
+                                }
+                            },
+                            selectionMode = selectionType == LibrarySelection.PLAYLIST,
+                            selected = playlist.id in selectedIds,
+                            onLongClick = {
+                                if (selectionType == null) {
+                                    selectionType = LibrarySelection.PLAYLIST
+                                    selectedIds = setOf(playlist.id)
+                                }
+                            },
+                        )
                     }
                 }
             }
@@ -191,7 +246,7 @@ fun LibraryScreen(vm: MainViewModel) {
                     title = if (query.isBlank()) "ВСЕ ТРЕКИ" else "РЕЗУЛЬТАТЫ: ${filtered.size}",
                     modifier = Modifier.padding(top = 10.dp),
                     action = {
-                        if (query.isBlank()) {
+                        if (query.isBlank() && selectionType == null) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 if (tracks.isNotEmpty()) {
                                     Row(
@@ -260,7 +315,12 @@ fun LibraryScreen(vm: MainViewModel) {
                         isCurrent = currentTrack?.id == track.id,
                         isPlaying = playerState.isPlaying && currentTrack?.id == track.id,
                         onClick = {
-                            vm.playTracks(filtered, index)
+                            when (selectionType) {
+                                LibrarySelection.TRACK ->
+                                    toggleSelection(LibrarySelection.TRACK, track.id)
+                                null -> vm.playTracks(filtered, index)
+                                else -> Unit
+                            }
                         },
                         onFavorite = { vm.toggleFavorite(track) },
                         onLyrics = {
@@ -271,10 +331,48 @@ fun LibraryScreen(vm: MainViewModel) {
                         },
                         onAddToPlaylist = { playlistTarget = track },
                         onDelete = { vm.deleteTrack(track) },
+                        selectionMode = selectionType == LibrarySelection.TRACK,
+                        selected = track.id in selectedIds,
+                        onLongClick = {
+                            if (selectionType == null) {
+                                selectionType = LibrarySelection.TRACK
+                                selectedIds = setOf(track.id)
+                            }
+                        },
                     )
                 }
             }
         }
+        }
+    }
+
+    if (showDeleteConfirm) {
+        val type = selectionType
+        val ids = selectedIds
+        ConfirmDialog(
+            title = if (type == LibrarySelection.TRACK) {
+                "Удалить выбранные треки?"
+            } else {
+                "Удалить выбранные плейлисты?"
+            },
+            message = if (type == LibrarySelection.TRACK) {
+                "Будет убрано треков: ${ids.size}. Файлы на устройстве останутся, при повторном сканировании папки треки вернутся в библиотеку."
+            } else {
+                "Будет удалено плейлистов: ${ids.size}. Плейлисты не восстанавливаются, треки останутся в библиотеке."
+            },
+            confirmText = "Удалить",
+            destructive = true,
+            onConfirm = {
+                showDeleteConfirm = false
+                clearSelection()
+                when (type) {
+                    LibrarySelection.TRACK -> vm.deleteTracks(ids)
+                    LibrarySelection.PLAYLIST -> vm.deletePlaylists(ids)
+                    null -> Unit
+                }
+            },
+            onDismiss = { showDeleteConfirm = false },
+        )
     }
 
     if (showCreate) {
@@ -396,14 +494,65 @@ private fun LibrarySearchField(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun PlaylistCard(playlist: Playlist, onClick: () -> Unit) {
-    Column(Modifier.width(116.dp).clickable(onClick = onClick)) {
-        GlyphCover(
-            artwork = playlist.cover,
-            seed = playlist.name,
-            modifier = Modifier.size(116.dp),
-        )
+private fun PlaylistCard(
+    playlist: Playlist,
+    onClick: () -> Unit,
+    selectionMode: Boolean = false,
+    selected: Boolean = false,
+    onLongClick: (() -> Unit)? = null,
+) {
+    Column(
+        Modifier
+            .width(116.dp)
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick,
+            )
+    ) {
+        Box {
+            GlyphCover(
+                artwork = playlist.cover,
+                seed = playlist.name,
+                modifier = Modifier
+                    .size(116.dp)
+                    .then(
+                        if (selected) {
+                            Modifier.border(2.dp, GlyphRed, RoundedCornerShape(2.dp))
+                        } else {
+                            Modifier
+                        }
+                    ),
+            )
+            if (selectionMode) {
+                Box(
+                    Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(7.dp)
+                        .size(22.dp)
+                        .background(
+                            if (selected) GlyphRed else GlyphBlack.copy(alpha = 0.72f),
+                            RoundedCornerShape(2.dp),
+                        )
+                        .border(
+                            1.dp,
+                            if (selected) GlyphRed else GlyphLine,
+                            RoundedCornerShape(2.dp),
+                        ),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    if (selected) {
+                        GlyphIcon(
+                            Glyph.Check,
+                            tint = GlyphWhite,
+                            modifier = Modifier.size(13.dp),
+                            stroke = 2.dp,
+                        )
+                    }
+                }
+            }
+        }
         Spacer(Modifier.height(8.dp))
         Text(
             playlist.name,

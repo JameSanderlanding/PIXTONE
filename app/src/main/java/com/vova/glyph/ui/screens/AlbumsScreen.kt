@@ -4,13 +4,10 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -20,7 +17,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -31,11 +27,8 @@ import com.vova.glyph.ui.components.ConfirmDialog
 import com.vova.glyph.ui.components.EmptyState
 import com.vova.glyph.ui.components.Glyph
 import com.vova.glyph.ui.components.GlyphButton
-import com.vova.glyph.ui.components.GlyphIconButton
-import com.vova.glyph.ui.components.MicroLabel
 import com.vova.glyph.ui.components.ScreenHeader
-import com.vova.glyph.ui.theme.GlyphDim
-import com.vova.glyph.ui.theme.GlyphRed
+import com.vova.glyph.ui.components.SelectionBar
 
 @Composable
 fun AlbumsScreen(vm: MainViewModel) {
@@ -54,7 +47,7 @@ fun AlbumsScreen(vm: MainViewModel) {
 
     Column(Modifier.fillMaxSize()) {
         if (selectionMode) {
-            AlbumsSelectionBar(
+            SelectionBar(
                 selectedCount = selectedKeys.size,
                 onCancel = { clearSelection() },
                 onConfirm = {
@@ -158,35 +151,3 @@ fun AlbumsScreen(vm: MainViewModel) {
     }
 }
 
-@Composable
-private fun AlbumsSelectionBar(
-    selectedCount: Int,
-    onCancel: () -> Unit,
-    onConfirm: () -> Unit,
-) {
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 14.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        GlyphIconButton(
-            glyph = Glyph.Close,
-            onClick = onCancel,
-            size = 34.dp,
-            iconSize = 17.dp,
-            tint = GlyphDim,
-        )
-        Spacer(Modifier.width(10.dp))
-        MicroLabel("ВЫБРАНО: $selectedCount", color = GlyphRed, fontSize = 9)
-        Spacer(Modifier.weight(1f))
-        GlyphIconButton(
-            glyph = Glyph.Check,
-            onClick = onConfirm,
-            size = 34.dp,
-            iconSize = 18.dp,
-            tint = if (selectedCount > 0) GlyphRed else GlyphDim,
-            bordered = true,
-        )
-    }
-}

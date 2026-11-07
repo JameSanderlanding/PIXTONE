@@ -652,6 +652,7 @@ fun GlyphTextField(
     )
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun TrackRow(
     track: Track,
@@ -665,6 +666,9 @@ fun TrackRow(
     onDelete: (() -> Unit)? = null,
     showCover: Boolean = true,
     divider: Boolean = true,
+    selectionMode: Boolean = false,
+    selected: Boolean = false,
+    onLongClick: (() -> Unit)? = null,
 ) {
     var menuOpen by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
@@ -674,7 +678,13 @@ fun TrackRow(
         Row(
             Modifier
                 .fillMaxWidth()
-                .clickable(onClick = onClick)
+                .background(
+                    if (selected) GlyphRed.copy(alpha = 0.08f) else Color.Transparent
+                )
+                .combinedClickable(
+                    onClick = onClick,
+                    onLongClick = onLongClick,
+                )
                 .padding(horizontal = 20.dp, vertical = 9.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -735,83 +745,110 @@ fun TrackRow(
                     letterSpacing = 0.4.sp,
                 ),
             )
-            Box(
-                Modifier
-                    .size(36.dp)
-                    .clickable(onClick = onFavorite),
-                contentAlignment = Alignment.Center,
-            ) {
-                GlyphIcon(
-                    glyph = if (track.favorite) Glyph.HeartFilled else Glyph.Heart,
-                    tint = if (track.favorite) GlyphRed else GlyphGray,
-                    modifier = Modifier.size(17.dp),
-                    stroke = 1.5.dp,
-                )
-            }
-            onLyrics?.let {
+            if (selectionMode) {
+                Spacer(Modifier.width(4.dp))
+                Box(
+                    Modifier
+                        .size(24.dp)
+                        .background(
+                            if (selected) GlyphRed else Color.Transparent,
+                            RoundedCornerShape(2.dp),
+                        )
+                        .border(
+                            1.dp,
+                            if (selected) GlyphRed else GlyphLine,
+                            RoundedCornerShape(2.dp),
+                        ),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    if (selected) {
+                        GlyphIcon(
+                            Glyph.Check,
+                            tint = GlyphWhite,
+                            modifier = Modifier.size(13.dp),
+                            stroke = 2.dp,
+                        )
+                    }
+                }
+            } else {
                 Box(
                     Modifier
                         .size(36.dp)
-                        .clickable(onClick = it),
+                        .clickable(onClick = onFavorite),
                     contentAlignment = Alignment.Center,
                 ) {
                     GlyphIcon(
-                        glyph = Glyph.Text,
-                        tint = GlyphGray,
+                        glyph = if (track.favorite) Glyph.HeartFilled else Glyph.Heart,
+                        tint = if (track.favorite) GlyphRed else GlyphGray,
                         modifier = Modifier.size(17.dp),
                         stroke = 1.5.dp,
                     )
                 }
-            }
-            Box(
-                Modifier
-                    .size(28.dp)
-                    .clickable { menuOpen = true },
-                contentAlignment = Alignment.Center,
-            ) {
-                GlyphIcon(Glyph.More, tint = GlyphDim, modifier = Modifier.size(16.dp))
-                DropdownMenu(
-                    expanded = menuOpen,
-                    onDismissRequest = { menuOpen = false },
+                onLyrics?.let {
+                    Box(
+                        Modifier
+                            .size(36.dp)
+                            .clickable(onClick = it),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        GlyphIcon(
+                            glyph = Glyph.Text,
+                            tint = GlyphGray,
+                            modifier = Modifier.size(17.dp),
+                            stroke = 1.5.dp,
+                        )
+                    }
+                }
+                Box(
+                    Modifier
+                        .size(28.dp)
+                        .clickable { menuOpen = true },
+                    contentAlignment = Alignment.Center,
                 ) {
-                    DropdownMenuItem(
-                        text = { Text(if (track.favorite) "Убрать из избранного" else "В избранное") },
-                        onClick = {
-                            menuOpen = false
-                            onFavorite()
-                        },
-                    )
-                    if (onAddToPlaylist != null) {
+                    GlyphIcon(Glyph.More, tint = GlyphDim, modifier = Modifier.size(16.dp))
+                    DropdownMenu(
+                        expanded = menuOpen,
+                        onDismissRequest = { menuOpen = false },
+                    ) {
                         DropdownMenuItem(
-                            text = { Text("Добавить в плейлист") },
+                            text = { Text(if (track.favorite) "Убрать из избранного" else "В избранное") },
                             onClick = {
                                 menuOpen = false
-                                onAddToPlaylist()
+                                onFavorite()
                             },
                         )
-                    }
-                    if (onRemove != null) {
-                        DropdownMenuItem(
-                            text = { Text("Убрать из плейлиста") },
-                            onClick = {
-                                menuOpen = false
-                                onRemove()
-                            },
-                        )
-                    }
-                    if (onDelete != null) {
-                        DropdownMenuItem(
-                            text = {
-                                Text(
-                                    "Удалить",
-                                    style = MaterialTheme.typography.bodyMedium.copy(color = GlyphRed),
-                                )
-                            },
-                            onClick = {
-                                menuOpen = false
-                                confirmDelete = true
-                            },
-                        )
+                        if (onAddToPlaylist != null) {
+                            DropdownMenuItem(
+                                text = { Text("Добавить в плейлист") },
+                                onClick = {
+                                    menuOpen = false
+                                    onAddToPlaylist()
+                                },
+                            )
+                        }
+                        if (onRemove != null) {
+                            DropdownMenuItem(
+                                text = { Text("Убрать из плейлиста") },
+                                onClick = {
+                                    menuOpen = false
+                                    onRemove()
+                                },
+                            )
+                        }
+                        if (onDelete != null) {
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        "Удалить",
+                                        style = MaterialTheme.typography.bodyMedium.copy(color = GlyphRed),
+                                    )
+                                },
+                                onClick = {
+                                    menuOpen = false
+                                    confirmDelete = true
+                                },
+                            )
+                        }
                     }
                 }
             }
@@ -916,6 +953,40 @@ fun MiniPlayer(
                 GlyphIcon(Glyph.Next, tint = GlyphGray, modifier = Modifier.size(17.dp))
             }
         }
+    }
+}
+
+@Composable
+fun SelectionBar(
+    selectedCount: Int,
+    onCancel: () -> Unit,
+    onConfirm: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier
+            .fillMaxWidth()
+            .padding(horizontal = 14.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        GlyphIconButton(
+            glyph = Glyph.Close,
+            onClick = onCancel,
+            size = 34.dp,
+            iconSize = 17.dp,
+            tint = GlyphDim,
+        )
+        Spacer(Modifier.width(10.dp))
+        MicroLabel("ВЫБРАНО: $selectedCount", color = GlyphRed, fontSize = 9)
+        Spacer(Modifier.weight(1f))
+        GlyphIconButton(
+            glyph = Glyph.Check,
+            onClick = onConfirm,
+            size = 34.dp,
+            iconSize = 18.dp,
+            tint = if (selectedCount > 0) GlyphRed else GlyphDim,
+            bordered = true,
+        )
     }
 }
 
