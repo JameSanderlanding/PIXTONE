@@ -26,8 +26,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.vova.glyph.MainViewModel
+import com.vova.glyph.SortTarget
 import com.vova.glyph.Tab
 import com.vova.glyph.data.Track
+import com.vova.glyph.data.TrackSort
+import com.vova.glyph.data.TrackSorter
 import com.vova.glyph.i18n.tr
 import com.vova.glyph.ui.components.AddToPlaylistSheet
 import com.vova.glyph.ui.components.ConfirmDialog
@@ -39,6 +42,7 @@ import com.vova.glyph.ui.components.GlyphIconButton
 import com.vova.glyph.ui.components.Hairline
 import com.vova.glyph.ui.components.MicroLabel
 import com.vova.glyph.ui.components.SectionHeader
+import com.vova.glyph.ui.components.SortRow
 import com.vova.glyph.ui.components.Text
 import com.vova.glyph.ui.components.TrackRow
 import com.vova.glyph.ui.theme.GlyphBlack
@@ -56,8 +60,10 @@ fun AlbumDetailScreen(vm: MainViewModel) {
     val playerState by vm.playerState.collectAsStateWithLifecycle()
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var playlistTarget by remember { mutableStateOf<Track?>(null) }
+    val sorting by vm.albumSorting.collectAsStateWithLifecycle()
 
     val currentAlbum = album ?: return
+    val sorted = remember(tracks, sorting) { TrackSorter.apply(tracks, sorting) }
 
     Column(Modifier.fillMaxSize()) {
         Row(
@@ -137,7 +143,7 @@ fun AlbumDetailScreen(vm: MainViewModel) {
             ) {
                 GlyphButton(
                     text = "СЛУШАТЬ",
-                    onClick = { vm.playTracks(tracks, 0, openPlayer = true) },
+                    onClick = { vm.playTracks(sorted, 0, openPlayer = true) },
                     enabled = tracks.isNotEmpty(),
                     leading = Glyph.Play,
                     modifier = Modifier.weight(1f),
@@ -155,6 +161,20 @@ fun AlbumDetailScreen(vm: MainViewModel) {
             }
         }
         item { Hairline(Modifier.padding(horizontal = 20.dp)) }
+        item {
+            SortRow(
+                options = listOf(
+                    TrackSort.TRACK_NO to "НОМЕР",
+                    TrackSort.TITLE to "НАЗВАНИЕ",
+                    TrackSort.ADDED to "ДОБАВЛЕНО",
+                    TrackSort.MODIFIED to "ИЗМЕНЕНО",
+                ),
+                sorting = sorting,
+                onSortBy = { vm.setSortBy(SortTarget.ALBUM, it) },
+                onReverse = { vm.setSortReverse(SortTarget.ALBUM, it) },
+                modifier = Modifier.padding(vertical = 8.dp),
+            )
+        }
         stickyHeader(key = "tracks") {
             SectionHeader(
                 number = "01",
@@ -172,7 +192,7 @@ fun AlbumDetailScreen(vm: MainViewModel) {
             }
         } else {
             itemsIndexed(
-                items = tracks,
+                items = sorted,
                 key = { _, track -> track.id },
                 contentType = { _, _ -> "track" },
             ) { index, track ->
@@ -180,7 +200,7 @@ fun AlbumDetailScreen(vm: MainViewModel) {
                     track = track,
                     isCurrent = currentTrack?.id == track.id,
                     isPlaying = playerState.isPlaying && currentTrack?.id == track.id,
-                    onClick = { vm.playTracks(tracks, index) },
+                    onClick = { vm.playTracks(sorted, index) },
                     onFavorite = { vm.toggleFavorite(track) },
                     onAddToPlaylist = { playlistTarget = track },
                     onDelete = { vm.deleteTrack(track) },

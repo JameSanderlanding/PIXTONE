@@ -8,7 +8,9 @@ import android.database.sqlite.SQLiteOpenHelper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-class GlyphDb(context: Context) : SQLiteOpenHelper(context, "glyph.db", null, 10) {
+private const val UNKNOWN_COUNT = -1
+
+class GlyphDb(context: Context) : SQLiteOpenHelper(context, "glyph.db", null, 12) {
     override fun onCreate(db: SQLiteDatabase) {
         db.execSQL(
             """
@@ -26,7 +28,9 @@ class GlyphDb(context: Context) : SQLiteOpenHelper(context, "glyph.db", null, 10
                 source TEXT NOT NULL DEFAULT 'LOCAL',
                 source_id TEXT,
                 added_at INTEGER NOT NULL DEFAULT 0,
-                file_size INTEGER NOT NULL DEFAULT 0
+                file_size INTEGER NOT NULL DEFAULT 0,
+                file_mtime INTEGER NOT NULL DEFAULT 0,
+                track_no INTEGER NOT NULL DEFAULT 0
             )
             """.trimIndent()
         )
@@ -93,6 +97,12 @@ class GlyphDb(context: Context) : SQLiteOpenHelper(context, "glyph.db", null, 10
                     "WHERE source = 'LOCAL' AND (genre IS NULL OR TRIM(genre) = '')"
             )
         }
+        if (oldVersion < 11) {
+            db.execSQL("ALTER TABLE tracks ADD COLUMN file_mtime INTEGER NOT NULL DEFAULT 0")
+        }
+        if (oldVersion < 12) {
+            db.execSQL("ALTER TABLE tracks ADD COLUMN track_no INTEGER NOT NULL DEFAULT 0")
+        }
     }
 
     private fun createLyricsTable(db: SQLiteDatabase) {
@@ -146,6 +156,8 @@ class GlyphDb(context: Context) : SQLiteOpenHelper(context, "glyph.db", null, 10
             put("title", track.title)
             put("artist", track.artist)
             put("album", track.album)
+            put("file_mtime", track.fileModifiedAt.ifKnownDate())
+            put("track_no", if (track.trackNumber > 0) track.trackNumber else UNKNOWN_COUNT)
             put("duration", track.durationMs)
             put("uri", track.uri)
             track.artwork?.let { put("artwork", it) }
@@ -164,11 +176,49 @@ class GlyphDb(context: Context) : SQLiteOpenHelper(context, "glyph.db", null, 10
             put("title", track.title)
             put("artist", track.artist)
             put("album", track.album)
+            put("file_mtime", track.fileModifiedAt.ifKnownDate())
+            put("track_no", if (track.trackNumber > 0) track.trackNumber else UNKNOWN_COUNT)
             put("duration", track.durationMs)
             put("file_size", track.fileSize)
             track.artwork?.let { put("artwork", it) }
         }
         db.update("tracks", values, "id = ?", arrayOf(id.toString()))
+    }
+
+    suspend fun tracksWithoutFileDate(): List<Pair<Long, String>> = withContext(Dispatchers.IO) {
+        readableDatabase.query(
+            "tracks", arrayOf("id", "uri"), "file_mtime = 0", null, null, null, "id ASC"
+        ).use { cursor ->
+            buildList {
+                while (cursor.moveToNext()) {
+                    add(cursor.getLong(0) to cursor.getString(1).orEmpty())
+                }
+            }
+        }
+    }
+
+    suspend fun setFileModifiedAt(trackId: Long, modifiedAt: Long) = withContext(Dispatchers.IO) {
+        val values = ContentValues().apply { put("file_mtime", modifiedAt.ifKnownDate()) }
+        writableDatabase.update("tracks", values, "id = ?", arrayOf(trackId.toString()))
+    }
+
+    suspend fun tracksWithoutTrackNumber(): List<Pair<Long, String>> = withContext(Dispatchers.IO) {
+        readableDatabase.query(
+            "tracks", arrayOf("id", "uri"), "track_no = 0", null, null, null, "id ASC"
+        ).use { cursor ->
+            buildList {
+                while (cursor.moveToNext()) {
+                    add(cursor.getLong(0) to cursor.getString(1).orEmpty())
+                }
+            }
+        }
+    }
+
+    suspend fun setTrackNumber(trackId: Long, trackNumber: Int) = withContext(Dispatchers.IO) {
+        val values = ContentValues().apply {
+            put("track_no", if (trackNumber > 0) trackNumber else UNKNOWN_COUNT)
+        }
+        writableDatabase.update("tracks", values, "id = ?", arrayOf(trackId.toString()))
     }
 
     private fun findSameLocalFile(db: SQLiteDatabase, track: Track): Long? {
@@ -370,6 +420,8 @@ class GlyphDb(context: Context) : SQLiteOpenHelper(context, "glyph.db", null, 10
         title = string("title"),
         artist = string("artist"),
         album = string("album"),
+        fileModifiedAt = long("file_mtime"),
+        trackNumber = int("track_no"),
         durationMs = long("duration"),
         uri = string("uri"),
         artwork = nullableString("artwork"),
@@ -379,6 +431,8 @@ class GlyphDb(context: Context) : SQLiteOpenHelper(context, "glyph.db", null, 10
         addedAt = long("added_at"),
         fileSize = long("file_size"),
     )
+
+    private fun Long.ifKnownDate(): Long = if (this > 0L) this else UNKNOWN_COUNT.toLong()
 
     private fun Cursor.long(column: String): Long = getLong(getColumnIndexOrThrow(column))
     private fun Cursor.int(column: String): Int = getInt(getColumnIndexOrThrow(column))
