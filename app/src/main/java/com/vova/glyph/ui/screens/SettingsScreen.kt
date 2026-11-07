@@ -406,6 +406,7 @@ private fun ThemeSettingsPage(
     onEditPreset: () -> Unit,
 ) {
     val presets = ThemeController.allPresets()
+    var pendingDelete by remember { mutableStateOf<ThemePreset?>(null) }
 
     SettingsPageHeader(title = "ТЕМА", onBack = onBack)
     Spacer(Modifier.height(7.dp))
@@ -418,15 +419,21 @@ private fun ThemeSettingsPage(
     SettingsSection(number = "01", title = "ПРЕСЕТЫ") {
         presets.forEachIndexed { index, preset ->
             if (index > 0) Spacer(Modifier.height(10.dp))
+            val custom = ThemeController.customPresets.any { it.id == preset.id }
             PresetRow(
                 preset = preset,
                 selected = ThemeController.presetId == preset.id,
                 onClick = { ThemeController.applyPreset(preset) },
-                onEdit = if (ThemeController.customPresets.any { it.id == preset.id }) {
+                onEdit = if (custom) {
                     {
                         ThemeController.startEdit(preset)
                         onEditPreset()
                     }
+                } else {
+                    null
+                },
+                onDelete = if (custom) {
+                    { pendingDelete = preset }
                 } else {
                     null
                 },
@@ -442,6 +449,20 @@ private fun ThemeSettingsPage(
         leading = Glyph.Plus,
         modifier = Modifier.fillMaxWidth(),
     )
+
+    pendingDelete?.let { preset ->
+        ConfirmDialog(
+            title = "Удалить пресет?",
+            message = "Пользовательский пресет будет удалён с этого устройства. Если он выбран, тема вернётся к PIXTONE.",
+            confirmText = "Удалить",
+            destructive = true,
+            onConfirm = {
+                ThemeController.deletePreset(preset)
+                pendingDelete = null
+            },
+            onDismiss = { pendingDelete = null },
+        )
+    }
 }
 
 @Composable
@@ -791,6 +812,7 @@ private fun PresetRow(
     selected: Boolean,
     onClick: () -> Unit,
     onEdit: (() -> Unit)? = null,
+    onDelete: (() -> Unit)? = null,
 ) {
     val shape = RoundedCornerShape(2.dp)
     Row(
@@ -827,6 +849,24 @@ private fun PresetRow(
                     stroke = 1.5.dp,
                 )
             }
+        }
+        if (onDelete != null) {
+            Spacer(Modifier.width(2.dp))
+            Box(
+                Modifier
+                    .size(28.dp)
+                    .clickable(onClick = onDelete),
+                contentAlignment = Alignment.Center,
+            ) {
+                GlyphIcon(
+                    glyph = Glyph.Trash,
+                    tint = GlyphGray,
+                    modifier = Modifier.size(14.dp),
+                    stroke = 1.5.dp,
+                )
+            }
+            Spacer(Modifier.width(6.dp))
+        } else if (onEdit != null) {
             Spacer(Modifier.width(6.dp))
         }
         Box(

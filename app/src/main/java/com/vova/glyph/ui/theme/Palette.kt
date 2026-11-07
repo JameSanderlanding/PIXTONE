@@ -226,6 +226,18 @@ object ThemeController {
         draftEditingId = null
     }
 
+    fun deletePreset(preset: ThemePreset) {
+        if (customPresets.none { it.id == preset.id }) return
+        customPresets = customPresets.filterNot { it.id == preset.id }
+        if (draftEditingId == preset.id) {
+            draftEditingId = null
+        }
+        if (presetId == preset.id) {
+            applyPreset(ThemePresets.first())
+        }
+        saveCustomPresets()
+    }
+
     fun saveDraft(name: String) {
         val trimmed = name.trim().ifBlank { "PRESET" }
         val editingId = draftEditingId

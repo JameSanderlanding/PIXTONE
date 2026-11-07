@@ -182,6 +182,8 @@ private val DICT: Map<String, Tr> = mapOf(
     "РЕДАКТИРОВАТЬ ПРЕСЕТ" to t("EDIT PRESET", "PRESET BEARBEITEN", "MODIFIER LE PRÉSET", "编辑预设", "プリセットを編集"),
     "НАЗВАНИЕ ПРЕСЕТА" to t("PRESET NAME", "PRESET-NAME", "NOM DU PRÉSET", "预设名称", "プリセット名"),
     "МОЙ ПРЕСЕТ" to t("MY PRESET", "MEIN PRESET", "MON PRÉSET", "我的预设", "マイプリセット"),
+    "Удалить пресет?" to t("Delete preset?", "Preset löschen?", "Supprimer le préset ?", "删除预设？", "プリセットを削除しますか？"),
+    "Пользовательский пресет будет удалён с этого устройства. Если он выбран, тема вернётся к PIXTONE." to t("The custom preset will be deleted from this device. If it is selected, the theme returns to PIXTONE.", "Das eigene Preset wird von diesem Gerät gelöscht. Wenn es ausgewählt ist, wird das Design auf PIXTONE zurückgesetzt.", "Le préset personnalisé sera supprimé de cet appareil. S'il est sélectionné, le thème revient à PIXTONE.", "自定义预设将从此设备删除。如果它正在使用，主题将恢复为 PIXTONE。", "カスタムプリセットをこの端末から削除します。選択中の場合はテーマが PIXTONE に戻ります。"),
     "ПАЛИТРА" to t("PALETTE", "PALETTE", "PALETTE", "配色", "パレット"),
     "СОХРАНИТЬ" to t("SAVE", "SPEICHERN", "ENREGISTRER", "保存", "保存"),
     "Настройте цвета и сохраните пресет." to t("Adjust the colors and save the preset.", "Passen Sie die Farben an und speichern Sie das Preset.", "Ajustez les couleurs et enregistrez le préset.", "调整颜色并保存预设。", "色を調整してプリセットを保存します。"),

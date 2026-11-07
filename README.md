@@ -56,7 +56,7 @@ PIXTONE plays the music stored on your device. No account, no cloud, no ads, no 
 - **Albums** — grouped automatically from file tags (album + artist), with a dedicated tab, album screen and one-tap removal from the app. Audio files always stay on the device.
 - **Lyrics** — search across LRCLIB, lyrics.ovh and Genius; supports plain and synced LRC lyrics with line highlighting and tap-to-seek.
 - **Smart cover art** — Genius, Deezer and iTunes are queried in parallel; scraped covers are replaced with real ones.
-- **Themes** — six built-in presets, a full custom palette editor (8 colors, RGB sliders and HEX input), saved custom presets.
+- **Themes** — six built-in presets, a full custom palette editor (8 colors, RGB sliders and HEX input), saved custom presets with editing and deletion.
 - **Custom typography** — three font roles (body, headings, accent) can use Doto, Pixelify Sans, Space Grotesk or the system font.
 - **Six languages** — Russian, English, German, French, Chinese and Japanese, switchable at runtime. English is enabled by default.
 - **Message queue with pixel dissolve** — every toast can be dismissed with a tap.
