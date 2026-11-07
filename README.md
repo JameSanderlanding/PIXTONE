@@ -53,7 +53,11 @@ PIXTONE plays the music stored on your device. No account, no cloud, no ads, no 
 - **Folder scanning** — MP3, M4A, FLAC, WAV, OGG, OPUS and AAC with tags and embedded artwork.
 - **Background playback** — Media3 ExoPlayer + MediaSession, notification controls, headset and Bluetooth support.
 - **Playlists and favorites** — fully offline, stored in a local SQLite database.
-- **Albums** — grouped automatically from file tags (album + artist), with a dedicated tab, album screen and one-tap removal from the app. Audio files always stay on the device.
+- **Albums** — grouped automatically from file tags (album + artist), with a dedicated tab, album screen, multi-select removal from the app and per-album sorting. Audio files always stay on the device.
+- **Sorting** — Sort tracks by title, date added, file modification date, album track number or playlist order; the library and playlist choices persist between launches.
+- **Multi-select** — Long-press albums, tracks or playlists to select several at once, delete them in bulk and use the "select all" checkbox; search results are selected as a group.
+- **Own images** — Pick a cover from the gallery for any track and add individual audio files without choosing a folder.
+- **Sticky headers and collapsing search** — Section headers stay pinned while scrolling, and the search field folds away to give the list more room.
 - **Lyrics** — search across LRCLIB, lyrics.ovh and Genius; supports plain and synced LRC lyrics with line highlighting and tap-to-seek.
 - **Smart cover art** — Genius, Deezer and iTunes are queried in parallel; scraped covers are replaced with real ones.
 - **Themes** — six built-in presets, a full custom palette editor (8 colors, RGB sliders and HEX input), saved custom presets with editing and deletion.
