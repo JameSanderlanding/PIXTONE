@@ -8,9 +8,11 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -917,22 +919,67 @@ fun MiniPlayer(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun AlbumCard(
     album: Album,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    selectionMode: Boolean = false,
+    selected: Boolean = false,
+    onLongClick: (() -> Unit)? = null,
 ) {
     Column(
         modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick,
+            )
     ) {
-        GlyphCover(
-            artwork = album.artwork,
-            seed = album.name + album.artist,
-            modifier = Modifier.fillMaxWidth().aspectRatio(1f),
-        )
+        Box {
+            GlyphCover(
+                artwork = album.artwork,
+                seed = album.name + album.artist,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(1f)
+                    .then(
+                        if (selected) {
+                            Modifier.border(2.dp, GlyphRed, RoundedCornerShape(2.dp))
+                        } else {
+                            Modifier
+                        }
+                    ),
+            )
+            if (selectionMode) {
+                Box(
+                    Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(7.dp)
+                        .size(22.dp)
+                        .background(
+                            if (selected) GlyphRed else GlyphBlack.copy(alpha = 0.72f),
+                            RoundedCornerShape(2.dp),
+                        )
+                        .border(
+                            1.dp,
+                            if (selected) GlyphRed else GlyphLine,
+                            RoundedCornerShape(2.dp),
+                        ),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    if (selected) {
+                        GlyphIcon(
+                            Glyph.Check,
+                            tint = GlyphWhite,
+                            modifier = Modifier.size(13.dp),
+                            stroke = 2.dp,
+                        )
+                    }
+                }
+            }
+        }
         Spacer(Modifier.height(9.dp))
         Text(
             album.name,

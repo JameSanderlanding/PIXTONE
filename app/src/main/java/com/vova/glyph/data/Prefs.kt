@@ -22,5 +22,22 @@ class Prefs(context: Context) {
         get() = sp.getBoolean("shuffle", false)
         set(value) = sp.edit().putBoolean("shuffle", value).apply()
 
+    var hiddenAlbumKeys: Set<String>
+        get() = sp.getStringSet("hidden_albums", emptySet())
+            ?.mapTo(HashSet()) { Uri.decode(it) }
+            ?: emptySet()
+        set(value) {
+            sp.edit()
+                .putStringSet("hidden_albums", value.mapTo(HashSet()) { Uri.encode(it) })
+                .apply()
+        }
+
+    fun isAlbumHidden(key: String): Boolean = key in hiddenAlbumKeys
+
+    fun hideAlbums(keys: Collection<String>) {
+        if (keys.isEmpty()) return
+        hiddenAlbumKeys = hiddenAlbumKeys + keys
+    }
+
     fun folderUriOrNull(): Uri? = folderUri?.let(Uri::parse)
 }

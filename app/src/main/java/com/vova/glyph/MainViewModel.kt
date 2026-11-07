@@ -117,8 +117,11 @@ class MainViewModel(
     private val _playlistTracks = MutableStateFlow<List<Track>>(emptyList())
     val playlistTracks = _playlistTracks.asStateFlow()
 
-    val albums: StateFlow<List<Album>> = repo.tracks.map { Albums.group(it) }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    private val _hiddenAlbums = MutableStateFlow(prefs.hiddenAlbumKeys)
+
+    val albums: StateFlow<List<Album>> = combine(repo.tracks, _hiddenAlbums) { tracks, hidden ->
+        Albums.group(tracks).filter { it.key !in hidden }
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     private val _openAlbumKey = MutableStateFlow<String?>(null)
     val openAlbumKey = _openAlbumKey.asStateFlow()
@@ -622,22 +625,22 @@ class MainViewModel(
     }
 
     fun deleteAlbum(album: Album) {
-        viewModelScope.launch {
-            val tracks = Albums.tracksOf(repo.tracks.value, album.key)
-            if (tracks.isEmpty()) {
-                notify("В альбоме нет треков")
-                return@launch
+        deleteAlbums(listOf(album))
+    }
+
+    fun deleteAlbums(albums: List<Album>) {
+        if (albums.isEmpty()) return
+        val keys = albums.mapTo(HashSet()) { it.key }
+        prefs.hideAlbums(keys)
+        _hiddenAlbums.update { it + keys }
+        if (_openAlbumKey.value in keys) closeAlbum()
+        notify(
+            if (albums.size == 1) {
+                "Альбом «${albums.first().name}» убран из вкладки «Альбомы»"
+            } else {
+                "Убрано альбомов из вкладки «Альбомы»: ${albums.size}"
             }
-            val ids = tracks.mapTo(HashSet()) { it.id }
-            if (playerState.value.trackId in ids) player.stop()
-            runCatching { repo.deleteTracks(ids) }
-                .onSuccess {
-                    tracks.forEach { container.artworkStore.deleteReplacedArt(it.artwork) }
-                    if (_openAlbumKey.value == album.key) closeAlbum()
-                    notify("Альбом «${album.name}» убран из приложения")
-                }
-                .onFailure { notify(it.message ?: "Не удалось убрать альбом") }
-        }
+        )
     }
 
     fun deleteTrack(track: Track) {

@@ -183,7 +183,7 @@ fun AlbumDetailScreen(vm: MainViewModel) {
     if (showDeleteConfirm) {
         ConfirmDialog(
             title = "Удалить альбом?",
-            message = "Альбом «${currentAlbum.name}» будет убран из приложения. Файлы на устройстве останутся.",
+            message = "Альбом «${currentAlbum.name}» будет убран из вкладки «Альбомы». Треки останутся в библиотеке.",
             confirmText = "Удалить",
             destructive = true,
             onConfirm = {
