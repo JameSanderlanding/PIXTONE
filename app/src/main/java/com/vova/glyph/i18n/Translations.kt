@@ -353,6 +353,7 @@ private val DICT: Map<String, Tr> = mapOf(
     ),
     "Удалить альбом" to t("Delete album", "Album löschen", "Supprimer l'album", "删除专辑", "アルバムを削除"),
     "Удалить альбом?" to t("Delete album?", "Album löschen?", "Supprimer l'album ?", "删除专辑？", "アルバムを削除しますか？"),
+    "Удалить трек?" to t("Delete track?", "Titel löschen?", "Supprimer le morceau ?", "删除曲目？", "曲を削除しますか？"),
     "Не удалось убрать альбом" to t("Couldn't remove the album", "Album konnte nicht entfernt werden", "Impossible de retirer l'album", "无法移除专辑", "アルバムを削除できませんでした"),
     "В альбоме нет треков" to t("This album has no tracks", "Dieses Album hat keine Titel", "Cet album n'a aucun morceau", "该专辑没有曲目", "このアルバムには曲がありません"),
 )
@@ -525,5 +526,21 @@ private val RULES: List<Rule> = listOf(
         "Album « %1 » sera retiré de l'application. Les fichiers sur l'appareil restent.",
         "专辑“%1”将从应用中移除。设备上的文件会保留。",
         "アルバム「%1」をアプリから削除します。デバイス上のファイルは残ります。",
+    ),
+    r(
+        "^Трек «(.+)» убран из приложения$",
+        "Track “%1” removed from the app",
+        "Titel „%1“ aus der App entfernt",
+        "Morceau « %1 » retiré de l'application",
+        "曲目“%1”已从应用中移除",
+        "曲「%1」をアプリから削除しました",
+    ),
+    r(
+        "^Трек «(.+)» будет убран из приложения\\. Файл на устройстве останется\\.$",
+        "Track “%1” will be removed from the app. The file on the device stays untouched.",
+        "Titel „%1“ wird aus der App entfernt. Die Datei auf dem Gerät bleibt erhalten.",
+        "Le morceau « %1 » sera retiré de l'application. Le fichier sur l'appareil reste.",
+        "曲目“%1”将从应用中移除。设备上的文件会保留。",
+        "曲「%1」をアプリから削除します。デバイス上のファイルは残ります。",
     ),
 )

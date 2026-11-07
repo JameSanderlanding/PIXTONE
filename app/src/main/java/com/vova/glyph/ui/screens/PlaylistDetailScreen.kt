@@ -195,6 +195,7 @@ fun PlaylistDetailScreen(vm: MainViewModel) {
                     onClick = { vm.playTracks(tracks, index) },
                     onFavorite = { vm.toggleFavorite(track) },
                     onRemove = { vm.removeTrackFromPlaylist(currentPlaylist.id, track) },
+                    onDelete = { vm.deleteTrack(track) },
                 )
             }
         }

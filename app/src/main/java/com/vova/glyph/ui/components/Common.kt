@@ -660,10 +660,12 @@ fun TrackRow(
     onLyrics: (() -> Unit)? = null,
     onAddToPlaylist: (() -> Unit)? = null,
     onRemove: (() -> Unit)? = null,
+    onDelete: (() -> Unit)? = null,
     showCover: Boolean = true,
     divider: Boolean = true,
 ) {
     var menuOpen by remember { mutableStateOf(false) }
+    var confirmDelete by remember { mutableStateOf(false) }
     val coverSeed = remember(track.title, track.artist) { track.title + track.artist }
     val durationLabel = remember(track.durationMs) { formatDuration(track.durationMs) }
     Column {
@@ -795,6 +797,20 @@ fun TrackRow(
                             },
                         )
                     }
+                    if (onDelete != null) {
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    "Удалить",
+                                    style = MaterialTheme.typography.bodyMedium.copy(color = GlyphRed),
+                                )
+                            },
+                            onClick = {
+                                menuOpen = false
+                                confirmDelete = true
+                            },
+                        )
+                    }
                 }
             }
         }
@@ -807,6 +823,20 @@ fun TrackRow(
                     .background(GlyphLine.copy(alpha = 0.55f))
             )
         }
+    }
+
+    if (confirmDelete) {
+        ConfirmDialog(
+            title = "Удалить трек?",
+            message = "Трек «${track.title}» будет убран из приложения. Файл на устройстве останется.",
+            confirmText = "Удалить",
+            destructive = true,
+            onConfirm = {
+                confirmDelete = false
+                onDelete?.invoke()
+            },
+            onDismiss = { confirmDelete = false },
+        )
     }
 }
 

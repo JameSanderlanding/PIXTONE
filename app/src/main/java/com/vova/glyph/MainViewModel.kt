@@ -570,6 +570,23 @@ class MainViewModel(
         }
     }
 
+    fun deleteTrack(track: Track) {
+        viewModelScope.launch {
+            if (playerState.value.trackId == track.id) player.stop()
+            val openPlaylist = _openPlaylistId.value
+            runCatching { repo.deleteTracks(listOf(track.id)) }
+                .onSuccess {
+                    container.artworkStore.deleteReplacedArt(track.artwork)
+                    if (_lyricsTrackId.value == track.id) clearLyrics()
+                    if (openPlaylist != null) {
+                        _playlistTracks.value = repo.playlistTracks(openPlaylist)
+                    }
+                    notify("Трек «${track.title}» убран из приложения")
+                }
+                .onFailure { notify(it.message ?: "Не удалось убрать трек") }
+        }
+    }
+
     fun createPlaylist(name: String, description: String, coverUri: Uri?) {
         val trimmed = name.trim()
         if (trimmed.isBlank()) {
