@@ -108,6 +108,30 @@ class MusicScanner(
         }
     }
 
+    suspend fun modifiedAt(uri: String): Long = withContext(Dispatchers.IO) {
+        runCatching {
+            DocumentFile.fromSingleUri(appContext, Uri.parse(uri))?.lastModified() ?: 0L
+        }.getOrDefault(0L)
+    }
+
+    suspend fun trackNumberFor(uri: String): Int = withContext(Dispatchers.IO) {
+        val retriever = MediaMetadataRetriever()
+        try {
+            retriever.setDataSource(appContext, Uri.parse(uri))
+            retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_CD_TRACK_NUMBER)
+                ?.let(::parseTrackNumber) ?: 0
+        } catch (_: Throwable) {
+            0
+        } finally {
+            runCatching { retriever.release() }
+        }
+    }
+
+    private fun parseTrackNumber(raw: String): Int {
+        val digits = raw.trim().takeWhile { it.isDigit() }
+        return digits.toIntOrNull() ?: 0
+    }
+
     private suspend fun collectAudio(
         dir: DocumentFile,
         out: MutableList<DocumentFile>,
@@ -147,6 +171,9 @@ class MusicScanner(
                 ?.trim().orEmpty()
             val duration = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)
                 ?.toLongOrNull() ?: 0L
+            val trackNumber = retriever
+                .extractMetadata(MediaMetadataRetriever.METADATA_KEY_CD_TRACK_NUMBER)
+                ?.let(::parseTrackNumber) ?: 0
             val hasAudio = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_HAS_AUDIO)
                 ?.equals("yes", ignoreCase = true) != false
             if (!hasAudio) return null
@@ -157,6 +184,8 @@ class MusicScanner(
                 title = title,
                 artist = artist,
                 album = album,
+                fileModifiedAt = doc.lastModified(),
+                trackNumber = trackNumber,
                 durationMs = duration,
                 uri = uri.toString(),
                 artwork = artwork,

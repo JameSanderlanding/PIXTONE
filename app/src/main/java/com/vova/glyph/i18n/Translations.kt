@@ -255,6 +255,12 @@ private val DICT: Map<String, Tr> = mapOf(
     "ЛОКАЛЬНАЯ ФОНОТЕКА" to t("LOCAL LIBRARY", "LOKALE BIBLIOTHEK", "BIBLIOTHÈQUE LOCALE", "本地音乐库", "ローカルライブラリ"),
     "НАЙДЕНО" to t("FOUND", "GEFUNDEN", "TROUVÉS", "已找到", "検出"),
     "ТРЕКОВ" to t("TRACKS", "TITEL", "MORCEAUX", "首", "曲"),
+    "НАЗВАНИЕ" to t("TITLE", "TITEL", "TITRE", "标题", "タイトル"),
+    "ДОБАВЛЕНО" to t("ADDED", "HINZUGEFÜGT", "AJOUTÉ", "添加时间", "追加日"),
+    "ИЗМЕНЕНО" to t("MODIFIED", "GEÄNDERT", "MODIFIÉ", "修改时间", "更新日"),
+    "РЕВЕРС" to t("REVERSE", "UMGEKEHRT", "INVERSÉ", "倒序", "逆順"),
+    "НОМЕР" to t("NUMBER", "NUMMER", "NUMÉRO", "编号", "番号"),
+    "ПОРЯДОК" to t("ORDER", "REIHENFOLGE", "ORDRE", "顺序", "順序"),
     "Не закрывайте приложение. Большая фонотека может занять несколько минут." to t("Don't close the app. A large library may take a few minutes.", "Schließen Sie die App nicht. Eine große Bibliothek kann einige Minuten dauern.", "Ne fermez pas l'application. Une grande bibliothèque peut prendre quelques minutes.", "请勿关闭应用。大型音乐库可能需要几分钟。", "アプリを閉じないでください。大きなライブラリは数分かかることがあります。"),
 
     "Удалить плейлист" to t("Delete playlist", "Playlist löschen", "Supprimer la playlist", "删除播放列表", "プレイリストを削除"),

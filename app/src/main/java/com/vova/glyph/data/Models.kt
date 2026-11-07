@@ -5,6 +5,8 @@ data class Track(
     val title: String,
     val artist: String,
     val album: String = "",
+    val fileModifiedAt: Long = 0,
+    val trackNumber: Int = 0,
     val durationMs: Long = 0,
     val uri: String,
     val artwork: String? = null,
@@ -29,3 +31,23 @@ data class Playlist(
     val createdAt: Long = 0,
     val trackCount: Int = 0,
 )
+
+enum class TrackSort { TITLE, ADDED, MODIFIED, TRACK_NO, PLAYLIST }
+
+data class TrackSorting(
+    val by: TrackSort = TrackSort.TITLE,
+    val reverse: Boolean = false,
+) {
+    fun encode(): String = "${by.name}$SEPARATOR${if (reverse) 1 else 0}"
+
+    companion object {
+        private const val SEPARATOR = ":"
+
+        fun decode(raw: String?, fallback: TrackSorting): TrackSorting {
+            if (raw.isNullOrBlank()) return fallback
+            val parts = raw.split(SEPARATOR)
+            val by = runCatching { TrackSort.valueOf(parts.first()) }.getOrNull() ?: return fallback
+            return TrackSorting(by = by, reverse = parts.getOrNull(1) == "1")
+        }
+    }
+}

@@ -36,7 +36,7 @@
 | UI | Jetpack Compose, Material 3 |
 | Плеер | AndroidX Media3 ExoPlayer + MediaSessionService |
 | Async | Kotlin Coroutines, StateFlow / SharedFlow |
-| БД | SQLiteOpenHelper, схема `glyph.db` версии 10 |
+| БД | SQLiteOpenHelper, схема `glyph.db` версии 12 |
 | Сеть | OkHttp, org.json, Jsoup |
 | Картинки | Coil |
 | Сборка | Gradle 9.6, AGP 9.4.1, JDK 21 |
@@ -275,7 +275,16 @@ PIXTONE/
 - Кастомный `Text` дополнительно помнит результат перевода через `remember(text, language)`, чтобы рекомпозиция строки не запускала перевод заново.
 - `LangController.select()` сохраняет язык и мгновенно перерисовывает UI.
 
-### 4.10 Сообщения
+### 4.10 Сортировка списков треков
+
+- Состояние — `TrackSorting` (`by: TrackSort`, `reverse`) в `MainViewModel`. Три независимых состояния по экранам (`SortTarget`): `librarySorting`, `albumSorting`, `playlistSorting`. Библиотека и плейлисты запоминаются между запусками (`glyph_prefs`: `sort_library`, `sort_playlist`, формат `CRITERION:0|1`), альбомы — только в памяти.
+- Значения `TrackSort`: `TITLE` (по названию без учёта регистра), `ADDED` (по `added_at`), `MODIFIED` (по `file_mtime`), `TRACK_NO` (по номеру трека из тегов), `PLAYLIST` (порядок `playlist_tracks.position`).
+- Значения по умолчанию: библиотека — `TITLE`, альбом — `TRACK_NO`, плейлист — `PLAYLIST`.
+- `TrackSorter.apply()` — чистая функция сортировки, покрыта unit-тестами. При равных ключах порядок добивается по названию; треки с неизвестным номером или датой файла уходят в конец.
+- UI: `SortRow` из `ui/components/Sorts.kt` — чипы критериев + «РЕВЕРС». В библиотеке строка живёт под полем поиска и скрывается вместе с ним, в альбоме и плейлисте — над sticky-заголовком треков.
+- `file_mtime` (`DocumentFile.lastModified()`) и `track_no` (`METADATA_KEY_CD_TRACK_NUMBER`) заполняются при сканировании, для старых треков догоняются фоном (`startMetadataBackfill()`). Значение `0` = «ещё не проверяли», `-1` = «проверили, данных нет».
+
+### 4.11 Сообщения
 
 - `MainViewModel.notify()` эмитит строку в `SharedFlow`.
 - `GlyphMessageHost` показывает сообщения по одному.
@@ -287,11 +296,11 @@ PIXTONE/
 
 ## 5. Данные и хранилища
 
-### SQLite (`glyph.db`, версия 10)
+### SQLite (`glyph.db`, версия 12)
 
 | Таблица | Назначение |
 |---|---|
-| `tracks` | треки: title, artist, album, genre, duration, uri, artwork, favorite, source, source_id, added_at, file_size |
+| `tracks` | треки: title, artist, album, genre, duration, uri, artwork, favorite, source, source_id, added_at, file_size, file_mtime, track_no |
 | `playlists` | плейлисты: name, description, cover, created_at |
 | `playlist_tracks` | связь плейлист↔трек + position |
 | `lyrics` | кэш текстов: plain, synced, found, fetched_at |
@@ -300,7 +309,7 @@ PIXTONE/
 
 | Файл | Ключи |
 |---|---|
-| `glyph_prefs` | `onboarding_done`, `folder_uri`, `folder_name`, `shuffle` |
+| `glyph_prefs` | `onboarding_done`, `folder_uri`, `folder_name`, `shuffle`, `sort_library`, `sort_playlist` |
 | `glyph_theme` | `preset`, 8 цветов, `custom_presets` (JSON) |
 | `glyph_fonts` | `body`, `display`, `brand` |
 | `glyph_language` | `language` |

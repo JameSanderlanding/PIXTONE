@@ -32,6 +32,14 @@ class Prefs(context: Context) {
                 .apply()
         }
 
+    var librarySort: String?
+        get() = sp.getString("sort_library", null)
+        set(value) = sp.edit().putString("sort_library", value).apply()
+
+    var playlistSort: String?
+        get() = sp.getString("sort_playlist", null)
+        set(value) = sp.edit().putString("sort_playlist", value).apply()
+
     fun isAlbumHidden(key: String): Boolean = key in hiddenAlbumKeys
 
     fun hideAlbums(keys: Collection<String>) {

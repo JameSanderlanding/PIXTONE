@@ -15,6 +15,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,6 +33,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -58,8 +60,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.vova.glyph.MainViewModel
+import com.vova.glyph.SortTarget
 import com.vova.glyph.data.Playlist
 import com.vova.glyph.data.Track
+import com.vova.glyph.data.TrackSort
+import com.vova.glyph.data.TrackSorter
+import com.vova.glyph.data.TrackSorting
 import com.vova.glyph.ui.components.ConfirmDialog
 import com.vova.glyph.ui.components.CreatePlaylistDialog
 import com.vova.glyph.ui.components.DotSpinner
@@ -73,6 +79,7 @@ import com.vova.glyph.ui.components.MicroLabel
 import com.vova.glyph.ui.components.ScreenHeader
 import com.vova.glyph.ui.components.SectionHeader
 import com.vova.glyph.ui.components.SelectionBar
+import com.vova.glyph.ui.components.SortRow
 import com.vova.glyph.ui.components.Text
 import com.vova.glyph.ui.components.TrackRow
 import com.vova.glyph.ui.theme.DotoFamily
@@ -97,6 +104,7 @@ fun LibraryScreen(vm: MainViewModel) {
     val scanning by vm.scanning.collectAsStateWithLifecycle()
     val scanStatus by vm.scanStatus.collectAsStateWithLifecycle()
     val scanFound by vm.scanFound.collectAsStateWithLifecycle()
+    val sorting by vm.librarySorting.collectAsStateWithLifecycle()
 
     var query by remember { mutableStateOf("") }
     var showCreate by remember { mutableStateOf(false) }
@@ -184,14 +192,18 @@ fun LibraryScreen(vm: MainViewModel) {
         ActivityResultContracts.OpenDocument()
     ) { uri -> if (uri != null) vm.onFilePicked(uri) }
 
-    val filtered = remember(tracks, query) {
+    val sorted = remember(tracks, query, sorting) {
         val q = query.trim()
-        if (q.isBlank()) tracks
-        else tracks.filter {
-            it.title.contains(q, ignoreCase = true) ||
-                it.artist.contains(q, ignoreCase = true) ||
-                it.album.contains(q, ignoreCase = true)
+        val matched = if (q.isBlank()) {
+            tracks
+        } else {
+            tracks.filter {
+                it.title.contains(q, ignoreCase = true) ||
+                    it.artist.contains(q, ignoreCase = true) ||
+                    it.album.contains(q, ignoreCase = true)
+            }
         }
+        TrackSorter.apply(matched, sorting)
     }
 
     val librarySubtitle = buildString {
@@ -225,11 +237,24 @@ fun LibraryScreen(vm: MainViewModel) {
                 exit = fadeOut(animationSpec = tween(90)) +
                     shrinkVertically(animationSpec = tween(180), shrinkTowards = Alignment.Top),
             ) {
-                LibrarySearchField(
-                    query = query,
-                    onQueryChange = { query = it },
-                    modifier = Modifier.padding(horizontal = 20.dp),
-                )
+                Column {
+                    LibrarySearchField(
+                        query = query,
+                        onQueryChange = { query = it },
+                        modifier = Modifier.padding(horizontal = 20.dp),
+                    )
+                    Spacer(Modifier.height(10.dp))
+                    SortRow(
+                        options = listOf(
+                            TrackSort.TITLE to "НАЗВАНИЕ",
+                            TrackSort.ADDED to "ДОБАВЛЕНО",
+                            TrackSort.MODIFIED to "ИЗМЕНЕНО",
+                        ),
+                        sorting = sorting,
+                        onSortBy = { vm.setSortBy(SortTarget.LIBRARY, it) },
+                        onReverse = { vm.setSortReverse(SortTarget.LIBRARY, it) },
+                    )
+                }
             }
         }
 
@@ -309,7 +334,7 @@ fun LibraryScreen(vm: MainViewModel) {
             stickyHeader(key = "tracks") {
                 SectionHeader(
                     number = "03",
-                    title = if (query.isBlank()) "ВСЕ ТРЕКИ" else "РЕЗУЛЬТАТЫ: ${filtered.size}",
+                    title = if (query.isBlank()) "ВСЕ ТРЕКИ" else "РЕЗУЛЬТАТЫ: ${sorted.size}",
                     modifier = Modifier.background(GlyphBlack).padding(top = 10.dp),
                     action = {
                         if (query.isBlank() && selectionType == null) {
@@ -362,7 +387,7 @@ fun LibraryScreen(vm: MainViewModel) {
                         },
                     )
                 }
-            } else if (filtered.isEmpty()) {
+            } else if (sorted.isEmpty()) {
                 item {
                     EmptyState(
                         glyph = Glyph.Search,
@@ -372,7 +397,7 @@ fun LibraryScreen(vm: MainViewModel) {
                 }
             } else {
                 itemsIndexed(
-                    items = filtered,
+                    items = sorted,
                     key = { _, track -> track.id },
                     contentType = { _, _ -> "track" },
                 ) { index, track ->
@@ -384,7 +409,7 @@ fun LibraryScreen(vm: MainViewModel) {
                             when (selectionType) {
                                 LibrarySelection.TRACK ->
                                     toggleSelection(LibrarySelection.TRACK, track.id)
-                                null -> vm.playTracks(filtered, index)
+                                null -> vm.playTracks(sorted, index)
                                 else -> Unit
                             }
                         },

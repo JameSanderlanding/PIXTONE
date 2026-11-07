@@ -14,6 +14,8 @@ import com.vova.glyph.data.Albums
 import com.vova.glyph.data.LyricLine
 import com.vova.glyph.data.Playlist
 import com.vova.glyph.data.Track
+import com.vova.glyph.data.TrackSort
+import com.vova.glyph.data.TrackSorting
 import com.vova.glyph.playback.PlayerProgress
 import com.vova.glyph.playback.PlayerUiState
 import kotlinx.coroutines.CancellationException
@@ -37,6 +39,8 @@ import kotlinx.coroutines.sync.withPermit
 import java.io.IOException
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
+
+enum class SortTarget { LIBRARY, ALBUM, PLAYLIST }
 
 enum class Tab(val title: String) {
     LIBRARY("БИБЛИОТЕКА"),
@@ -84,6 +88,21 @@ class MainViewModel(
 
     private val _folderName = MutableStateFlow(prefs.folderName)
     val folderName = _folderName.asStateFlow()
+
+    private val _librarySorting = MutableStateFlow(
+        TrackSorting.decode(prefs.librarySort, TrackSorting())
+    )
+    val librarySorting = _librarySorting.asStateFlow()
+
+    private val _albumSorting = MutableStateFlow(TrackSorting(by = TrackSort.TRACK_NO))
+    val albumSorting = _albumSorting.asStateFlow()
+
+    private val _playlistSorting = MutableStateFlow(
+        TrackSorting.decode(prefs.playlistSort, TrackSorting(by = TrackSort.PLAYLIST))
+    )
+    val playlistSorting = _playlistSorting.asStateFlow()
+
+    private var metadataJob: Job? = null
 
     private val _lyrics = MutableStateFlow<String?>(null)
     val lyrics = _lyrics.asStateFlow()
@@ -148,6 +167,7 @@ class MainViewModel(
     init {
         viewModelScope.launch {
             runCatching { repo.refresh() }
+            startMetadataBackfill()
         }
         viewModelScope.launch {
             player.state.map { it.error }.collect { error ->
@@ -163,6 +183,73 @@ class MainViewModel(
         prefs.onboardingDone = true
         _onboardingVisible.value = false
         _onboardingError.value = null
+    }
+
+    fun setSortBy(target: SortTarget, sort: TrackSort) {
+        sortingState(target).update { it.copy(by = sort) }
+        persistSorting(target)
+    }
+
+    fun setSortReverse(target: SortTarget, reverse: Boolean) {
+        sortingState(target).update { it.copy(reverse = reverse) }
+        persistSorting(target)
+    }
+
+    private fun persistSorting(target: SortTarget) {
+        when (target) {
+            SortTarget.LIBRARY -> prefs.librarySort = _librarySorting.value.encode()
+            SortTarget.PLAYLIST -> prefs.playlistSort = _playlistSorting.value.encode()
+            SortTarget.ALBUM -> Unit
+        }
+    }
+
+    private fun sortingState(target: SortTarget): MutableStateFlow<TrackSorting> = when (target) {
+        SortTarget.LIBRARY -> _librarySorting
+        SortTarget.ALBUM -> _albumSorting
+        SortTarget.PLAYLIST -> _playlistSorting
+    }
+
+    private fun startMetadataBackfill() {
+        if (metadataJob?.isActive == true) return
+        metadataJob = viewModelScope.launch {
+            fillFileDates()
+            fillTrackNumbers()
+            runCatching { repo.refresh() }
+        }
+    }
+
+    private suspend fun fillFileDates() {
+        val pending = runCatching { container.db.tracksWithoutFileDate() }.getOrNull().orEmpty()
+        if (pending.isEmpty()) return
+        val gate = Semaphore(METADATA_WORKERS)
+        coroutineScope {
+            pending.forEach { (id, uri) ->
+                launch {
+                    gate.withPermit {
+                        val modifiedAt = runCatching { container.scanner.modifiedAt(uri) }
+                            .getOrDefault(0L)
+                        runCatching { container.db.setFileModifiedAt(id, modifiedAt) }
+                    }
+                }
+            }
+        }
+    }
+
+    private suspend fun fillTrackNumbers() {
+        val pending = runCatching { container.db.tracksWithoutTrackNumber() }.getOrNull().orEmpty()
+        if (pending.isEmpty()) return
+        val gate = Semaphore(METADATA_WORKERS)
+        coroutineScope {
+            pending.forEach { (id, uri) ->
+                launch {
+                    gate.withPermit {
+                        val number = runCatching { container.scanner.trackNumberFor(uri) }
+                            .getOrDefault(0)
+                        runCatching { container.db.setTrackNumber(id, number) }
+                    }
+                }
+            }
+        }
     }
 
     fun onFolderPicked(uri: Uri, fromOnboarding: Boolean) {
@@ -753,6 +840,8 @@ class MainViewModel(
 
     private companion object {
         const val COVER_WORKERS = 4
+
+        const val METADATA_WORKERS = 4
 
         const val MAX_NETWORK_ERRORS = 4
 
