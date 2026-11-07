@@ -1,10 +1,12 @@
 package com.vova.glyph.ui.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -39,6 +41,7 @@ import com.vova.glyph.ui.components.MicroLabel
 import com.vova.glyph.ui.components.SectionHeader
 import com.vova.glyph.ui.components.Text
 import com.vova.glyph.ui.components.TrackRow
+import com.vova.glyph.ui.theme.GlyphBlack
 import com.vova.glyph.ui.theme.GlyphDim
 import com.vova.glyph.ui.theme.GlyphGray
 import com.vova.glyph.ui.theme.GlyphRed
@@ -56,39 +59,39 @@ fun AlbumDetailScreen(vm: MainViewModel) {
 
     val currentAlbum = album ?: return
 
-    LazyColumn(
-        Modifier.fillMaxWidth(),
-        contentPadding = PaddingValues(bottom = 24.dp),
-    ) {
-        item {
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 14.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                GlyphIconButton(
-                    glyph = Glyph.Back,
-                    onClick = vm::closeAlbum,
-                    size = 36.dp,
-                    iconSize = 20.dp,
-                )
-                Spacer(Modifier.width(4.dp))
-                MicroLabel(
-                    if (currentAlbum.unknown) "БЕЗ АЛЬБОМА" else "АЛЬБОМ",
-                    color = GlyphDim,
-                )
-                Spacer(Modifier.weight(1f))
-                GlyphIconButton(
-                    glyph = Glyph.Trash,
-                    onClick = { showDeleteConfirm = true },
-                    size = 32.dp,
-                    iconSize = 16.dp,
-                    tint = GlyphGray,
-                    description = tr("Удалить альбом"),
-                )
-            }
+    Column(Modifier.fillMaxSize()) {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            GlyphIconButton(
+                glyph = Glyph.Back,
+                onClick = vm::closeAlbum,
+                size = 36.dp,
+                iconSize = 20.dp,
+            )
+            Spacer(Modifier.width(4.dp))
+            MicroLabel(
+                if (currentAlbum.unknown) "БЕЗ АЛЬБОМА" else "АЛЬБОМ",
+                color = GlyphDim,
+            )
+            Spacer(Modifier.weight(1f))
+            GlyphIconButton(
+                glyph = Glyph.Trash,
+                onClick = { showDeleteConfirm = true },
+                size = 32.dp,
+                iconSize = 16.dp,
+                tint = GlyphGray,
+                description = tr("Удалить альбом"),
+            )
         }
+
+        LazyColumn(
+            Modifier.fillMaxWidth().weight(1f),
+            contentPadding = PaddingValues(bottom = 24.dp),
+        ) {
         item {
             Row(
                 Modifier.fillMaxWidth().padding(horizontal = 20.dp),
@@ -152,7 +155,13 @@ fun AlbumDetailScreen(vm: MainViewModel) {
             }
         }
         item { Hairline(Modifier.padding(horizontal = 20.dp)) }
-        item { SectionHeader("01", "ТРЕКИ") }
+        stickyHeader(key = "tracks") {
+            SectionHeader(
+                number = "01",
+                title = "ТРЕКИ",
+                modifier = Modifier.background(GlyphBlack),
+            )
+        }
         if (tracks.isEmpty()) {
             item {
                 EmptyState(
@@ -177,6 +186,7 @@ fun AlbumDetailScreen(vm: MainViewModel) {
                     onDelete = { vm.deleteTrack(track) },
                 )
             }
+        }
         }
     }
 

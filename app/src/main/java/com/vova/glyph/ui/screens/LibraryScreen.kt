@@ -4,6 +4,12 @@ import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -25,6 +31,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -35,10 +42,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -97,6 +110,46 @@ fun LibraryScreen(vm: MainViewModel) {
     var selectedIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
 
+    val collapsed = remember { mutableStateOf(false) }
+    val listState = rememberLazyListState()
+    val density = LocalDensity.current
+
+    LaunchedEffect(listState) {
+        snapshotFlow {
+            listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset == 0
+        }.collect { atTop -> if (atTop) collapsed.value = false }
+    }
+
+    val searchScrollConnection = remember(density) {
+        object : NestedScrollConnection {
+            private val hideThreshold = with(density) { 40.dp.roundToPx().toFloat() }
+            private val showThreshold = with(density) { 140.dp.roundToPx().toFloat() }
+            private var drag = 0f
+
+            override fun onPostScroll(
+                consumed: Offset,
+                available: Offset,
+                source: NestedScrollSource,
+            ): Offset {
+                if (consumed.y == 0f) return Offset.Zero
+                if (collapsed.value) {
+                    drag = if (consumed.y > 0f) drag + consumed.y else 0f
+                    if (drag >= showThreshold) {
+                        collapsed.value = false
+                        drag = 0f
+                    }
+                } else {
+                    drag = if (consumed.y < 0f) drag - consumed.y else 0f
+                    if (drag >= hideThreshold) {
+                        collapsed.value = true
+                        drag = 0f
+                    }
+                }
+                return Offset.Zero
+            }
+        }
+    }
+
     fun clearSelection() {
         selectionType = null
         selectedIds = emptySet()
@@ -141,6 +194,13 @@ fun LibraryScreen(vm: MainViewModel) {
         }
     }
 
+    val librarySubtitle = buildString {
+        append("${tracks.size} ТРЕКОВ · ${favorites.size} В ИЗБРАННОМ")
+        folderName?.takeIf { it.isNotBlank() }?.let {
+            append(" · ${it.uppercase()}")
+        }
+    }
+
     Column(Modifier.fillMaxSize()) {
         if (selectionType != null) {
             SelectionBar(
@@ -150,24 +210,37 @@ fun LibraryScreen(vm: MainViewModel) {
             )
         }
 
+        ScreenHeader(
+            index = "01",
+            title = "Библиотека",
+            subtitle = librarySubtitle,
+            onSettings = vm::openSettings,
+        )
+        Spacer(Modifier.height(18.dp))
+        if (!scanning) {
+            AnimatedVisibility(
+                visible = !collapsed.value || query.isNotBlank(),
+                enter = fadeIn(animationSpec = tween(120)) +
+                    expandVertically(animationSpec = tween(180), expandFrom = Alignment.Top),
+                exit = fadeOut(animationSpec = tween(90)) +
+                    shrinkVertically(animationSpec = tween(180), shrinkTowards = Alignment.Top),
+            ) {
+                LibrarySearchField(
+                    query = query,
+                    onQueryChange = { query = it },
+                    modifier = Modifier.padding(horizontal = 20.dp),
+                )
+            }
+        }
+
         LazyColumn(
-            Modifier.fillMaxWidth().weight(1f),
+            Modifier
+                .fillMaxWidth()
+                .weight(1f)
+                .nestedScroll(searchScrollConnection),
+            state = listState,
             contentPadding = PaddingValues(bottom = 24.dp),
         ) {
-        item {
-            ScreenHeader(
-                index = "01",
-                title = "Библиотека",
-                subtitle = buildString {
-                    append("${tracks.size} ТРЕКОВ · ${favorites.size} В ИЗБРАННОМ")
-                    folderName?.takeIf { it.isNotBlank() }?.let {
-                        append(" · ${it.uppercase()}")
-                    }
-                },
-                onSettings = vm::openSettings,
-            )
-        }
-        item { Spacer(Modifier.height(18.dp)) }
         if (scanning) {
             item {
                 LibraryScanCard(
@@ -176,18 +249,11 @@ fun LibraryScreen(vm: MainViewModel) {
                 )
             }
         } else {
-            item {
-                LibrarySearchField(
-                    query = query,
-                    onQueryChange = { query = it },
-                    modifier = Modifier.padding(horizontal = 20.dp),
-                )
-            }
-            item {
+            stickyHeader(key = "playlists") {
                 SectionHeader(
                     number = "02",
                     title = "ПЛЕЙЛИСТЫ",
-                    modifier = Modifier.padding(top = 8.dp),
+                    modifier = Modifier.background(GlyphBlack).padding(top = 8.dp),
                     action = {
                         if (selectionType == null) {
                             Row(
@@ -240,11 +306,11 @@ fun LibraryScreen(vm: MainViewModel) {
                     }
                 }
             }
-            item {
+            stickyHeader(key = "tracks") {
                 SectionHeader(
                     number = "03",
                     title = if (query.isBlank()) "ВСЕ ТРЕКИ" else "РЕЗУЛЬТАТЫ: ${filtered.size}",
-                    modifier = Modifier.padding(top = 10.dp),
+                    modifier = Modifier.background(GlyphBlack).padding(top = 10.dp),
                     action = {
                         if (query.isBlank() && selectionType == null) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
