@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -38,6 +39,7 @@ import com.vova.glyph.ui.components.ScreenHeader
 import com.vova.glyph.ui.components.SectionHeader
 import com.vova.glyph.ui.components.Text
 import com.vova.glyph.ui.components.TrackRow
+import com.vova.glyph.ui.theme.GlyphBlack
 import com.vova.glyph.ui.theme.GlyphDim
 import com.vova.glyph.ui.theme.GlyphGray
 import com.vova.glyph.ui.theme.GlyphLine
@@ -52,18 +54,18 @@ fun FavoritesScreen(vm: MainViewModel) {
     val playerState by vm.playerState.collectAsStateWithLifecycle()
     var playlistTarget by remember { mutableStateOf<Track?>(null) }
 
-    LazyColumn(
-        Modifier.fillMaxWidth(),
-        contentPadding = PaddingValues(bottom = 24.dp),
-    ) {
-        item {
-            ScreenHeader(
-                index = "03",
-                title = "Избранное",
-                subtitle = "${favorites.size} ТРЕКОВ · СОБРАНО ВРУЧНУЮ",
-                onSettings = vm::openSettings,
-            )
-        }
+    Column(Modifier.fillMaxSize()) {
+        ScreenHeader(
+            index = "03",
+            title = "Избранное",
+            subtitle = "${favorites.size} ТРЕКОВ · СОБРАНО ВРУЧНУЮ",
+            onSettings = vm::openSettings,
+        )
+
+        LazyColumn(
+            Modifier.fillMaxWidth().weight(1f),
+            contentPadding = PaddingValues(bottom = 24.dp),
+        ) {
         item {
             Row(
                 Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(top = 18.dp),
@@ -103,10 +105,11 @@ fun FavoritesScreen(vm: MainViewModel) {
             }
         }
         item { Hairline(Modifier.padding(horizontal = 20.dp)) }
-        item {
+        stickyHeader(key = "favorites") {
             SectionHeader(
                 number = "01",
                 title = "ВАША КОЛЛЕКЦИЯ",
+                modifier = Modifier.background(GlyphBlack),
                 action = {
                     Text(
                         "${favorites.size}",
@@ -152,6 +155,7 @@ fun FavoritesScreen(vm: MainViewModel) {
                     onDelete = { vm.deleteTrack(track) },
                 )
             }
+        }
         }
     }
 

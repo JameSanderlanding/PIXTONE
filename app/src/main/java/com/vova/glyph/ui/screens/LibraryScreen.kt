@@ -47,8 +47,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.vova.glyph.MainViewModel
 import com.vova.glyph.data.Playlist
 import com.vova.glyph.data.Track
-import com.vova.glyph.ui.components.CreatePlaylistDialog
 import com.vova.glyph.ui.components.ConfirmDialog
+import com.vova.glyph.ui.components.CreatePlaylistDialog
 import com.vova.glyph.ui.components.DotSpinner
 import com.vova.glyph.ui.components.EmptyState
 import com.vova.glyph.ui.components.Glyph
@@ -150,24 +150,30 @@ fun LibraryScreen(vm: MainViewModel) {
             )
         }
 
+        ScreenHeader(
+            index = "01",
+            title = "Библиотека",
+            subtitle = buildString {
+                append("${tracks.size} ТРЕКОВ · ${favorites.size} В ИЗБРАННОМ")
+                folderName?.takeIf { it.isNotBlank() }?.let {
+                    append(" · ${it.uppercase()}")
+                }
+            },
+            onSettings = vm::openSettings,
+        )
+        Spacer(Modifier.height(18.dp))
+        if (!scanning) {
+            LibrarySearchField(
+                query = query,
+                onQueryChange = { query = it },
+                modifier = Modifier.padding(horizontal = 20.dp),
+            )
+        }
+
         LazyColumn(
             Modifier.fillMaxWidth().weight(1f),
             contentPadding = PaddingValues(bottom = 24.dp),
         ) {
-        item {
-            ScreenHeader(
-                index = "01",
-                title = "Библиотека",
-                subtitle = buildString {
-                    append("${tracks.size} ТРЕКОВ · ${favorites.size} В ИЗБРАННОМ")
-                    folderName?.takeIf { it.isNotBlank() }?.let {
-                        append(" · ${it.uppercase()}")
-                    }
-                },
-                onSettings = vm::openSettings,
-            )
-        }
-        item { Spacer(Modifier.height(18.dp)) }
         if (scanning) {
             item {
                 LibraryScanCard(
@@ -176,18 +182,11 @@ fun LibraryScreen(vm: MainViewModel) {
                 )
             }
         } else {
-            item {
-                LibrarySearchField(
-                    query = query,
-                    onQueryChange = { query = it },
-                    modifier = Modifier.padding(horizontal = 20.dp),
-                )
-            }
-            item {
+            stickyHeader(key = "playlists") {
                 SectionHeader(
                     number = "02",
                     title = "ПЛЕЙЛИСТЫ",
-                    modifier = Modifier.padding(top = 8.dp),
+                    modifier = Modifier.background(GlyphBlack).padding(top = 8.dp),
                     action = {
                         if (selectionType == null) {
                             Row(
@@ -240,11 +239,11 @@ fun LibraryScreen(vm: MainViewModel) {
                     }
                 }
             }
-            item {
+            stickyHeader(key = "tracks") {
                 SectionHeader(
                     number = "03",
                     title = if (query.isBlank()) "ВСЕ ТРЕКИ" else "РЕЗУЛЬТАТЫ: ${filtered.size}",
-                    modifier = Modifier.padding(top = 10.dp),
+                    modifier = Modifier.background(GlyphBlack).padding(top = 10.dp),
                     action = {
                         if (query.isBlank() && selectionType == null) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
