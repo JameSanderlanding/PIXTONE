@@ -46,6 +46,33 @@ class ArtworkStore(context: Context) {
         file.absolutePath
     }.getOrNull()
 
+    fun saveCustomCover(uri: Uri): String? = runCatching {
+        val file = File(artDir, "custom_${UUID.randomUUID()}.jpg")
+        val bitmap = appContext.contentResolver.openInputStream(uri)?.use { input ->
+            BitmapFactory.decodeStream(input)
+        } ?: return@runCatching null
+        val largest = maxOf(bitmap.width, bitmap.height)
+        val scaled = if (largest > MAX_CUSTOM_ART_SIDE) {
+            val ratio = MAX_CUSTOM_ART_SIDE.toFloat() / largest
+            Bitmap.createScaledBitmap(
+                bitmap,
+                (bitmap.width * ratio).toInt().coerceAtLeast(1),
+                (bitmap.height * ratio).toInt().coerceAtLeast(1),
+                true,
+            ).also { if (it !== bitmap) bitmap.recycle() }
+        } else {
+            bitmap
+        }
+        try {
+            file.outputStream().use { output ->
+                scaled.compress(Bitmap.CompressFormat.JPEG, 90, output)
+            }
+        } finally {
+            scaled.recycle()
+        }
+        file.absolutePath
+    }.getOrNull()
+
     fun needsRemoteCover(path: String?, preferGenius: Boolean = true): Boolean {
         if (path.isNullOrBlank()) return true
         if (path.startsWith("http://") || path.startsWith("https://")) return false
@@ -65,7 +92,9 @@ class ArtworkStore(context: Context) {
         if (path.isNullOrBlank()) return
         val file = File(path)
         if (file.parentFile != artDir) return
-        if (!file.name.startsWith("embedded_") && !file.name.startsWith("net_")) return
+        if (!file.name.startsWith("embedded_") && !file.name.startsWith("net_") &&
+            !file.name.startsWith("custom_")
+        ) return
         runCatching { file.delete() }
     }
 
@@ -94,5 +123,7 @@ class ArtworkStore(context: Context) {
 
     private companion object {
         const val MAX_ART_SIDE = 640
+
+        const val MAX_CUSTOM_ART_SIDE = 1080
     }
 }

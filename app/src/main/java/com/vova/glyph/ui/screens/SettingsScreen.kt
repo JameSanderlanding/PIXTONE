@@ -49,6 +49,7 @@ import com.vova.glyph.ui.components.ConfirmDialog
 import com.vova.glyph.ui.components.CoverUpdateDialog
 import com.vova.glyph.ui.components.DotGrid
 import com.vova.glyph.ui.components.DotSpinner
+import com.vova.glyph.ui.components.FilesDialog
 import com.vova.glyph.ui.components.Glyph
 import com.vova.glyph.ui.components.GlyphButton
 import com.vova.glyph.ui.components.GlyphIcon
@@ -146,11 +147,18 @@ private fun SettingsMain(
     val favoritesList by vm.favorites.collectAsStateWithLifecycle()
     var showCoverDialog by remember { mutableStateOf(false) }
     var showResetCoversConfirm by remember { mutableStateOf(false) }
+    var showFilesDialog by remember { mutableStateOf(false) }
 
     val folderPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocumentTree()
     ) { uri ->
         if (uri != null) vm.onFolderPicked(uri, fromOnboarding = false)
+    }
+
+    val filePicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) vm.onFilePicked(uri)
     }
 
     Row(
@@ -278,8 +286,8 @@ private fun SettingsMain(
         Spacer(Modifier.height(14.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
             GlyphButton(
-                text = if (folderName.isNullOrBlank()) "ВЫБРАТЬ ПАПКУ" else "СМЕНИТЬ",
-                onClick = { folderPicker.launch(null) },
+                text = "ФАЙЛЫ",
+                onClick = { showFilesDialog = true },
                 enabled = !scanning,
                 leading = Glyph.Folder,
                 modifier = Modifier.weight(1f),
@@ -292,14 +300,6 @@ private fun SettingsMain(
                 modifier = Modifier.weight(1f),
             )
         }
-        Spacer(Modifier.height(9.dp))
-        GlyphButton(
-            text = "СКАНИРОВАТЬ",
-            onClick = vm::rescanFolder,
-            filled = false,
-            enabled = !scanning && !folderName.isNullOrBlank(),
-            modifier = Modifier.fillMaxWidth(),
-        )
         Spacer(Modifier.height(11.dp))
         Row {
             MicroLabel("В БИБЛИОТЕКЕ: ${tracks.size}", color = GlyphDim, fontSize = 8)
@@ -364,6 +364,26 @@ private fun SettingsMain(
         MicroLabel("PIXTONE · ЛИЧНЫЙ ПЛЕЕР", color = GlyphDim, fontSize = 8)
         Spacer(Modifier.weight(1f))
         MicroLabel("СДЕЛАНО ДЛЯ МУЗЫКИ", color = GlyphDim, fontSize = 8)
+    }
+
+    if (showFilesDialog) {
+        FilesDialog(
+            folderName = folderName,
+            scanning = scanning,
+            onChooseFolder = {
+                showFilesDialog = false
+                folderPicker.launch(null)
+            },
+            onScan = {
+                showFilesDialog = false
+                vm.rescanFolder()
+            },
+            onAddTrack = {
+                showFilesDialog = false
+                filePicker.launch(arrayOf("audio/*"))
+            },
+            onDismiss = { showFilesDialog = false },
+        )
     }
 
     if (showCoverDialog) {

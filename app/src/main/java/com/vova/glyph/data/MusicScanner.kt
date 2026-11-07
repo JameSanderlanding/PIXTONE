@@ -87,6 +87,14 @@ class MusicScanner(
         )
     }
 
+    suspend fun scanFile(uri: Uri): Track? = withContext(Dispatchers.IO) {
+        val doc = DocumentFile.fromSingleUri(appContext, uri) ?: return@withContext null
+        val name = doc.name.orEmpty()
+        val isAudio = AudioFormats.isAudio(name) || doc.type?.startsWith("audio/") == true
+        if (!isAudio) return@withContext null
+        readTrack(doc)
+    }
+
     suspend fun embeddedArtworkFor(uri: String): String? = withContext(Dispatchers.IO) {
         val retriever = MediaMetadataRetriever()
         try {

@@ -1,5 +1,7 @@
 package com.vova.glyph.ui.screens
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -67,6 +69,15 @@ fun PlayerOverlay(vm: MainViewModel) {
     var showPlaylists by remember { mutableStateOf(false) }
     var showLyrics by remember { mutableStateOf(false) }
     var lyricsCompletionBase by remember { mutableStateOf(0L) }
+
+    val coverPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri ->
+        if (uri != null) {
+            val target = track
+            if (target != null) vm.setCustomCover(target, uri)
+        }
+    }
 
     Box(Modifier.fillMaxSize().background(GlyphBlack)) {
         DotGrid(
@@ -184,6 +195,12 @@ fun PlayerOverlay(vm: MainViewModel) {
                 }
                 Spacer(Modifier.width(10.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    PlayerAction(
+                        glyph = Glyph.Image,
+                        tint = GlyphWhite,
+                        label = "ОБЛОЖКА",
+                        onClick = { coverPicker.launch("image/*") },
+                    )
                     PlayerAction(
                         glyph = if (current.favorite) Glyph.HeartFilled else Glyph.Heart,
                         tint = if (current.favorite) GlyphRed else GlyphWhite,

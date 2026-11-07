@@ -201,8 +201,8 @@ class MainViewModel(
                 _tab.value = Tab.LIBRARY
                 notify(
                     when {
-                        result.newCount > 0 -> "Добавлено треков: ${result.newCount}"
-                        saved > 0 -> "Библиотека обновлена"
+                        saved > 0 -> "Добавлено треков: $saved"
+                        result.newCount > 0 -> "Библиотека обновлена"
                         else -> "Новых треков нет — всё уже в библиотеке"
                     }
                 )
@@ -215,6 +215,56 @@ class MainViewModel(
                 if (fromOnboarding) _onboardingError.value = error else notify(error)
             } finally {
                 _scanning.value = false
+            }
+        }
+    }
+
+    fun onFilePicked(uri: Uri) {
+        if (_scanning.value) return
+        viewModelScope.launch {
+            _scanning.value = true
+            _onboardingError.value = null
+            _scanFound.value = 0
+            _scanStatus.value = "ОТКРЫВАЮ ФАЙЛ…"
+            try {
+                runCatching {
+                    app.contentResolver.takePersistableUriPermission(
+                        uri,
+                        Intent.FLAG_GRANT_READ_URI_PERMISSION,
+                    )
+                }
+                val alreadyAdded = repo.tracks.value
+                    .filter { it.source == Track.SOURCE_LOCAL }
+                    .any { it.uri == uri.toString() }
+                if (alreadyAdded) {
+                    notify("Этот трек уже в библиотеке")
+                    return@launch
+                }
+                val track = container.scanner.scanFile(uri)
+                if (track == null) {
+                    val error = "Не удалось прочитать аудиофайл"
+                    if (_onboardingVisible.value) _onboardingError.value = error else notify(error)
+                    return@launch
+                }
+                val saved = repo.addLocalTracks(listOf(track))
+                if (saved > 0) {
+                    prefs.onboardingDone = true
+                    _onboardingVisible.value = false
+                    _tab.value = Tab.LIBRARY
+                    _scanFound.value = 1
+                    notify("Трек «${track.title}» добавлен")
+                } else {
+                    notify("Этот трек уже в библиотеке")
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                val error = e.message?.takeIf { it.isNotBlank() }
+                    ?: "Не удалось добавить трек"
+                if (_onboardingVisible.value) _onboardingError.value = error else notify(error)
+            } finally {
+                _scanning.value = false
+                _scanStatus.value = ""
             }
         }
     }
@@ -528,6 +578,26 @@ class MainViewModel(
         viewModelScope.launch {
             val favorite = runCatching { repo.toggleFavorite(track.id) }.getOrNull() ?: return@launch
             notify(if (favorite) "«${track.title}» в избранном" else "Убрано из избранного")
+        }
+    }
+
+    fun setCustomCover(track: Track, uri: Uri) {
+        viewModelScope.launch {
+            val path = container.artworkStore.saveCustomCover(uri)
+            if (path == null) {
+                notify("Не удалось установить обложку")
+                return@launch
+            }
+            runCatching {
+                repo.setArtwork(track.id, path)
+                repo.refresh()
+            }.onSuccess {
+                container.artworkStore.deleteReplacedArt(track.artwork)
+                notify("Обложка обновлена")
+            }.onFailure {
+                container.artworkStore.deleteReplacedArt(path)
+                notify(it.message ?: "Не удалось установить обложку")
+            }
         }
     }
 

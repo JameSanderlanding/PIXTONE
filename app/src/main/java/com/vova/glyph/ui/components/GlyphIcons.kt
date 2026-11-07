@@ -20,7 +20,7 @@ enum class Glyph {
     Heart, HeartFilled,
     Search, Library, Chat, Settings, Close, Plus, Check,
     Back, Download, More, Shuffle, Repeat, RepeatOne,
-    Folder, Sparkle, Trash, Text, Pencil, Album,
+    Folder, Sparkle, Trash, Text, Pencil, Album, Image,
 }
 
 @Composable
@@ -249,6 +249,24 @@ fun GlyphIcon(
                 }, fill = false)
                 line(15f, 6.5f, 17.5f, 9f)
                 line(8f, 18.5f, 9.5f, 20f)
+            }
+
+            Glyph.Image -> {
+                drawRoundRect(
+                    tint,
+                    topLeft = p(3.5f, 5f),
+                    size = Size(17f * u, 14f * u),
+                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(2f * u),
+                    style = strokeStyle,
+                )
+                strokeCircle(8.5f, 9.8f, 1.5f)
+                path({
+                    moveTo(4.8f * u, 17.8f * u)
+                    lineTo(9.8f * u, 12.8f * u)
+                    lineTo(13.4f * u, 16.4f * u)
+                    lineTo(15.8f * u, 14f * u)
+                    lineTo(19.2f * u, 17.4f * u)
+                }, fill = false, close = false)
             }
         }
     }

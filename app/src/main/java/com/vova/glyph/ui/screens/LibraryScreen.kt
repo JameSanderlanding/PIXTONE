@@ -103,6 +103,10 @@ fun LibraryScreen(vm: MainViewModel) {
         ActivityResultContracts.OpenDocumentTree()
     ) { uri -> if (uri != null) vm.onFolderPicked(uri, fromOnboarding = false) }
 
+    val filePicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri -> if (uri != null) vm.onFilePicked(uri) }
+
     val filtered = remember(tracks, query) {
         val q = query.trim()
         if (q.isBlank()) tracks
@@ -187,14 +191,27 @@ fun LibraryScreen(vm: MainViewModel) {
                     title = if (query.isBlank()) "ВСЕ ТРЕКИ" else "РЕЗУЛЬТАТЫ: ${filtered.size}",
                     modifier = Modifier.padding(top = 10.dp),
                     action = {
-                        if (tracks.isNotEmpty() && query.isBlank()) {
-                            Row(
-                                Modifier.clickable { folderPicker.launch(null) },
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                GlyphIcon(Glyph.Folder, tint = GlyphGray, modifier = Modifier.size(13.dp))
-                                Spacer(Modifier.width(5.dp))
-                                MicroLabel("ПАПКА", color = GlyphGray)
+                        if (query.isBlank()) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                if (tracks.isNotEmpty()) {
+                                    Row(
+                                        Modifier.clickable { folderPicker.launch(null) },
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        GlyphIcon(Glyph.Folder, tint = GlyphGray, modifier = Modifier.size(13.dp))
+                                        Spacer(Modifier.width(5.dp))
+                                        MicroLabel("ПАПКА", color = GlyphGray)
+                                    }
+                                    Spacer(Modifier.width(12.dp))
+                                }
+                                Row(
+                                    Modifier.clickable { filePicker.launch(arrayOf("audio/*")) },
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    GlyphIcon(Glyph.Plus, tint = GlyphWhite, modifier = Modifier.size(12.dp))
+                                    Spacer(Modifier.width(5.dp))
+                                    MicroLabel("ФАЙЛ", color = GlyphWhite)
+                                }
                             }
                         }
                     },
@@ -212,6 +229,13 @@ fun LibraryScreen(vm: MainViewModel) {
                                     text = "ВЫБРАТЬ ПАПКУ",
                                     onClick = { folderPicker.launch(null) },
                                     leading = Glyph.Folder,
+                                )
+                                Spacer(Modifier.height(8.dp))
+                                GlyphButton(
+                                    text = "ВЫБРАТЬ ФАЙЛ",
+                                    onClick = { filePicker.launch(arrayOf("audio/*")) },
+                                    filled = false,
+                                    leading = Glyph.Plus,
                                 )
                             }
                         },

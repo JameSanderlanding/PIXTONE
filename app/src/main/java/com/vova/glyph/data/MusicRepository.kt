@@ -24,8 +24,7 @@ class MusicRepository(private val db: GlyphDb) {
         var added = 0
         for (track in tracks) {
             runCatching {
-                db.upsertLocal(track)
-                added++
+                if (db.upsertLocal(track)) added++
             }
         }
         refresh()

@@ -127,24 +127,20 @@ class GlyphDb(context: Context) : SQLiteOpenHelper(context, "glyph.db", null, 10
         ).use { if (it.moveToFirst()) it.toTrack() else null }
     }
 
-    suspend fun upsertLocal(track: Track): Long = withContext(Dispatchers.IO) {
+    suspend fun upsertLocal(track: Track): Boolean = withContext(Dispatchers.IO) {
         val db = writableDatabase
         db.query(
             "tracks", arrayOf("id"), "uri = ?", arrayOf(track.uri), null, null, null
         ).use { cursor ->
             if (cursor.moveToFirst()) {
-                val id = cursor.getLong(0)
-                val values = ContentValues().apply {
-                    put("title", track.title)
-                    put("artist", track.artist)
-                    put("album", track.album)
-                    put("duration", track.durationMs)
-                    put("file_size", track.fileSize)
-                    track.artwork?.let { put("artwork", it) }
-                }
-                db.update("tracks", values, "id = ?", arrayOf(id.toString()))
-                return@withContext id
+                updateLocalTrack(db, cursor.getLong(0), track)
+                return@withContext false
             }
+        }
+        val duplicateId = findSameLocalFile(db, track)
+        if (duplicateId != null) {
+            updateLocalTrack(db, duplicateId, track)
+            return@withContext false
         }
         val values = ContentValues().apply {
             put("title", track.title)
@@ -159,6 +155,42 @@ class GlyphDb(context: Context) : SQLiteOpenHelper(context, "glyph.db", null, 10
             put("file_size", track.fileSize)
         }
         db.insertOrThrow("tracks", null, values)
+        true
+    }
+
+    private fun updateLocalTrack(db: SQLiteDatabase, id: Long, track: Track) {
+        val values = ContentValues().apply {
+            put("uri", track.uri)
+            put("title", track.title)
+            put("artist", track.artist)
+            put("album", track.album)
+            put("duration", track.durationMs)
+            put("file_size", track.fileSize)
+            track.artwork?.let { put("artwork", it) }
+        }
+        db.update("tracks", values, "id = ?", arrayOf(id.toString()))
+    }
+
+    private fun findSameLocalFile(db: SQLiteDatabase, track: Track): Long? {
+        if (track.fileSize <= 0L || track.durationMs <= 0L) return null
+        db.query(
+            "tracks",
+            arrayOf("id"),
+            "source = ? AND file_size = ? AND duration = ? AND title = ? AND artist = ? AND album = ?",
+            arrayOf(
+                Track.SOURCE_LOCAL,
+                track.fileSize.toString(),
+                track.durationMs.toString(),
+                track.title,
+                track.artist,
+                track.album,
+            ),
+            null,
+            null,
+            null,
+        ).use { cursor ->
+            return if (cursor.moveToFirst()) cursor.getLong(0) else null
+        }
     }
 
     suspend fun toggleFavorite(trackId: Long): Boolean = withContext(Dispatchers.IO) {

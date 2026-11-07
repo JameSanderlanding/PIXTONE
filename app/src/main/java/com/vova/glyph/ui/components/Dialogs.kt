@@ -134,6 +134,7 @@ private fun CoverOptionCard(
     onClick: () -> Unit,
     buttonText: String = "ОБНОВИТЬ ОБЛОЖКИ",
     filled: Boolean = true,
+    enabled: Boolean = true,
 ) {
     val shape = RoundedCornerShape(2.dp)
     Column(
@@ -156,8 +157,69 @@ private fun CoverOptionCard(
             text = buttonText,
             onClick = onClick,
             filled = filled,
+            enabled = enabled,
             modifier = Modifier.fillMaxWidth(),
         )
+    }
+}
+
+@Composable
+fun FilesDialog(
+    folderName: String?,
+    scanning: Boolean,
+    onChooseFolder: () -> Unit,
+    onScan: () -> Unit,
+    onAddTrack: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val shape = RoundedCornerShape(2.dp)
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .border(1.dp, GlyphLine, shape),
+            color = GlyphSurface,
+            shape = shape,
+        ) {
+            Column(Modifier.padding(20.dp)) {
+                MicroLabel("ФАЙЛЫ", color = GlyphRed)
+                Spacer(Modifier.height(14.dp))
+                CoverOptionCard(
+                    title = "ПАПКА С МУЗЫКОЙ",
+                    body = if (folderName.isNullOrBlank()) {
+                        "Папка не выбрана. Выберите папку с музыкой на устройстве."
+                    } else {
+                        "Текущая папка: «$folderName». Можно выбрать другую."
+                    },
+                    onClick = onChooseFolder,
+                    buttonText = "ВЫБРАТЬ ПАПКУ",
+                )
+                Spacer(Modifier.height(10.dp))
+                CoverOptionCard(
+                    title = "СКАНИРОВАТЬ ПАПКУ",
+                    body = "Найти новые треки в выбранной папке.",
+                    onClick = onScan,
+                    buttonText = "СКАНИРОВАТЬ",
+                    enabled = !scanning && !folderName.isNullOrBlank(),
+                )
+                Spacer(Modifier.height(10.dp))
+                CoverOptionCard(
+                    title = "ДОБАВИТЬ ТРЕК",
+                    body = "Выберите отдельный аудиофайл — папку выбирать не обязательно.",
+                    onClick = onAddTrack,
+                    buttonText = "ВЫБРАТЬ ФАЙЛ",
+                    filled = false,
+                    enabled = !scanning,
+                )
+                Spacer(Modifier.height(16.dp))
+                GlyphButton(
+                    text = "Закрыть",
+                    onClick = onDismiss,
+                    filled = false,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        }
     }
 }
 

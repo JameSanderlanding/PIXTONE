@@ -72,6 +72,12 @@ fun OnboardingScreen(vm: MainViewModel) {
         if (uri != null) vm.onFolderPicked(uri, fromOnboarding = true)
     }
 
+    val filePicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) vm.onFilePicked(uri)
+    }
+
     Box(Modifier.fillMaxSize().background(GlyphBlack)) {
         DotGrid(Modifier.fillMaxSize(), color = GlyphWhite.copy(alpha = 0.04f), step = 24.dp)
         Column(
@@ -133,6 +139,16 @@ fun OnboardingScreen(vm: MainViewModel) {
                 Spacer(Modifier.height(12.dp))
                 ChoiceCard(
                     number = "02",
+                    title = "ЕСТЬ ОДИН ТРЕК",
+                    body = "Выберите отдельный аудиофайл — папку выбирать не обязательно.",
+                    buttonText = "ВЫБРАТЬ ФАЙЛ",
+                    glyph = Glyph.Plus,
+                    onClick = { filePicker.launch(arrayOf("audio/*")) },
+                    leadingGlyph = Glyph.Plus,
+                )
+                Spacer(Modifier.height(12.dp))
+                ChoiceCard(
+                    number = "03",
                     title = "ГОТОВОЙ ПАПКИ НЕТ",
                     body = "Пропустите шаг и выберите папку позже в библиотеке или настройках.",
                     buttonText = "ПРОПУСТИТЬ",
@@ -212,6 +228,7 @@ private fun ChoiceCard(
     glyph: Glyph,
     onClick: () -> Unit,
     outlined: Boolean = false,
+    leadingGlyph: Glyph = Glyph.Folder,
 ) {
     val shape = RoundedCornerShape(2.dp)
     Column(
@@ -257,7 +274,7 @@ private fun ChoiceCard(
             text = buttonText,
             onClick = onClick,
             filled = !outlined,
-            leading = if (outlined) null else Glyph.Folder,
+            leading = if (outlined) null else leadingGlyph,
             modifier = Modifier.fillMaxWidth(),
         )
     }
