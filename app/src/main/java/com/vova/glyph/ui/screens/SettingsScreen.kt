@@ -54,6 +54,7 @@ import com.vova.glyph.ui.components.Glyph
 import com.vova.glyph.ui.components.GlyphButton
 import com.vova.glyph.ui.components.GlyphIcon
 import com.vova.glyph.ui.components.GlyphIconButton
+import com.vova.glyph.ui.components.GlyphSection
 import com.vova.glyph.ui.components.LicenseTextDialog
 import com.vova.glyph.ui.components.MicroLabel
 import com.vova.glyph.ui.components.Text
@@ -197,7 +198,7 @@ private fun SettingsMain(
     )
     Spacer(Modifier.height(22.dp))
 
-    SettingsSection(number = "01", title = "ЛОКАЛЬНАЯ МУЗЫКА") {
+    GlyphSection(number = "01", title = "ЛОКАЛЬНАЯ МУЗЫКА") {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
                 Modifier.size(42.dp).border(1.dp, GlyphLine, CircleShape),
@@ -313,7 +314,7 @@ private fun SettingsMain(
 
     Spacer(Modifier.height(14.dp))
 
-    SettingsSection(number = "02", title = "ОФОРМЛЕНИЕ") {
+    GlyphSection(number = "02", title = "ОФОРМЛЕНИЕ") {
         SettingsLinkRow(
             label = "ТЕМА",
             value = ThemeController.presetName,
@@ -339,7 +340,7 @@ private fun SettingsMain(
 
     Spacer(Modifier.height(14.dp))
 
-    SettingsSection(number = "03", title = "О ПРИЛОЖЕНИИ") {
+    GlyphSection(number = "03", title = "О ПРИЛОЖЕНИИ") {
         InfoRow("ВЕРСИЯ", "1.0.1")
         Spacer(Modifier.height(9.dp))
         InfoRow("СБОРКА", "PIXTONE / LOCAL-FIRST")
@@ -439,7 +440,7 @@ private fun ThemeSettingsPage(
     )
     Spacer(Modifier.height(22.dp))
 
-    SettingsSection(number = "01", title = "ПРЕСЕТЫ") {
+    GlyphSection(number = "01", title = "ПРЕСЕТЫ") {
         presets.forEachIndexed { index, preset ->
             if (index > 0) Spacer(Modifier.height(10.dp))
             val custom = ThemeController.customPresets.any { it.id == preset.id }
@@ -528,7 +529,7 @@ private fun ThemeEditorPage(
     )
     Spacer(Modifier.height(22.dp))
 
-    SettingsSection(number = "01", title = "НАЗВАНИЕ ПРЕСЕТА") {
+    GlyphSection(number = "01", title = "НАЗВАНИЕ ПРЕСЕТА") {
         PresetNameField(
             value = name,
             onValueChange = { name = it },
@@ -537,7 +538,7 @@ private fun ThemeEditorPage(
 
     Spacer(Modifier.height(14.dp))
 
-    SettingsSection(number = "02", title = "ПАЛИТРА") {
+    GlyphSection(number = "02", title = "ПАЛИТРА") {
         ColorSlot.entries.forEachIndexed { index, slot ->
             if (index > 0) Spacer(Modifier.height(9.dp))
             ColorSlotRow(
@@ -621,7 +622,7 @@ private fun FontsSettingsPage(onBack: () -> Unit) {
 
     FontRole.entries.forEachIndexed { roleIndex, role ->
         if (roleIndex > 0) Spacer(Modifier.height(14.dp))
-        SettingsSection(number = "0${roleIndex + 1}", title = role.label) {
+        GlyphSection(number = "0${roleIndex + 1}", title = role.label) {
             AppFont.entries.forEachIndexed { fontIndex, font ->
                 if (fontIndex > 0) Spacer(Modifier.height(9.dp))
                 FontRow(
@@ -722,7 +723,7 @@ private fun LicensesSettingsPage(onBack: () -> Unit) {
     )
     Spacer(Modifier.height(22.dp))
 
-    SettingsSection(number = "01", title = "ШРИФТЫ") {
+    GlyphSection(number = "01", title = "ШРИФТЫ") {
         FontLicenses.forEachIndexed { index, entry ->
             if (index > 0) {
                 Spacer(Modifier.height(9.dp))
@@ -735,7 +736,7 @@ private fun LicensesSettingsPage(onBack: () -> Unit) {
 
     Spacer(Modifier.height(14.dp))
 
-    SettingsSection(number = "02", title = "БИБЛИОТЕКИ") {
+    GlyphSection(number = "02", title = "БИБЛИОТЕКИ") {
         LibraryLicenses.forEachIndexed { index, entry ->
             if (index > 0) {
                 Spacer(Modifier.height(9.dp))
@@ -748,7 +749,7 @@ private fun LicensesSettingsPage(onBack: () -> Unit) {
 
     Spacer(Modifier.height(14.dp))
 
-    SettingsSection(number = "03", title = "УВЕДОМЛЕНИЯ") {
+    GlyphSection(number = "03", title = "УВЕДОМЛЕНИЯ") {
         val notices = LicenseEntry(
             name = "THIRD-PARTY NOTICES",
             license = "TXT",
@@ -799,7 +800,7 @@ private fun LanguageSettingsPage(onBack: () -> Unit) {
     )
     Spacer(Modifier.height(22.dp))
 
-    SettingsSection(number = "01", title = "ЯЗЫК") {
+    GlyphSection(number = "01", title = "ЯЗЫК") {
         AppLanguage.entries.forEachIndexed { index, language ->
             if (index > 0) Spacer(Modifier.height(9.dp))
             LanguageRow(
@@ -1013,38 +1014,6 @@ private fun SettingsLinkRow(
 private fun hexOf(color: Color): String {
     val argb = color.toArgb()
     return "#%06X".format(argb and 0xFFFFFF)
-}
-
-@Composable
-private fun SettingsSection(
-    number: String,
-    title: String,
-    content: @Composable () -> Unit,
-) {
-    val shape = RoundedCornerShape(2.dp)
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .background(GlyphSurface.copy(alpha = 0.94f), shape)
-            .border(1.dp, GlyphLine, shape)
-            .padding(16.dp)
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                number,
-                style = MaterialTheme.typography.labelLarge.copy(
-                    color = GlyphRed,
-                    fontSize = 11.sp,
-                ),
-            )
-            Spacer(Modifier.width(9.dp))
-            Box(Modifier.width(1.dp).height(11.dp).background(GlyphLine))
-            Spacer(Modifier.width(9.dp))
-            MicroLabel(title, color = GlyphGray, fontSize = 9)
-        }
-        Spacer(Modifier.height(14.dp))
-        content()
-    }
 }
 
 @Composable

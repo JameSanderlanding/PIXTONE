@@ -3,17 +3,24 @@ package com.vova.glyph.playback
 import android.content.ComponentName
 import android.content.Context
 import android.net.Uri
+import android.os.Bundle
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
+import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
 import androidx.media3.session.MediaController
+import androidx.media3.session.SessionCommand
+import androidx.media3.session.SessionResult
 import androidx.media3.session.SessionToken
+import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import com.vova.glyph.data.Prefs
 import com.vova.glyph.data.Track
+import com.vova.glyph.playback.dsp.EqCurve
+import com.vova.glyph.playback.dsp.EqPreset
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -68,6 +75,23 @@ class PlayerConnection(private val context: Context) {
     private val _progress = MutableStateFlow(PlayerProgress())
     val progress: StateFlow<PlayerProgress> = _progress.asStateFlow()
 
+    private val _dsp = MutableStateFlow(
+        DspUiState(
+            eqEnabled = prefs.fxEqEnabled,
+            eqPreset = EqPreset.fromName(prefs.fxEqPreset),
+            bassEnabled = prefs.fxBassEnabled,
+            bassStrength = prefs.fxBassStrength,
+            loudnessEnabled = prefs.fxLoudnessEnabled,
+            loudnessGainMb = prefs.fxLoudnessGain,
+            speed = prefs.fxSpeed,
+            reverbEnabled = prefs.fxReverbEnabled,
+            reverbRoom = prefs.fxReverbRoom,
+            reverbDamp = prefs.fxReverbDamp,
+            reverbWet = prefs.fxReverbWet,
+        )
+    )
+    val dsp: StateFlow<DspUiState> = _dsp.asStateFlow()
+
     private var progressUpdates: Job? = null
 
     private var lastPositionMs: Long = 0L
@@ -75,6 +99,20 @@ class PlayerConnection(private val context: Context) {
     private var lastDurationMs: Long = 0L
 
     private var pendingSeekMs: Long? = null
+
+    private val controllerListener = object : MediaController.Listener {
+        override fun onCustomCommand(
+            controller: MediaController,
+            command: SessionCommand,
+            args: Bundle,
+        ): ListenableFuture<SessionResult> {
+            if (command.customAction == CMD_DSP_CHANGED) {
+                val remote = dspFromBundle(args)
+                if (remote.queried) _dsp.value = remote
+            }
+            return Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
+        }
+    }
 
     private val listener = object : Player.Listener {
         override fun onEvents(player: Player, events: Player.Events) {
@@ -162,7 +200,9 @@ class PlayerConnection(private val context: Context) {
             appContext,
             ComponentName(appContext, PlaybackService::class.java),
         )
-        val future = MediaController.Builder(appContext, token).buildAsync()
+        val future = MediaController.Builder(appContext, token)
+            .setListener(controllerListener)
+            .buildAsync()
         controllerFuture = future
         future.addListener(
             {
@@ -172,7 +212,9 @@ class PlayerConnection(private val context: Context) {
 
                         connected.shuffleModeEnabled = false
                         connected.addListener(listener)
+                        applySpeed(connected)
                         updateState(connected)
+                        queryDsp(connected)
                     }
                     .onFailure { error ->
                         _state.update {
@@ -295,8 +337,185 @@ class PlayerConnection(private val context: Context) {
         updateState(controller)
     }
 
+    fun setSpeed(value: Float) {
+        val speed = value.coerceIn(MIN_SPEED, MAX_SPEED)
+        prefs.fxSpeed = speed
+        controller?.setPlaybackParameters(PlaybackParameters(speed, speed))
+        _dsp.update { current ->
+            current.copy(
+                speed = speed,
+                bands = bandsForPreset(current, current.eqPreset, speed),
+            )
+        }
+    }
+
+    fun setEqEnabled(enabled: Boolean) {
+        prefs.fxEqEnabled = enabled
+        _dsp.update { it.copy(eqEnabled = enabled) }
+    }
+
+    fun setEqPreset(preset: EqPreset) {
+        val current = _dsp.value
+        val bands = if (preset == EqPreset.CUSTOM) {
+            customBands(current)
+        } else {
+            bandsForPreset(current, preset, current.speed)
+        }
+        if (preset == EqPreset.CUSTOM) {
+            prefs.setCustomEq(encodeBands(bands.map { it.levelMb }))
+        } else {
+            prefs.selectEqPreset(preset.name)
+        }
+        _dsp.value = current.copy(
+            eqPreset = preset,
+            eqEnabled = true,
+            bands = bands,
+        )
+    }
+
+    fun setBandLevel(index: Int, levelMb: Int) {
+        val current = _dsp.value
+        if (index !in current.bands.indices) return
+        val level = levelMb.coerceIn(current.levelMinMb, current.levelMaxMb)
+        val bands = current.bands.mapIndexed { position, band ->
+            if (position == index) band.copy(levelMb = level) else band
+        }
+        prefs.setCustomEq(encodeBands(bands.map { it.levelMb }))
+        _dsp.value = current.copy(
+            bands = bands,
+            eqPreset = EqPreset.CUSTOM,
+            eqEnabled = true,
+        )
+    }
+
+    fun setBassEnabled(enabled: Boolean) {
+        prefs.fxBassEnabled = enabled
+        val strength = if (enabled && prefs.fxBassStrength == 0) DEFAULT_BASS_STRENGTH else prefs.fxBassStrength
+        if (strength != prefs.fxBassStrength) prefs.fxBassStrength = strength
+        _dsp.update { it.copy(bassEnabled = enabled, bassStrength = strength) }
+    }
+
+    fun setBassStrength(strength: Int) {
+        val value = strength.coerceIn(0, 1000)
+        prefs.fxBassStrength = value
+        prefs.fxBassEnabled = true
+        _dsp.update { it.copy(bassStrength = value, bassEnabled = true) }
+    }
+
+    fun setLoudnessEnabled(enabled: Boolean) {
+        prefs.fxLoudnessEnabled = enabled
+        val gain = if (enabled && prefs.fxLoudnessGain == 0) DEFAULT_LOUDNESS_MB else prefs.fxLoudnessGain
+        if (gain != prefs.fxLoudnessGain) prefs.fxLoudnessGain = gain
+        _dsp.update { it.copy(loudnessEnabled = enabled, loudnessGainMb = gain) }
+    }
+
+    fun setLoudnessGain(gainMb: Int) {
+        val value = gainMb.coerceIn(0, MAX_LOUDNESS_MB)
+        prefs.fxLoudnessGain = value
+        prefs.fxLoudnessEnabled = true
+        _dsp.update { it.copy(loudnessGainMb = value, loudnessEnabled = true) }
+    }
+
+    fun setReverbEnabled(enabled: Boolean) {
+        prefs.fxReverbEnabled = enabled
+        _dsp.update { it.copy(reverbEnabled = enabled) }
+    }
+
+    fun setReverbRoom(value: Int) {
+        val room = value.coerceIn(0, 100)
+        prefs.fxReverbRoom = room
+        prefs.fxReverbEnabled = true
+        _dsp.update { it.copy(reverbRoom = room, reverbEnabled = true) }
+    }
+
+    fun setReverbDamp(value: Int) {
+        val damp = value.coerceIn(0, 100)
+        prefs.fxReverbDamp = damp
+        prefs.fxReverbEnabled = true
+        _dsp.update { it.copy(reverbDamp = damp, reverbEnabled = true) }
+    }
+
+    fun setReverbWet(value: Int) {
+        val wet = value.coerceIn(0, 100)
+        prefs.fxReverbWet = wet
+        prefs.fxReverbEnabled = true
+        _dsp.update { it.copy(reverbWet = wet, reverbEnabled = true) }
+    }
+
+    fun resetDsp() {
+        prefs.resetFx()
+        controller?.setPlaybackParameters(PlaybackParameters(1f, 1f))
+        _dsp.update { current ->
+            current.copy(
+                bands = current.bands.map { band -> band.copy(levelMb = 0) },
+                eqEnabled = false,
+                eqPreset = EqPreset.FLAT,
+                bassEnabled = false,
+                bassStrength = 0,
+                loudnessEnabled = false,
+                loudnessGainMb = 0,
+                speed = 1f,
+                reverbEnabled = false,
+                reverbRoom = 70,
+                reverbDamp = 40,
+                reverbWet = 30,
+            )
+        }
+    }
+
     fun clearError() {
         _state.update { it.copy(error = null) }
+    }
+
+    private fun applySpeed(player: Player) {
+        val speed = prefs.fxSpeed
+        runCatching { player.setPlaybackParameters(PlaybackParameters(speed, speed)) }
+    }
+
+    private fun queryDsp(player: MediaController) {
+        val future = runCatching {
+            player.sendCustomCommand(
+                SessionCommand(CMD_QUERY_DSP, Bundle.EMPTY),
+                Bundle.EMPTY,
+            )
+        }.getOrNull() ?: return
+        future.addListener(
+            {
+                runCatching { future.get() }
+                    .onSuccess { result ->
+                        if (result.resultCode == SessionResult.RESULT_SUCCESS) {
+                            val remote = dspFromBundle(result.extras)
+                            if (remote.queried) _dsp.value = remote
+                        } else {
+                            _dsp.update { it.copy(queried = true) }
+                        }
+                    }
+                    .onFailure { _dsp.update { it.copy(queried = true) } }
+            },
+            executor,
+        )
+    }
+
+    private fun customBands(state: DspUiState): List<DspBand> {
+        val stored = decodeBands(prefs.fxEqBands)
+        if (stored.isEmpty()) return state.bands
+        return state.bands.mapIndexed { index, band ->
+            band.copy(
+                levelMb = stored.getOrElse(index) { band.levelMb }
+                    .coerceIn(state.levelMinMb, state.levelMaxMb),
+            )
+        }
+    }
+
+    private fun bandsForPreset(
+        state: DspUiState,
+        preset: EqPreset,
+        speed: Float,
+    ): List<DspBand> {
+        if (preset == EqPreset.CUSTOM || state.bands.isEmpty()) return state.bands
+        val centers = state.bands.map { it.centerHz }.toIntArray()
+        val gains = EqCurve.gains(preset, centers, speed, state.levelMinMb, state.levelMaxMb)
+        return state.bands.mapIndexed { index, band -> band.copy(levelMb = gains[index]) }
     }
 
     private fun shuffleKeepingFirst(items: List<MediaItem>, firstId: String?): List<MediaItem> {
@@ -390,3 +609,13 @@ private const val SEEK_ACK_TOLERANCE_MS = 700L
 private const val LOOP_DETECT_MARGIN_MS = 1_500L
 
 private const val LOOP_DETECT_BACKSTEP_MS = 1_000L
+
+private const val MIN_SPEED = 0.5f
+
+private const val MAX_SPEED = 1.5f
+
+private const val MAX_LOUDNESS_MB = 1_500
+
+private const val DEFAULT_BASS_STRENGTH = 500
+
+private const val DEFAULT_LOUDNESS_MB = 500

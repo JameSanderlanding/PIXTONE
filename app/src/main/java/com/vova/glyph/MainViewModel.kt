@@ -18,8 +18,10 @@ import com.vova.glyph.data.Playlist
 import com.vova.glyph.data.Track
 import com.vova.glyph.data.TrackSort
 import com.vova.glyph.data.TrackSorting
+import com.vova.glyph.playback.DspUiState
 import com.vova.glyph.playback.PlayerProgress
 import com.vova.glyph.playback.PlayerUiState
+import com.vova.glyph.playback.dsp.EqPreset
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
@@ -63,6 +65,7 @@ class MainViewModel(
     val playlists = repo.playlists
     val playerState: StateFlow<PlayerUiState> = player.state
     val progress: StateFlow<PlayerProgress> = player.progress
+    val dsp: StateFlow<DspUiState> = player.dsp
 
     private val _tab = MutableStateFlow(Tab.LIBRARY)
     val tab = _tab.asStateFlow()
@@ -603,6 +606,32 @@ class MainViewModel(
 
     fun toggleShuffle() = player.toggleShuffle()
     fun cycleRepeat() = player.cycleRepeat()
+
+    fun setSpeed(value: Float) = player.setSpeed(value)
+
+    fun setEqEnabled(enabled: Boolean) = player.setEqEnabled(enabled)
+
+    fun setEqPreset(preset: EqPreset) = player.setEqPreset(preset)
+
+    fun setBandLevel(index: Int, levelMb: Int) = player.setBandLevel(index, levelMb)
+
+    fun setBassEnabled(enabled: Boolean) = player.setBassEnabled(enabled)
+
+    fun setBassStrength(strength: Int) = player.setBassStrength(strength)
+
+    fun setLoudnessEnabled(enabled: Boolean) = player.setLoudnessEnabled(enabled)
+
+    fun setLoudnessGain(gainMb: Int) = player.setLoudnessGain(gainMb)
+
+    fun setReverbEnabled(enabled: Boolean) = player.setReverbEnabled(enabled)
+
+    fun setReverbRoom(value: Int) = player.setReverbRoom(value)
+
+    fun setReverbDamp(value: Int) = player.setReverbDamp(value)
+
+    fun setReverbWet(value: Int) = player.setReverbWet(value)
+
+    fun resetDsp() = player.resetDsp()
 
     fun fetchLyrics(track: Track) {
         if (_lyricsTrackId.value == track.id && (_lyrics.value != null || _lyricsLoading.value)) return

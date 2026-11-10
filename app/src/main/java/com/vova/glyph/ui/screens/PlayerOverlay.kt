@@ -68,6 +68,7 @@ fun PlayerOverlay(vm: MainViewModel) {
     val playerState by vm.playerState.collectAsStateWithLifecycle()
     val playlists by vm.playlists.collectAsStateWithLifecycle()
     var showPlaylists by remember { mutableStateOf(false) }
+    var showSound by remember { mutableStateOf(false) }
     var showLyrics by remember { mutableStateOf(false) }
     var lyricsCompletionBase by remember { mutableStateOf(0L) }
 
@@ -324,6 +325,14 @@ fun PlayerOverlay(vm: MainViewModel) {
                     }
                 }
             }
+
+            Spacer(Modifier.height(14.dp))
+
+            PlayerSoundSection(
+                vm = vm,
+                expanded = showSound,
+                onToggle = { showSound = !showSound },
+            )
 
             Spacer(Modifier.height(14.dp))
 
