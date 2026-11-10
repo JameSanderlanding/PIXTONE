@@ -30,6 +30,7 @@ import com.vova.glyph.data.Track
 import com.vova.glyph.ui.components.GlyphBottomNav
 import com.vova.glyph.ui.components.GlyphMessageHost
 import com.vova.glyph.ui.components.MiniPlayer
+import com.vova.glyph.ui.components.TrackEditDialog
 import com.vova.glyph.ui.screens.AlbumDetailScreen
 import com.vova.glyph.ui.screens.AlbumsScreen
 import com.vova.glyph.ui.screens.FavoritesScreen
@@ -50,6 +51,7 @@ fun GlyphRoot(vm: MainViewModel) {
     val showSettings by vm.showSettings.collectAsStateWithLifecycle()
     val openPlaylistId by vm.openPlaylistId.collectAsStateWithLifecycle()
     val openAlbumKey by vm.openAlbumKey.collectAsStateWithLifecycle()
+    val trackEditorTrack by vm.trackEditorTrack.collectAsStateWithLifecycle()
     val currentTrack by vm.currentTrack.collectAsStateWithLifecycle()
     val playerState by vm.playerState.collectAsStateWithLifecycle()
 
@@ -136,6 +138,14 @@ fun GlyphRoot(vm: MainViewModel) {
 
             if (showSettings) {
                 SettingsScreen(vm)
+            }
+
+            trackEditorTrack?.let { track ->
+                TrackEditDialog(
+                    track = track,
+                    onDismiss = vm::closeTrackEditor,
+                    onSave = { title, artist -> vm.saveTrackInfo(track, title, artist) },
+                )
             }
         }
 

@@ -203,6 +203,7 @@ fun AlbumDetailScreen(vm: MainViewModel) {
                     onClick = { vm.playTracks(sorted, index) },
                     onFavorite = { vm.toggleFavorite(track) },
                     onAddToPlaylist = { playlistTarget = track },
+                    onEditInfo = { vm.openTrackEditor(track) },
                     onDelete = { vm.deleteTrack(track) },
                 )
             }

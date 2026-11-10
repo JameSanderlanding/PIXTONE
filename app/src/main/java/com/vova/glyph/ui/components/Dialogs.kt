@@ -38,7 +38,9 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import coil.compose.AsyncImage
+import com.vova.glyph.data.Track
 import com.vova.glyph.ui.theme.GlyphBlack
+import com.vova.glyph.ui.theme.GlyphDim
 import com.vova.glyph.ui.theme.GlyphGray
 import com.vova.glyph.ui.theme.GlyphLine
 import com.vova.glyph.ui.theme.GlyphRed
@@ -330,6 +332,148 @@ fun CreatePlaylistDialog(
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun TrackEditDialog(
+    track: Track,
+    onDismiss: () -> Unit,
+    onSave: (title: String, artist: String) -> Unit,
+) {
+    var title by remember(track.id) { mutableStateOf(track.effectiveTitle) }
+    var artist by remember(track.id) { mutableStateOf(track.effectiveArtist) }
+    val shape = RoundedCornerShape(2.dp)
+    val tagTitle = track.title.trim()
+    val tagArtist = track.artist.trim()
+    val maxHeight = (LocalConfiguration.current.screenHeightDp * 0.8f).dp
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+    ) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 22.dp)
+                .imePadding()
+                .border(1.dp, GlyphLine, shape),
+            color = GlyphSurface,
+            shape = shape,
+        ) {
+            Column(
+                Modifier
+                    .heightIn(max = maxHeight)
+                    .verticalScroll(rememberScrollState())
+                    .padding(18.dp),
+            ) {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    MicroLabel("НАЗВАНИЕ И ИСПОЛНИТЕЛЬ", color = GlyphRed)
+                    Spacer(Modifier.weight(1f))
+                    GlyphIconButton(
+                        glyph = Glyph.Close,
+                        onClick = onDismiss,
+                        size = 32.dp,
+                        iconSize = 16.dp,
+                        tint = GlyphGray,
+                    )
+                }
+                Spacer(Modifier.height(16.dp))
+                TrackFieldLabel(
+                    text = "НАЗВАНИЕ",
+                    canReset = track.hasCustomTitle,
+                    onReset = { title = tagTitle },
+                )
+                Spacer(Modifier.height(7.dp))
+                GlyphTextField(
+                    value = title,
+                    onValueChange = { title = it.take(160) },
+                    placeholder = "Название трека",
+                )
+                if (track.hasCustomTitle) {
+                    Spacer(Modifier.height(5.dp))
+                    Text(
+                        "В теге: $tagTitle",
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            color = GlyphDim,
+                            fontSize = 11.sp,
+                        ),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                Spacer(Modifier.height(16.dp))
+                TrackFieldLabel(
+                    text = "ИСПОЛНИТЕЛЬ",
+                    canReset = track.hasCustomArtist,
+                    onReset = { artist = tagArtist },
+                )
+                Spacer(Modifier.height(7.dp))
+                GlyphTextField(
+                    value = artist,
+                    onValueChange = { artist = it.take(120) },
+                    placeholder = "Имя исполнителя",
+                )
+                if (track.hasCustomArtist) {
+                    Spacer(Modifier.height(5.dp))
+                    Text(
+                        "В теге: $tagArtist",
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            color = GlyphDim,
+                            fontSize = 11.sp,
+                        ),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    "Название и исполнитель хранятся в PIXTONE. Файл на устройстве не меняется.",
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        color = GlyphGray,
+                        fontSize = 11.sp,
+                    ),
+                )
+                Spacer(Modifier.height(18.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    GlyphButton(
+                        text = "ОТМЕНА",
+                        onClick = onDismiss,
+                        filled = false,
+                        modifier = Modifier.weight(1f),
+                    )
+                    GlyphButton(
+                        text = "СОХРАНИТЬ",
+                        onClick = { onSave(title, artist) },
+                        enabled = title.isNotBlank(),
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TrackFieldLabel(
+    text: String,
+    canReset: Boolean,
+    onReset: () -> Unit,
+) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        MicroLabel(text, color = GlyphGray)
+        Spacer(Modifier.weight(1f))
+        if (canReset) {
+            Text(
+                "СБРОСИТЬ",
+                modifier = Modifier.clickable(onClick = onReset),
+                style = MaterialTheme.typography.labelSmall.copy(
+                    color = GlyphRed,
+                    fontSize = 8.sp,
+                    letterSpacing = 0.8.sp,
+                ),
+            )
         }
     }
 }

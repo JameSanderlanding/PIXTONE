@@ -331,6 +331,16 @@ class PlayerConnection(private val context: Context) {
         updateState(player)
     }
 
+    fun updateTrackMetadata(track: Track) {
+        val player = controller ?: return
+        val item = track.toMediaItem()
+        val index = (0 until player.mediaItemCount).firstOrNull {
+            player.getMediaItemAt(it).mediaId == item.mediaId
+        } ?: return
+        player.replaceMediaItem(index, item)
+        originalItems = originalItems.map { if (it.mediaId == item.mediaId) item else it }
+    }
+
     fun stop() {
         pendingSeekMs = null
         controller?.stop()
@@ -574,8 +584,8 @@ class PlayerConnection(private val context: Context) {
             !it.startsWith("http://") && !it.startsWith("https://")
         }?.let(::localArtUri)
         val metadata = MediaMetadata.Builder()
-            .setTitle(title)
-            .setArtist(artist)
+            .setTitle(effectiveTitle)
+            .setArtist(effectiveArtist)
             .setAlbumTitle(album.ifBlank { null })
             .apply {
                 if (localArt != null) {

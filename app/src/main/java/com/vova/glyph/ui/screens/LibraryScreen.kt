@@ -63,6 +63,7 @@ import com.vova.glyph.MainViewModel
 import com.vova.glyph.SortTarget
 import com.vova.glyph.data.Playlist
 import com.vova.glyph.data.Track
+import com.vova.glyph.data.TrackSearch
 import com.vova.glyph.data.TrackSort
 import com.vova.glyph.data.TrackSorter
 import com.vova.glyph.data.TrackSorting
@@ -193,17 +194,7 @@ fun LibraryScreen(vm: MainViewModel) {
     ) { uri -> if (uri != null) vm.onFilePicked(uri) }
 
     val sorted = remember(tracks, query, sorting) {
-        val q = query.trim()
-        val matched = if (q.isBlank()) {
-            tracks
-        } else {
-            tracks.filter {
-                it.title.contains(q, ignoreCase = true) ||
-                    it.artist.contains(q, ignoreCase = true) ||
-                    it.album.contains(q, ignoreCase = true)
-            }
-        }
-        TrackSorter.apply(matched, sorting)
+        TrackSorter.apply(TrackSearch.filter(tracks, query), sorting)
     }
 
     val librarySubtitle = buildString {
@@ -440,6 +431,7 @@ fun LibraryScreen(vm: MainViewModel) {
                             showLyrics = true
                         },
                         onAddToPlaylist = { playlistTarget = track },
+                        onEditInfo = { vm.openTrackEditor(track) },
                         onDelete = { vm.deleteTrack(track) },
                         selectionMode = selectionType == LibrarySelection.TRACK,
                         selected = track.id in selectedIds,
@@ -582,7 +574,7 @@ private fun LibrarySearchField(
         Box(Modifier.weight(1f)) {
             if (query.isEmpty()) {
                 Text(
-                    "Поиск по библиотеке",
+                    "Поиск по названию или исполнителю",
                     style = MaterialTheme.typography.bodySmall.copy(color = GlyphDim),
                 )
             }

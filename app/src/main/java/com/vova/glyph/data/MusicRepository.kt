@@ -35,6 +35,11 @@ class MusicRepository(private val db: GlyphDb) {
         db.updateArtwork(trackId, artwork)
     }
 
+    suspend fun setTrackInfo(trackId: Long, title: String?, artist: String?) {
+        db.setCustomTrackInfo(trackId, title, artist)
+        refresh()
+    }
+
     suspend fun cachedLyrics(trackId: Long): CachedLyrics? = db.lyricsFor(trackId)
 
     suspend fun saveLyrics(trackId: Long, result: LyricsResult) = db.saveLyrics(trackId, result)

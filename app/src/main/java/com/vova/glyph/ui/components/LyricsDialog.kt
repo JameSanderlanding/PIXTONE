@@ -213,7 +213,7 @@ fun LyricsDialog(
                 )
                 Spacer(Modifier.height(16.dp))
                 Text(
-                    track.title,
+                    track.effectiveTitle,
                     style = MaterialTheme.typography.titleLarge.copy(color = GlyphWhite),
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,

@@ -36,7 +36,7 @@
 | UI | Jetpack Compose, Material 3 |
 | Плеер | AndroidX Media3 ExoPlayer + MediaSessionService |
 | Async | Kotlin Coroutines, StateFlow / SharedFlow |
-| БД | SQLiteOpenHelper, схема `glyph.db` версии 13 |
+| БД | SQLiteOpenHelper, схема `glyph.db` версии 15 |
 | Сеть | OkHttp, org.json, Jsoup |
 | Картинки | Coil |
 | Сборка | Gradle 9.6, AGP 9.4.1, JDK 21 |
@@ -107,7 +107,7 @@ PIXTONE/
 
 | Файл | Что делает |
 |---|---|
-| `Models.kt` | `Track`, `Playlist`, `displayArtist` |
+| `Models.kt` | `Track`, `Playlist`, `customTitle`, `effectiveTitle`, `customArtist`, `effectiveArtist`, `displayArtist` |
 | `MusicRepository.kt` | обёртка над БД + StateFlow: tracks/favorites/playlists; refresh, favorites, playlists |
 | `GlyphDb.kt` | SQLiteOpenHelper, схема и все SQL-запросы |
 | `MusicScanner.kt` | обход папки через SAF (`DocumentFile`), параллельное чтение тегов и встроенных обложек |
@@ -119,6 +119,7 @@ PIXTONE/
 | `Prefs.kt` | SharedPreferences `glyph_prefs` |
 | `QueryText.kt` | нормализация и транслитерация поисковых запросов |
 | `Lyrics.kt` | `LyricsResult`, `LyricLine`, `CachedLyrics`, парсинг LRC, gap-маркеры |
+| `TrackSearch.kt` | поиск по названию и исполнителю (включая ручные значения) и альбому |
 
 ### `playback/`
 
@@ -237,7 +238,7 @@ PIXTONE/
 ### 4.6 Альбомы
 
 - Отдельной таблицы нет: альбомы вычисляются из `tracks.album` при каждом изменении библиотеки.
-- `Albums.group(tracks)` группирует по паре «альбом + исполнитель» (регистр не важен).
+- `Albums.group(tracks)` группирует по паре «альбом + исполнитель» (регистр не важен). Исполнитель — `Track.effectiveArtist`: ручное значение из `custom_artist`, если оно задано, иначе тег `artist`.
 - Треки без тега альбома попадают в один виртуальный альбом «Без альбома» (`Albums.UNKNOWN_KEY`), он всегда последний в списке.
 - Обложка альбома — первая непустая обложка его треков; длительность — сумма длительностей.
 - Вкладка `Tab.ALBUMS` показывает сетку (2 колонки); тап открывает `AlbumDetailScreen`.
@@ -324,15 +325,24 @@ PIXTONE/
 - Тап по сообщению закрывает его мгновенно.
 - Очередь сохраняется.
 
+### 4.13 Название и исполнитель
+
+- Поиск в библиотеке (`TrackSearch`) ищет по названию, тегу исполнителя, ручным названию и исполнителю и альбому.
+- Название и исполнителя можно задать вручную из меню трека («Изменить трек») или из кнопки настроек (три точки) справа от «ТЕКСТ» в полном плеере. Диалог открывается из `GlyphRoot`, поэтому доступен на всех экранах.
+- Ручные значения хранятся в `tracks.custom_title` и `tracks.custom_artist` и не меняют аудиофайл. `Track.effectiveTitle` и `Track.effectiveArtist` используют их вместо тегов; `hasCustomTitle` / `hasCustomArtist` показывают, задано ли переопределение.
+- Повторное сканирование обновляет только теги, `custom_*` сохраняются.
+- Ручные значения используются в отображении, поиске, сортировке, группировке альбомов, обложках, текстах и метаданных плеера.
+- «Сбросить» рядом с полем очищает соответствующее переопределение, и трек снова показывает значение из тега.
+
 ---
 
 ## 5. Данные и хранилища
 
-### SQLite (`glyph.db`, версия 13)
+### SQLite (`glyph.db`, версия 15)
 
 | Таблица | Назначение |
 |---|---|
-| `tracks` | треки: title, artist, album, genre, duration, uri, artwork, favorite, source, source_id, added_at, file_size, file_mtime, track_no |
+| `tracks` | треки: title, custom_title, artist, custom_artist, album, genre, duration, uri, artwork, favorite, source, source_id, added_at, file_size, file_mtime, track_no |
 | `playlists` | плейлисты: name, description, cover, created_at |
 | `playlist_tracks` | связь плейлист↔трек + position |
 | `lyrics` | кэш текстов: plain, synced, found, fetched_at |

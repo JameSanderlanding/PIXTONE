@@ -152,6 +152,7 @@ fun FavoritesScreen(vm: MainViewModel) {
                     onClick = { vm.playTracks(favorites, index) },
                     onFavorite = { vm.toggleFavorite(track) },
                     onAddToPlaylist = { playlistTarget = track },
+                    onEditInfo = { vm.openTrackEditor(track) },
                     onDelete = { vm.deleteTrack(track) },
                 )
             }
