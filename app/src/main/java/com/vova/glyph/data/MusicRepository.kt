@@ -41,6 +41,17 @@ class MusicRepository(private val db: GlyphDb) {
 
     suspend fun markLyricsMissing(trackId: Long) = db.saveLyricsMissing(trackId)
 
+    suspend fun lyricQuotes(trackId: Long): List<LyricQuote> = db.lyricQuotes(trackId)
+
+    suspend fun addLyricQuote(trackId: Long, lines: List<LyricQuoteLine>): Boolean =
+        db.addLyricQuote(trackId, lines)
+
+    suspend fun deleteLyricQuote(trackId: Long, quoteId: Long) =
+        db.deleteLyricQuote(trackId, quoteId)
+
+    suspend fun deleteLyricHighlights(trackId: Long, lineIndices: List<Int>) =
+        db.deleteLyricHighlights(trackId, lineIndices)
+
     suspend fun toggleFavorite(trackId: Long): Boolean {
         val nowFavorite = db.toggleFavorite(trackId)
         refresh()

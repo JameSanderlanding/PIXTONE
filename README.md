@@ -58,7 +58,7 @@ PIXTONE plays the music stored on your device. No account, no cloud, no ads, no 
 - **Multi-select** — Long-press albums, tracks or playlists to select several at once, delete them in bulk and use the "select all" checkbox; search results are selected as a group.
 - **Own images** — Pick a cover from the gallery for any track and add individual audio files without choosing a folder.
 - **Sticky headers and collapsing search** — Section headers stay pinned while scrolling, and the search field folds away to give the list more room.
-- **Lyrics** — search across LRCLIB, lyrics.ovh and Genius; supports plain and synced LRC lyrics with line highlighting and tap-to-seek.
+- **Lyrics** — search across LRCLIB, lyrics.ovh and Genius; plain and synced LRC with tap-to-seek. Select any lines to copy them or keep them as a quote for that track, then jump back to the moment a quote is sung.
 - **Smart cover art** — Genius, Deezer and iTunes are queried in parallel; scraped covers are replaced with real ones.
 - **Themes** — six built-in presets, a full custom palette editor (8 colors, RGB sliders and HEX input), saved custom presets with editing and deletion.
 - **Custom typography** — three font roles (body, headings, accent) can use Doto, Pixelify Sans, Space Grotesk or the system font.

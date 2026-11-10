@@ -10,7 +10,7 @@ import kotlinx.coroutines.withContext
 
 private const val UNKNOWN_COUNT = -1
 
-class GlyphDb(context: Context) : SQLiteOpenHelper(context, "glyph.db", null, 12) {
+class GlyphDb(context: Context) : SQLiteOpenHelper(context, "glyph.db", null, 13) {
     override fun onCreate(db: SQLiteDatabase) {
         db.execSQL(
             """
@@ -60,6 +60,7 @@ class GlyphDb(context: Context) : SQLiteOpenHelper(context, "glyph.db", null, 12
         )
 
         createLyricsTable(db)
+        createLyricHighlightsTable(db)
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
@@ -103,6 +104,13 @@ class GlyphDb(context: Context) : SQLiteOpenHelper(context, "glyph.db", null, 12
         if (oldVersion < 12) {
             db.execSQL("ALTER TABLE tracks ADD COLUMN track_no INTEGER NOT NULL DEFAULT 0")
         }
+        if (oldVersion < 13) createLyricHighlightsTable(db)
+    }
+
+    override fun onDowngrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
+        // Local builds from other branches may carry a newer schema version.
+        // Keep their data and only make sure this version's tables exist.
+        createLyricHighlightsTable(db)
     }
 
     private fun createLyricsTable(db: SQLiteDatabase) {
@@ -116,6 +124,26 @@ class GlyphDb(context: Context) : SQLiteOpenHelper(context, "glyph.db", null, 12
                 fetched_at INTEGER NOT NULL DEFAULT 0
             )
             """.trimIndent()
+        )
+    }
+
+    private fun createLyricHighlightsTable(db: SQLiteDatabase) {
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS lyric_highlights (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                track_id INTEGER NOT NULL,
+                quote_id INTEGER NOT NULL,
+                line_index INTEGER NOT NULL,
+                text TEXT NOT NULL,
+                time_ms INTEGER NOT NULL DEFAULT 0,
+                created_at INTEGER NOT NULL DEFAULT 0
+            )
+            """.trimIndent()
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS idx_lyric_highlights_track " +
+                "ON lyric_highlights(track_id)"
         )
     }
 
@@ -280,6 +308,7 @@ class GlyphDb(context: Context) : SQLiteOpenHelper(context, "glyph.db", null, 12
                 val args = chunk.map { it.toString() }.toTypedArray()
                 db.delete("playlist_tracks", "track_id IN ($placeholders)", args)
                 db.delete("lyrics", "track_id IN ($placeholders)", args)
+                db.delete("lyric_highlights", "track_id IN ($placeholders)", args)
                 db.delete("tracks", "id IN ($placeholders)", args)
             }
             db.setTransactionSuccessful()
@@ -330,6 +359,103 @@ class GlyphDb(context: Context) : SQLiteOpenHelper(context, "glyph.db", null, 12
             "lyrics", null, values, SQLiteDatabase.CONFLICT_REPLACE
         )
     }
+
+    suspend fun lyricQuotes(trackId: Long): List<LyricQuote> = withContext(Dispatchers.IO) {
+        readableDatabase.query(
+            "lyric_highlights",
+            arrayOf("quote_id", "line_index", "text", "time_ms", "created_at"),
+            "track_id = ?",
+            arrayOf(trackId.toString()),
+            null, null,
+            "line_index ASC, id ASC",
+        ).use { cursor ->
+            val quotes = LinkedHashMap<Long, MutableList<LyricQuoteLine>>()
+            val createdAt = HashMap<Long, Long>()
+            while (cursor.moveToNext()) {
+                val quoteId = cursor.getLong(0)
+                quotes.getOrPut(quoteId) { mutableListOf() }
+                    .add(
+                        LyricQuoteLine(
+                            lineIndex = cursor.getInt(1),
+                            text = cursor.getString(2),
+                            timeMs = cursor.getLong(3),
+                        )
+                    )
+                createdAt.putIfAbsent(quoteId, cursor.getLong(4))
+            }
+            quotes.map { (quoteId, lines) ->
+                LyricQuote(
+                    id = quoteId,
+                    trackId = trackId,
+                    lines = lines,
+                    createdAt = createdAt[quoteId] ?: 0L,
+                )
+            }
+        }
+    }
+
+    suspend fun addLyricQuote(trackId: Long, lines: List<LyricQuoteLine>): Boolean =
+        withContext(Dispatchers.IO) {
+            if (lines.isEmpty()) return@withContext false
+            val db = writableDatabase
+            db.beginTransaction()
+            try {
+                val saved = mutableSetOf<Int>()
+                db.query(
+                    "lyric_highlights", arrayOf("line_index"),
+                    "track_id = ?", arrayOf(trackId.toString()), null, null, null,
+                ).use { cursor ->
+                    while (cursor.moveToNext()) saved += cursor.getInt(0)
+                }
+                val fresh = lines
+                    .filter { it.text.isNotBlank() && it.lineIndex !in saved }
+                    .distinctBy { it.lineIndex }
+                    .sortedBy { it.lineIndex }
+                if (fresh.isEmpty()) return@withContext false
+
+                val quoteId = db.rawQuery(
+                    "SELECT COALESCE(MAX(quote_id), 0) + 1 FROM lyric_highlights",
+                    null,
+                ).use { cursor -> if (cursor.moveToFirst()) cursor.getLong(0) else 1L }
+                val now = System.currentTimeMillis()
+                for (line in fresh) {
+                    val values = ContentValues().apply {
+                        put("track_id", trackId)
+                        put("quote_id", quoteId)
+                        put("line_index", line.lineIndex)
+                        put("text", line.text)
+                        put("time_ms", line.timeMs)
+                        put("created_at", now)
+                    }
+                    db.insert("lyric_highlights", null, values)
+                }
+                db.setTransactionSuccessful()
+                true
+            } finally {
+                db.endTransaction()
+            }
+        }
+
+    suspend fun deleteLyricQuote(trackId: Long, quoteId: Long) = withContext(Dispatchers.IO) {
+        writableDatabase.delete(
+            "lyric_highlights",
+            "track_id = ? AND quote_id = ?",
+            arrayOf(trackId.toString(), quoteId.toString()),
+        )
+    }
+
+    suspend fun deleteLyricHighlights(trackId: Long, lineIndices: List<Int>) =
+        withContext(Dispatchers.IO) {
+            if (lineIndices.isEmpty()) return@withContext
+            val placeholders = lineIndices.joinToString(",") { "?" }
+            val args = (listOf(trackId.toString()) + lineIndices.map { it.toString() })
+                .toTypedArray()
+            writableDatabase.delete(
+                "lyric_highlights",
+                "track_id = ? AND line_index IN ($placeholders)",
+                args,
+            )
+        }
 
     suspend fun playlists(): List<Playlist> = withContext(Dispatchers.IO) {
         readableDatabase.rawQuery(
