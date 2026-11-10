@@ -41,6 +41,8 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -328,6 +330,91 @@ fun GlyphChip(
             ),
             maxLines = 1,
         )
+    }
+}
+
+@Composable
+fun GlyphSlider(
+    label: String,
+    valueText: String,
+    value: Float,
+    valueRange: ClosedFloatingPointRange<Float>,
+    onValueChange: (Float) -> Unit,
+    modifier: Modifier = Modifier,
+    steps: Int = 0,
+    enabled: Boolean = true,
+) {
+    Column(modifier.fillMaxWidth()) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            MicroLabel(label, color = if (enabled) GlyphGray else GlyphDim, fontSize = 8)
+            Spacer(Modifier.weight(1f))
+            Text(
+                valueText,
+                style = MaterialTheme.typography.bodySmall.copy(
+                    color = if (enabled) GlyphWhite else GlyphDim,
+                    fontSize = 11.sp,
+                ),
+                maxLines = 1,
+            )
+        }
+        Slider(
+            value = value,
+            onValueChange = onValueChange,
+            valueRange = valueRange,
+            steps = steps,
+            enabled = enabled,
+            colors = SliderDefaults.colors(
+                thumbColor = if (enabled) GlyphWhite else GlyphDim,
+                activeTrackColor = if (enabled) GlyphRed else GlyphDim,
+                inactiveTrackColor = GlyphLine,
+                disabledThumbColor = GlyphDim,
+                disabledActiveTrackColor = GlyphDim,
+                disabledInactiveTrackColor = GlyphLine,
+                activeTickColor = Color.Transparent,
+                inactiveTickColor = Color.Transparent,
+            ),
+            modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
+        )
+    }
+}
+
+@Composable
+fun GlyphToggle(
+    label: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable(enabled = enabled) { onCheckedChange(!checked) }
+            .padding(vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        MicroLabel(label, color = if (enabled) GlyphWhite else GlyphDim, fontSize = 9)
+        Spacer(Modifier.weight(1f))
+        MicroLabel(
+            if (checked) "ВКЛ" else "ВЫКЛ",
+            color = if (checked) GlyphRed else GlyphDim,
+            fontSize = 8,
+        )
+        Spacer(Modifier.width(8.dp))
+        Box(
+            Modifier
+                .size(width = 34.dp, height = 18.dp)
+                .background(if (checked) GlyphRed else GlyphBlack, RoundedCornerShape(2.dp))
+                .border(1.dp, if (checked) GlyphRed else GlyphLine, RoundedCornerShape(2.dp))
+        ) {
+            Box(
+                Modifier
+                    .align(if (checked) Alignment.CenterEnd else Alignment.CenterStart)
+                    .padding(3.dp)
+                    .size(width = 13.dp, height = 12.dp)
+                    .background(if (checked) GlyphBlack else GlyphDim, RoundedCornerShape(1.dp))
+            )
+        }
     }
 }
 

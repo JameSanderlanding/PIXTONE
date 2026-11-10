@@ -124,8 +124,14 @@ PIXTONE/
 
 | Файл | Что делает |
 |---|---|
-| `PlaybackService.kt` | `MediaSessionService`, ExoPlayer, session activity |
-| `PlayerConnection.kt` | подключение к сервису, очередь, shuffle, repeat, состояние `PlayerUiState`, прогресс `PlayerProgress`, `completionCount` |
+| `PlaybackService.kt` | `MediaSessionService`, ExoPlayer, session activity, ленивое создание audio-эффектов, команда `QUERY_DSP` |
+| `PlayerConnection.kt` | подключение к сервису, очередь, shuffle, repeat, состояние `PlayerUiState`, прогресс `PlayerProgress`, `completionCount`, `DspUiState` и запись `fx_*` в prefs |
+| `AudioEffects.kt` | системные `Equalizer`, `BassBoost`, `LoudnessEnhancer` на audio-session плеера, снимок возможностей для UI |
+| `Dsp.kt` | `DspUiState`, формат команды `QUERY_DSP`, `Bundle`-сериализация, кодирование полос EQ |
+| `dsp/Freeverb.kt` | чистый Freeverb: 8 комбов и 4 оллпасса на канал, параметры через `ReverbSettings` |
+| `dsp/ReverbAudioProcessor.kt` | `AudioProcessor` с Freeverb, пропускает PCM байт-в-байт при выключении |
+| `dsp/DspRenderersFactory.kt` | `DefaultRenderersFactory` с `DefaultAudioSink` и собственной цепочкой процессоров |
+| `dsp/EqCurve.kt` | пресеты эквалайзера (`FLAT`, `BASS`, `VOCAL`, `ROCK`) с поправкой на скорость |
 
 ### `i18n/`
 
@@ -284,7 +290,17 @@ PIXTONE/
 - UI: `SortRow` из `ui/components/Sorts.kt` — чипы критериев + «РЕВЕРС». В библиотеке строка живёт под полем поиска и скрывается вместе с ним, в альбоме и плейлисте — над sticky-заголовком треков.
 - `file_mtime` (`DocumentFile.lastModified()`) и `track_no` (`METADATA_KEY_CD_TRACK_NUMBER`) заполняются при сканировании, для старых треков догоняются фоном (`startMetadataBackfill()`). Значение `0` = «ещё не проверяли», `-1` = «проверили, данных нет».
 
-### 4.11 Сообщения
+### 4.11 Звук и DSP
+
+- Скорость: один слайдер в раскрытом плеере, диапазон `0.5…1.5`, шаг `0.05`. Применяется через `PlaybackParameters(speed, speed)`, поэтому тон едет вместе со скоростью. Значение живёт в `fx_speed` и применяется на `connect()`.
+- Источник правды — `glyph_prefs` с ключами `fx_*`: UI пишет, `PlaybackService` слушает `OnSharedPreferenceChangeListener` (сильная ссылка в поле сервиса) и применяет эффекты в процессе-владельце `AudioTrack`.
+- `Equalizer`, `BassBoost` и `LoudnessEnhancer` создаются лениво при `audioSessionId > 0` и пересоздаются по `AnalyticsListener.onAudioSessionIdChanged`. При `audioSessionId <= 0` эффекты не создаются вообще. Если конструктор бросил исключение или `hasControl()` вернул `false`, UI показывает «не поддерживается».
+- Пресеты EQ считаются по центральным частотам полос устройства и гейнам из `bandLevelRange()`. При скорости τ полоса на выходе `f` соответствует исходной частоте `f / τ` — кривая пресета подстраивается при изменении скорости. Ручная правка полосы переводит пресет в `CUSTOM` и сохраняет уровни в `fx_eq_bands`.
+- Возможности устройства UI получает сессионной командой `QUERY_DSP` через `MediaSession.Callback.onCustomCommand`; команда добавляется в `onConnect`. Ответ — `Bundle`: число полос, центральные частоты, диапазон гейнов, текущие значения и поддержка bass/loudness.
+- Реверб — свой `AudioProcessor` на `BaseAudioProcessor`, стоит до Sonic, поэтому хвост растягивается вместе со скоростью. `roomSize`, `damp` и `wet` — `@Volatile` и читаются на каждом буфере; `onFlush` и `onReset` чистят линии задержки после seek. При выключенном ревербе PCM проходит байт-в-байт.
+- При скорости ≠ 1.0 Media3 отключает audio offload сам — на слабых устройствах растёт расход батареи.
+
+### 4.12 Сообщения
 
 - `MainViewModel.notify()` эмитит строку в `SharedFlow`.
 - `GlyphMessageHost` показывает сообщения по одному.
@@ -309,7 +325,7 @@ PIXTONE/
 
 | Файл | Ключи |
 |---|---|
-| `glyph_prefs` | `onboarding_done`, `folder_uri`, `folder_name`, `shuffle`, `sort_library`, `sort_playlist` |
+| `glyph_prefs` | `onboarding_done`, `folder_uri`, `folder_name`, `shuffle`, `sort_library`, `sort_playlist`, `hidden_albums`, `fx_speed`, `fx_eq_enabled`, `fx_eq_preset`, `fx_eq_bands`, `fx_bass_enabled`, `fx_bass_strength`, `fx_loudness_enabled`, `fx_loudness_gain`, `fx_reverb_enabled`, `fx_reverb_room`, `fx_reverb_damp`, `fx_reverb_wet` |
 | `glyph_theme` | `preset`, 8 цветов, `custom_presets` (JSON) |
 | `glyph_fonts` | `body`, `display`, `brand` |
 | `glyph_language` | `language` |
@@ -332,7 +348,7 @@ PIXTONE/
   - `openAlbumKey`;
   - `onboardingVisible`.
 - `GlyphRoot` собирает экран из этих состояний; Navigation Compose не используется.
-- Настройки — это внутренние страницы `SettingsPage`: MAIN, THEME, THEME_EDITOR, FONTS, LANGUAGE, LICENSES.
+- Настройки — это внутренние страницы `SettingsPage`: MAIN, AUDIO, THEME, THEME_EDITOR, FONTS, LANGUAGE, LICENSES.
 - Системная «назад» обрабатывается через `BackHandler` в `GlyphRoot` и `SettingsScreen`.
 
 ### Важно про `Text`

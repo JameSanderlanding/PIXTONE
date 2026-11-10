@@ -52,6 +52,7 @@ PIXTONE plays the music stored on your device. No account, no cloud, no ads, no 
 - **Local-first library** — music is read through the Storage Access Framework; nothing is uploaded anywhere.
 - **Folder scanning** — MP3, M4A, FLAC, WAV, OGG, OPUS and AAC with tags and embedded artwork.
 - **Background playback** — Media3 ExoPlayer + MediaSession, notification controls, headset and Bluetooth support.
+- **Sound tuning** — equalizer with flat, bass, vocal and rock presets plus manual bands, bass boost, loudness enhancer, a built-in reverb and playback speed from 0.5× to 1.5× with the pitch following the speed.
 - **Playlists and favorites** — fully offline, stored in a local SQLite database.
 - **Albums** — grouped automatically from file tags (album + artist), with a dedicated tab, album screen, multi-select removal from the app and per-album sorting. Audio files always stay on the device.
 - **Sorting** — Sort tracks by title, date added, file modification date, album track number or playlist order; the library and playlist choices persist between launches.
@@ -73,7 +74,7 @@ PIXTONE plays the music stored on your device. No account, no cloud, no ads, no 
 |---|---|
 | Language | Kotlin 2.2 |
 | UI | Jetpack Compose, Material 3, custom design system |
-| Playback | AndroidX Media3 (ExoPlayer), MediaSessionService |
+| Playback | AndroidX Media3 (ExoPlayer), MediaSessionService, system audio effects and a custom reverb AudioProcessor |
 | Async | Kotlin Coroutines, StateFlow / SharedFlow |
 | Images | Coil |
 | Networking | OkHttp, org.json, Jsoup |
@@ -90,7 +91,7 @@ MainActivity
         └── GlyphRoot (state-driven navigation)
               ├── LibraryScreen / FavoritesScreen
               ├── PlayerOverlay
-              ├── SettingsScreen (theme, fonts, language, licenses)
+              ├── SettingsScreen (sound, theme, fonts, language, licenses)
               └── MessageHost (queued toasts)
 
 MainViewModel ── MusicRepository ── GlyphDb (SQLite)

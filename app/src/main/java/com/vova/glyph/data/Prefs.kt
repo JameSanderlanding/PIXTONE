@@ -1,6 +1,7 @@
 package com.vova.glyph.data
 
 import android.content.Context
+import android.content.SharedPreferences
 import android.net.Uri
 
 class Prefs(context: Context) {
@@ -21,6 +22,77 @@ class Prefs(context: Context) {
     var shuffle: Boolean
         get() = sp.getBoolean("shuffle", false)
         set(value) = sp.edit().putBoolean("shuffle", value).apply()
+
+    var fxSpeed: Float
+        get() = sp.getFloat("fx_speed", 1f).coerceIn(0.5f, 1.5f)
+        set(value) = sp.edit().putFloat("fx_speed", value.coerceIn(0.5f, 1.5f)).apply()
+
+    var fxEqEnabled: Boolean
+        get() = sp.getBoolean("fx_eq_enabled", false)
+        set(value) = sp.edit().putBoolean("fx_eq_enabled", value).apply()
+
+    var fxEqPreset: String
+        get() = sp.getString("fx_eq_preset", "FLAT").orEmpty()
+        set(value) = sp.edit().putString("fx_eq_preset", value).apply()
+
+    var fxEqBands: String
+        get() = sp.getString("fx_eq_bands", "").orEmpty()
+        set(value) = sp.edit().putString("fx_eq_bands", value).apply()
+
+    var fxBassEnabled: Boolean
+        get() = sp.getBoolean("fx_bass_enabled", false)
+        set(value) = sp.edit().putBoolean("fx_bass_enabled", value).apply()
+
+    var fxBassStrength: Int
+        get() = sp.getInt("fx_bass_strength", 0).coerceIn(0, 1000)
+        set(value) = sp.edit().putInt("fx_bass_strength", value.coerceIn(0, 1000)).apply()
+
+    var fxLoudnessEnabled: Boolean
+        get() = sp.getBoolean("fx_loudness_enabled", false)
+        set(value) = sp.edit().putBoolean("fx_loudness_enabled", value).apply()
+
+    var fxLoudnessGain: Int
+        get() = sp.getInt("fx_loudness_gain", 0).coerceIn(0, 1500)
+        set(value) = sp.edit().putInt("fx_loudness_gain", value.coerceIn(0, 1500)).apply()
+
+    var fxReverbEnabled: Boolean
+        get() = sp.getBoolean("fx_reverb_enabled", false)
+        set(value) = sp.edit().putBoolean("fx_reverb_enabled", value).apply()
+
+    var fxReverbRoom: Int
+        get() = sp.getInt("fx_reverb_room", 70).coerceIn(0, 100)
+        set(value) = sp.edit().putInt("fx_reverb_room", value.coerceIn(0, 100)).apply()
+
+    var fxReverbDamp: Int
+        get() = sp.getInt("fx_reverb_damp", 40).coerceIn(0, 100)
+        set(value) = sp.edit().putInt("fx_reverb_damp", value.coerceIn(0, 100)).apply()
+
+    var fxReverbWet: Int
+        get() = sp.getInt("fx_reverb_wet", 30).coerceIn(0, 100)
+        set(value) = sp.edit().putInt("fx_reverb_wet", value.coerceIn(0, 100)).apply()
+
+    fun registerListener(listener: SharedPreferences.OnSharedPreferenceChangeListener) {
+        sp.registerOnSharedPreferenceChangeListener(listener)
+    }
+
+    fun unregisterListener(listener: SharedPreferences.OnSharedPreferenceChangeListener) {
+        sp.unregisterOnSharedPreferenceChangeListener(listener)
+    }
+
+    fun selectEqPreset(preset: String) {
+        sp.edit()
+            .putString("fx_eq_preset", preset)
+            .putBoolean("fx_eq_enabled", true)
+            .apply()
+    }
+
+    fun setCustomEq(levels: String) {
+        sp.edit()
+            .putString("fx_eq_bands", levels)
+            .putString("fx_eq_preset", "CUSTOM")
+            .putBoolean("fx_eq_enabled", true)
+            .apply()
+    }
 
     var hiddenAlbumKeys: Set<String>
         get() = sp.getStringSet("hidden_albums", emptySet())

@@ -47,6 +47,7 @@ import com.vova.glyph.ui.components.Glyph
 import com.vova.glyph.ui.components.GlyphButton
 import com.vova.glyph.ui.components.GlyphCover
 import com.vova.glyph.ui.components.GlyphIcon
+import com.vova.glyph.ui.components.GlyphSlider
 import com.vova.glyph.ui.components.LyricsDialog
 import com.vova.glyph.ui.components.MicroLabel
 import com.vova.glyph.ui.components.SegmentedProgress
@@ -60,11 +61,13 @@ import com.vova.glyph.ui.theme.GlyphLine
 import com.vova.glyph.ui.theme.GlyphRed
 import com.vova.glyph.ui.theme.GlyphSurface
 import com.vova.glyph.ui.theme.GlyphWhite
+import java.util.Locale
 
 @Composable
 fun PlayerOverlay(vm: MainViewModel) {
     val track by vm.currentTrack.collectAsStateWithLifecycle()
     val playerState by vm.playerState.collectAsStateWithLifecycle()
+    val dsp by vm.dsp.collectAsStateWithLifecycle()
     val playlists by vm.playlists.collectAsStateWithLifecycle()
     var showPlaylists by remember { mutableStateOf(false) }
     var showLyrics by remember { mutableStateOf(false) }
@@ -322,6 +325,31 @@ fun PlayerOverlay(vm: MainViewModel) {
                         )
                     }
                 }
+            }
+
+            Spacer(Modifier.height(14.dp))
+
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .background(GlyphSurface, RoundedCornerShape(2.dp))
+                    .border(1.dp, GlyphLine, RoundedCornerShape(2.dp))
+                    .padding(horizontal = 14.dp, vertical = 9.dp),
+            ) {
+                GlyphSlider(
+                    label = "СКОРОСТЬ",
+                    valueText = String.format(Locale.US, "×%.2f", dsp.speed),
+                    value = dsp.speed,
+                    valueRange = 0.5f..1.5f,
+                    steps = 19,
+                    onValueChange = vm::setSpeed,
+                )
+                Spacer(Modifier.height(2.dp))
+                MicroLabel(
+                    "ТОН МЕНЯЕТСЯ ВМЕСТЕ СО СКОРОСТЬЮ",
+                    color = GlyphDim,
+                    fontSize = 7,
+                )
             }
 
             Spacer(Modifier.height(14.dp))
