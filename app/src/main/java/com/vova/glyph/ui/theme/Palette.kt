@@ -145,10 +145,15 @@ val ThemePresets: List<ThemePreset> = listOf(
     ),
 )
 
+val AdaptivePreset = ThemePreset("adaptive", "АДАПТИВ", DefaultPalette)
+
 object ThemeController {
     private var prefs: SharedPreferences? = null
 
-    var palette by mutableStateOf(DefaultPalette)
+    var basePalette by mutableStateOf(DefaultPalette)
+        private set
+
+    var coverPalette by mutableStateOf<ThemePalette?>(null)
         private set
 
     var presetId by mutableStateOf(ThemePresets.first().id)
@@ -157,16 +162,26 @@ object ThemeController {
     var customPresets by mutableStateOf<List<ThemePreset>>(emptyList())
         private set
 
+    val adaptive: Boolean get() = presetId == AdaptivePreset.id
+
     private var draftPalette: ThemePalette? = null
     private var draftPresetId: String? = null
     private var draftEditingId: String? = null
+    private var draftActive by mutableStateOf(false)
+
+    val palette: ThemePalette
+        get() = when {
+            draftActive -> basePalette
+            !adaptive -> basePalette
+            else -> coverPalette ?: DefaultPalette
+        }
 
     val isEditingDraft: Boolean get() = draftEditingId != null
 
     val presetName: String
         get() = allPresets().firstOrNull { it.id == presetId }?.name ?: ThemePresets.first().name
 
-    fun allPresets(): List<ThemePreset> = ThemePresets + customPresets
+    fun allPresets(): List<ThemePreset> = ThemePresets + AdaptivePreset + customPresets
 
     fun attach(context: Context) {
         if (prefs != null) return
@@ -174,7 +189,7 @@ object ThemeController {
             .getSharedPreferences("glyph_theme", Context.MODE_PRIVATE)
         prefs = sp
         presetId = sp.getString(KEY_PRESET, ThemePresets.first().id) ?: ThemePresets.first().id
-        palette = ThemePalette(
+        basePalette = ThemePalette(
             background = Color(sp.getInt("bg", DefaultPalette.background.toArgb())),
             surface = Color(sp.getInt("surface", DefaultPalette.surface.toArgb())),
             surfaceHigh = Color(sp.getInt("surface_high", DefaultPalette.surfaceHigh.toArgb())),
@@ -189,8 +204,14 @@ object ThemeController {
 
     fun applyPreset(preset: ThemePreset) {
         presetId = preset.id
-        palette = preset.palette
+        if (preset.id != AdaptivePreset.id) {
+            basePalette = preset.palette
+        }
         save()
+    }
+
+    fun updateCoverPalette(value: ThemePalette?) {
+        coverPalette = value
     }
 
     fun reset() {
@@ -198,32 +219,35 @@ object ThemeController {
     }
 
     fun startDraft() {
-        if (draftPalette != null) return
-        draftPalette = palette
+        if (draftActive) return
+        draftPalette = basePalette
         draftPresetId = presetId
         draftEditingId = null
+        draftActive = true
     }
 
     fun startEdit(preset: ThemePreset) {
-        if (draftPalette == null) {
-            draftPalette = palette
+        if (!draftActive) {
+            draftPalette = basePalette
             draftPresetId = presetId
+            draftActive = true
         }
         draftEditingId = preset.id
-        palette = preset.palette
+        basePalette = preset.palette
         presetId = preset.id
     }
 
     fun setDraftColor(slot: ColorSlot, color: Color) {
-        palette = palette.with(slot, color)
+        basePalette = basePalette.with(slot, color)
     }
 
     fun cancelDraft() {
-        draftPalette?.let { palette = it }
+        draftPalette?.let { basePalette = it }
         draftPresetId?.let { presetId = it }
         draftPalette = null
         draftPresetId = null
         draftEditingId = null
+        draftActive = false
     }
 
     fun deletePreset(preset: ThemePreset) {
@@ -244,7 +268,7 @@ object ThemeController {
         if (editingId != null) {
             customPresets = customPresets.map { preset ->
                 if (preset.id == editingId) {
-                    preset.copy(name = trimmed, palette = palette)
+                    preset.copy(name = trimmed, palette = basePalette)
                 } else {
                     preset
                 }
@@ -254,7 +278,7 @@ object ThemeController {
             val created = ThemePreset(
                 id = "custom_${System.currentTimeMillis()}",
                 name = trimmed,
-                palette = palette,
+                palette = basePalette,
             )
             customPresets = customPresets + created
             presetId = created.id
@@ -262,6 +286,7 @@ object ThemeController {
         draftPalette = null
         draftPresetId = null
         draftEditingId = null
+        draftActive = false
         save()
         saveCustomPresets()
     }
@@ -270,14 +295,14 @@ object ThemeController {
         val sp = prefs ?: return
         sp.edit()
             .putString(KEY_PRESET, presetId)
-            .putInt("bg", palette.background.toArgb())
-            .putInt("surface", palette.surface.toArgb())
-            .putInt("surface_high", palette.surfaceHigh.toArgb())
-            .putInt("text", palette.text.toArgb())
-            .putInt("gray", palette.gray.toArgb())
-            .putInt("dim", palette.dim.toArgb())
-            .putInt("line", palette.line.toArgb())
-            .putInt("accent", palette.accent.toArgb())
+            .putInt("bg", basePalette.background.toArgb())
+            .putInt("surface", basePalette.surface.toArgb())
+            .putInt("surface_high", basePalette.surfaceHigh.toArgb())
+            .putInt("text", basePalette.text.toArgb())
+            .putInt("gray", basePalette.gray.toArgb())
+            .putInt("dim", basePalette.dim.toArgb())
+            .putInt("line", basePalette.line.toArgb())
+            .putInt("accent", basePalette.accent.toArgb())
             .apply()
     }
 
