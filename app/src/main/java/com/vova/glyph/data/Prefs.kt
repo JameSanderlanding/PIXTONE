@@ -79,6 +79,23 @@ class Prefs(context: Context) {
         sp.unregisterOnSharedPreferenceChangeListener(listener)
     }
 
+    fun resetFx() {
+        sp.edit()
+            .putFloat("fx_speed", 1f)
+            .putBoolean("fx_eq_enabled", false)
+            .putString("fx_eq_preset", "FLAT")
+            .putString("fx_eq_bands", "")
+            .putBoolean("fx_bass_enabled", false)
+            .putInt("fx_bass_strength", 0)
+            .putBoolean("fx_loudness_enabled", false)
+            .putInt("fx_loudness_gain", 0)
+            .putBoolean("fx_reverb_enabled", false)
+            .putInt("fx_reverb_room", 70)
+            .putInt("fx_reverb_damp", 40)
+            .putInt("fx_reverb_wet", 30)
+            .apply()
+    }
+
     fun selectEqPreset(preset: String) {
         sp.edit()
             .putString("fx_eq_preset", preset)

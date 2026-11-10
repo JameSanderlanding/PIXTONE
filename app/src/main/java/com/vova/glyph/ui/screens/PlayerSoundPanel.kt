@@ -27,6 +27,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.vova.glyph.MainViewModel
 import com.vova.glyph.playback.dsp.EqPreset
 import com.vova.glyph.ui.components.Glyph
+import com.vova.glyph.ui.components.GlyphButton
 import com.vova.glyph.ui.components.GlyphChip
 import com.vova.glyph.ui.components.GlyphIcon
 import com.vova.glyph.ui.components.GlyphSection
@@ -259,6 +260,15 @@ fun PlayerSoundSection(
             )
         }
     }
+
+    Spacer(Modifier.height(12.dp))
+
+    GlyphButton(
+        text = "СБРОСИТЬ НАСТРОЙКИ",
+        onClick = vm::resetDsp,
+        filled = false,
+        modifier = Modifier.fillMaxWidth(),
+    )
 }
 
 private val AudioPresets = listOf(

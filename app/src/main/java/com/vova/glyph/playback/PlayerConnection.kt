@@ -442,6 +442,20 @@ class PlayerConnection(private val context: Context) {
         _dsp.update { it.copy(reverbWet = wet, reverbEnabled = true) }
     }
 
+    fun resetDsp() {
+        prefs.resetFx()
+        controller?.setPlaybackParameters(PlaybackParameters(1f, 1f))
+        _dsp.update { current ->
+            DspUiState(
+                queried = current.queried,
+                attached = current.attached,
+                bands = current.bands.map { band -> band.copy(levelMb = 0) },
+                levelMinMb = current.levelMinMb,
+                levelMaxMb = current.levelMaxMb,
+            )
+        }
+    }
+
     fun clearError() {
         _state.update { it.copy(error = null) }
     }

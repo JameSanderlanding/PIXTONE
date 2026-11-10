@@ -626,6 +626,8 @@ class MainViewModel(
 
     fun setReverbWet(value: Int) = player.setReverbWet(value)
 
+    fun resetDsp() = player.resetDsp()
+
     fun fetchLyrics(track: Track) {
         if (_lyricsTrackId.value == track.id && (_lyrics.value != null || _lyricsLoading.value)) return
         viewModelScope.launch { loadLyrics(track) }
