@@ -6,7 +6,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -45,7 +44,6 @@ import com.vova.glyph.MainViewModel
 import com.vova.glyph.i18n.AppLanguage
 import com.vova.glyph.i18n.LangController
 import com.vova.glyph.i18n.tr
-import com.vova.glyph.playback.dsp.EqPreset
 import com.vova.glyph.ui.components.ColorPickerDialog
 import com.vova.glyph.ui.components.ConfirmDialog
 import com.vova.glyph.ui.components.CoverUpdateDialog
@@ -54,11 +52,9 @@ import com.vova.glyph.ui.components.DotSpinner
 import com.vova.glyph.ui.components.FilesDialog
 import com.vova.glyph.ui.components.Glyph
 import com.vova.glyph.ui.components.GlyphButton
-import com.vova.glyph.ui.components.GlyphChip
 import com.vova.glyph.ui.components.GlyphIcon
 import com.vova.glyph.ui.components.GlyphIconButton
-import com.vova.glyph.ui.components.GlyphSlider
-import com.vova.glyph.ui.components.GlyphToggle
+import com.vova.glyph.ui.components.GlyphSection
 import com.vova.glyph.ui.components.LicenseTextDialog
 import com.vova.glyph.ui.components.MicroLabel
 import com.vova.glyph.ui.components.Text
@@ -75,10 +71,8 @@ import com.vova.glyph.ui.theme.GlyphSurface
 import com.vova.glyph.ui.theme.GlyphWhite
 import com.vova.glyph.ui.theme.ThemeController
 import com.vova.glyph.ui.theme.ThemePreset
-import java.util.Locale
-import kotlin.math.roundToInt
 
-private enum class SettingsPage { MAIN, AUDIO, THEME, THEME_EDITOR, FONTS, LANGUAGE, LICENSES }
+private enum class SettingsPage { MAIN, THEME, THEME_EDITOR, FONTS, LANGUAGE, LICENSES }
 
 @Composable
 fun SettingsScreen(vm: MainViewModel) {
@@ -108,15 +102,10 @@ fun SettingsScreen(vm: MainViewModel) {
             when (page) {
                 SettingsPage.MAIN -> SettingsMain(
                     vm = vm,
-                    onAudio = { page = SettingsPage.AUDIO },
                     onTheme = { page = SettingsPage.THEME },
                     onFonts = { page = SettingsPage.FONTS },
                     onLanguage = { page = SettingsPage.LANGUAGE },
                     onLicenses = { page = SettingsPage.LICENSES },
-                )
-                SettingsPage.AUDIO -> AudioSettingsPage(
-                    vm = vm,
-                    onBack = { page = SettingsPage.MAIN },
                 )
                 SettingsPage.THEME -> ThemeSettingsPage(
                     onBack = { page = SettingsPage.MAIN },
@@ -144,13 +133,11 @@ fun SettingsScreen(vm: MainViewModel) {
 @Composable
 private fun SettingsMain(
     vm: MainViewModel,
-    onAudio: () -> Unit,
     onTheme: () -> Unit,
     onFonts: () -> Unit,
     onLanguage: () -> Unit,
     onLicenses: () -> Unit,
 ) {
-    val dsp by vm.dsp.collectAsStateWithLifecycle()
     val folderName by vm.folderName.collectAsStateWithLifecycle()
     val scanning by vm.scanning.collectAsStateWithLifecycle()
     val scanStatus by vm.scanStatus.collectAsStateWithLifecycle()
@@ -208,7 +195,7 @@ private fun SettingsMain(
     )
     Spacer(Modifier.height(22.dp))
 
-    SettingsSection(number = "01", title = "ЛОКАЛЬНАЯ МУЗЫКА") {
+    GlyphSection(number = "01", title = "ЛОКАЛЬНАЯ МУЗЫКА") {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
                 Modifier.size(42.dp).border(1.dp, GlyphLine, CircleShape),
@@ -324,17 +311,7 @@ private fun SettingsMain(
 
     Spacer(Modifier.height(14.dp))
 
-    SettingsSection(number = "02", title = "ЗВУК") {
-        SettingsLinkRow(
-            label = "ЭФФЕКТЫ",
-            value = if (dsp.anyEffectEnabled) "ВКЛ" else "ВЫКЛ",
-            onClick = onAudio,
-        )
-    }
-
-    Spacer(Modifier.height(14.dp))
-
-    SettingsSection(number = "03", title = "ОФОРМЛЕНИЕ") {
+    GlyphSection(number = "02", title = "ОФОРМЛЕНИЕ") {
         SettingsLinkRow(
             label = "ТЕМА",
             value = ThemeController.presetName,
@@ -360,7 +337,7 @@ private fun SettingsMain(
 
     Spacer(Modifier.height(14.dp))
 
-    SettingsSection(number = "04", title = "О ПРИЛОЖЕНИИ") {
+    GlyphSection(number = "03", title = "О ПРИЛОЖЕНИИ") {
         InfoRow("ВЕРСИЯ", "1.0.1")
         Spacer(Modifier.height(9.dp))
         InfoRow("СБОРКА", "PIXTONE / LOCAL-FIRST")
@@ -444,187 +421,6 @@ private fun SettingsMain(
 }
 
 @Composable
-private fun AudioSettingsPage(vm: MainViewModel, onBack: () -> Unit) {
-    val dsp by vm.dsp.collectAsStateWithLifecycle()
-
-    SettingsPageHeader(title = "ЗВУК", onBack = onBack)
-    Spacer(Modifier.height(7.dp))
-    Text(
-        "Системные эффекты Android и собственный реверб. Настройки применяются сразу и остаются на этом устройстве.",
-        style = MaterialTheme.typography.bodySmall.copy(color = GlyphGray),
-    )
-    Spacer(Modifier.height(22.dp))
-
-    SettingsSection(number = "01", title = "ЭКВАЛАЙЗЕР") {
-        val eqAvailable = dsp.eqSupported || !dsp.attached
-        GlyphToggle(
-            label = "ВКЛЮЧИТЬ",
-            checked = dsp.eqEnabled,
-            onCheckedChange = vm::setEqEnabled,
-            enabled = eqAvailable,
-        )
-        if (eqAvailable) {
-            Spacer(Modifier.height(10.dp))
-            Row(
-                Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
-                AudioPresets.forEach { (preset, label) ->
-                    GlyphChip(
-                        text = label,
-                        selected = dsp.eqPreset == preset,
-                        onClick = { vm.setEqPreset(preset) },
-                    )
-                }
-            }
-        }
-        if (dsp.eqSupported) {
-            Spacer(Modifier.height(10.dp))
-            dsp.bands.forEachIndexed { index, band ->
-                if (index > 0) Spacer(Modifier.height(4.dp))
-                GlyphSlider(
-                    label = bandLabel(band.centerHz),
-                    valueText = dbLabel(band.levelMb),
-                    value = band.levelMb.toFloat(),
-                    valueRange = dsp.levelMinMb.toFloat()..dsp.levelMaxMb.toFloat(),
-                    onValueChange = { vm.setBandLevel(index, it.roundToInt()) },
-                )
-            }
-            Spacer(Modifier.height(10.dp))
-            Text(
-                "Набор полос зависит от устройства. При изменении скорости пресеты подстраиваются под неё.",
-                style = MaterialTheme.typography.bodySmall.copy(color = GlyphDim, fontSize = 11.sp),
-            )
-        } else {
-            Spacer(Modifier.height(10.dp))
-            Text(
-                if (dsp.attached) {
-                    "Устройство не поддерживает системный эквалайзер."
-                } else {
-                    "Полосы появятся, когда начнётся воспроизведение."
-                },
-                style = MaterialTheme.typography.bodySmall.copy(color = GlyphDim, fontSize = 11.sp),
-            )
-        }
-    }
-
-    Spacer(Modifier.height(14.dp))
-
-    SettingsSection(number = "02", title = "БАС") {
-        val bassAvailable = dsp.bassSupported || !dsp.attached
-        GlyphToggle(
-            label = "ВКЛЮЧИТЬ",
-            checked = dsp.bassEnabled,
-            onCheckedChange = vm::setBassEnabled,
-            enabled = bassAvailable,
-        )
-        if (bassAvailable) {
-            Spacer(Modifier.height(8.dp))
-            GlyphSlider(
-                label = "СИЛА",
-                valueText = "${(dsp.bassStrength / 10f).roundToInt()}%",
-                value = dsp.bassStrength.toFloat(),
-                valueRange = 0f..1000f,
-                onValueChange = { vm.setBassStrength(it.roundToInt()) },
-            )
-        } else {
-            Spacer(Modifier.height(10.dp))
-            Text(
-                "Устройство не поддерживает усиление баса.",
-                style = MaterialTheme.typography.bodySmall.copy(color = GlyphDim, fontSize = 11.sp),
-            )
-        }
-    }
-
-    Spacer(Modifier.height(14.dp))
-
-    SettingsSection(number = "03", title = "ГРОМКОСТЬ") {
-        val loudnessAvailable = dsp.loudnessSupported || !dsp.attached
-        GlyphToggle(
-            label = "ВКЛЮЧИТЬ",
-            checked = dsp.loudnessEnabled,
-            onCheckedChange = vm::setLoudnessEnabled,
-            enabled = loudnessAvailable,
-        )
-        if (loudnessAvailable) {
-            Spacer(Modifier.height(8.dp))
-            GlyphSlider(
-                label = "УСИЛЕНИЕ",
-                valueText = dbLabel(dsp.loudnessGainMb),
-                value = dsp.loudnessGainMb.toFloat(),
-                valueRange = 0f..1500f,
-                onValueChange = { vm.setLoudnessGain(it.roundToInt()) },
-            )
-        } else {
-            Spacer(Modifier.height(10.dp))
-            Text(
-                "Устройство не поддерживает усиление громкости.",
-                style = MaterialTheme.typography.bodySmall.copy(color = GlyphDim, fontSize = 11.sp),
-            )
-        }
-    }
-
-    Spacer(Modifier.height(14.dp))
-
-    SettingsSection(number = "04", title = "РЕВЕРБЕРАЦИЯ") {
-        GlyphToggle(
-            label = "ВКЛЮЧИТЬ",
-            checked = dsp.reverbEnabled,
-            onCheckedChange = vm::setReverbEnabled,
-        )
-        Spacer(Modifier.height(8.dp))
-        GlyphSlider(
-            label = "РАЗМЕР",
-            valueText = "${dsp.reverbRoom}%",
-            value = dsp.reverbRoom.toFloat(),
-            valueRange = 0f..100f,
-            onValueChange = { vm.setReverbRoom(it.roundToInt()) },
-        )
-        Spacer(Modifier.height(4.dp))
-        GlyphSlider(
-            label = "ЗАТУХАНИЕ",
-            valueText = "${dsp.reverbDamp}%",
-            value = dsp.reverbDamp.toFloat(),
-            valueRange = 0f..100f,
-            onValueChange = { vm.setReverbDamp(it.roundToInt()) },
-        )
-        Spacer(Modifier.height(4.dp))
-        GlyphSlider(
-            label = "УРОВЕНЬ",
-            valueText = "${dsp.reverbWet}%",
-            value = dsp.reverbWet.toFloat(),
-            valueRange = 0f..100f,
-            onValueChange = { vm.setReverbWet(it.roundToInt()) },
-        )
-        Spacer(Modifier.height(10.dp))
-        Text(
-            "Реверб считается на телефоне и работает на любом устройстве.",
-            style = MaterialTheme.typography.bodySmall.copy(color = GlyphDim, fontSize = 11.sp),
-        )
-    }
-}
-
-private val AudioPresets = listOf(
-    EqPreset.FLAT to "ПЛОСКИЙ",
-    EqPreset.BASS to "БАС",
-    EqPreset.VOCAL to "ВОКАЛ",
-    EqPreset.ROCK to "РОК",
-    EqPreset.CUSTOM to "СВОЙ",
-)
-
-private fun bandLabel(hz: Int): String {
-    if (hz < 1000) return "$hz Hz"
-    val khz = hz / 1000f
-    return if (khz == khz.toInt().toFloat()) {
-        "${khz.toInt()} kHz"
-    } else {
-        String.format(Locale.US, "%.1f kHz", khz)
-    }
-}
-
-private fun dbLabel(mb: Int): String = String.format(Locale.US, "%+.1f dB", mb / 100f)
-
-@Composable
 private fun ThemeSettingsPage(
     onBack: () -> Unit,
     onCreatePreset: () -> Unit,
@@ -641,7 +437,7 @@ private fun ThemeSettingsPage(
     )
     Spacer(Modifier.height(22.dp))
 
-    SettingsSection(number = "01", title = "ПРЕСЕТЫ") {
+    GlyphSection(number = "01", title = "ПРЕСЕТЫ") {
         presets.forEachIndexed { index, preset ->
             if (index > 0) Spacer(Modifier.height(10.dp))
             val custom = ThemeController.customPresets.any { it.id == preset.id }
@@ -720,7 +516,7 @@ private fun ThemeEditorPage(
     )
     Spacer(Modifier.height(22.dp))
 
-    SettingsSection(number = "01", title = "НАЗВАНИЕ ПРЕСЕТА") {
+    GlyphSection(number = "01", title = "НАЗВАНИЕ ПРЕСЕТА") {
         PresetNameField(
             value = name,
             onValueChange = { name = it },
@@ -729,7 +525,7 @@ private fun ThemeEditorPage(
 
     Spacer(Modifier.height(14.dp))
 
-    SettingsSection(number = "02", title = "ПАЛИТРА") {
+    GlyphSection(number = "02", title = "ПАЛИТРА") {
         ColorSlot.entries.forEachIndexed { index, slot ->
             if (index > 0) Spacer(Modifier.height(9.dp))
             ColorSlotRow(
@@ -813,7 +609,7 @@ private fun FontsSettingsPage(onBack: () -> Unit) {
 
     FontRole.entries.forEachIndexed { roleIndex, role ->
         if (roleIndex > 0) Spacer(Modifier.height(14.dp))
-        SettingsSection(number = "0${roleIndex + 1}", title = role.label) {
+        GlyphSection(number = "0${roleIndex + 1}", title = role.label) {
             AppFont.entries.forEachIndexed { fontIndex, font ->
                 if (fontIndex > 0) Spacer(Modifier.height(9.dp))
                 FontRow(
@@ -914,7 +710,7 @@ private fun LicensesSettingsPage(onBack: () -> Unit) {
     )
     Spacer(Modifier.height(22.dp))
 
-    SettingsSection(number = "01", title = "ШРИФТЫ") {
+    GlyphSection(number = "01", title = "ШРИФТЫ") {
         FontLicenses.forEachIndexed { index, entry ->
             if (index > 0) {
                 Spacer(Modifier.height(9.dp))
@@ -927,7 +723,7 @@ private fun LicensesSettingsPage(onBack: () -> Unit) {
 
     Spacer(Modifier.height(14.dp))
 
-    SettingsSection(number = "02", title = "БИБЛИОТЕКИ") {
+    GlyphSection(number = "02", title = "БИБЛИОТЕКИ") {
         LibraryLicenses.forEachIndexed { index, entry ->
             if (index > 0) {
                 Spacer(Modifier.height(9.dp))
@@ -940,7 +736,7 @@ private fun LicensesSettingsPage(onBack: () -> Unit) {
 
     Spacer(Modifier.height(14.dp))
 
-    SettingsSection(number = "03", title = "УВЕДОМЛЕНИЯ") {
+    GlyphSection(number = "03", title = "УВЕДОМЛЕНИЯ") {
         val notices = LicenseEntry(
             name = "THIRD-PARTY NOTICES",
             license = "TXT",
@@ -991,7 +787,7 @@ private fun LanguageSettingsPage(onBack: () -> Unit) {
     )
     Spacer(Modifier.height(22.dp))
 
-    SettingsSection(number = "01", title = "ЯЗЫК") {
+    GlyphSection(number = "01", title = "ЯЗЫК") {
         AppLanguage.entries.forEachIndexed { index, language ->
             if (index > 0) Spacer(Modifier.height(9.dp))
             LanguageRow(
@@ -1204,38 +1000,6 @@ private fun SettingsLinkRow(
 private fun hexOf(color: Color): String {
     val argb = color.toArgb()
     return "#%06X".format(argb and 0xFFFFFF)
-}
-
-@Composable
-private fun SettingsSection(
-    number: String,
-    title: String,
-    content: @Composable () -> Unit,
-) {
-    val shape = RoundedCornerShape(2.dp)
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .background(GlyphSurface.copy(alpha = 0.94f), shape)
-            .border(1.dp, GlyphLine, shape)
-            .padding(16.dp)
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                number,
-                style = MaterialTheme.typography.labelLarge.copy(
-                    color = GlyphRed,
-                    fontSize = 11.sp,
-                ),
-            )
-            Spacer(Modifier.width(9.dp))
-            Box(Modifier.width(1.dp).height(11.dp).background(GlyphLine))
-            Spacer(Modifier.width(9.dp))
-            MicroLabel(title, color = GlyphGray, fontSize = 9)
-        }
-        Spacer(Modifier.height(14.dp))
-        content()
-    }
 }
 
 @Composable

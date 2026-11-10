@@ -159,7 +159,8 @@ PIXTONE/
 | `screens/AlbumsScreen.kt` | сетка альбомов, собранных из тегов |
 | `screens/AlbumDetailScreen.kt` | треки альбома, удаление альбома из приложения |
 | `screens/FavoritesScreen.kt` | избранное |
-| `screens/PlayerOverlay.kt` | полноэкранный плеер |
+| `screens/PlayerOverlay.kt` | полноэкранный плеер, кнопка и секции панели ЗВУК |
+| `screens/PlayerSoundPanel.kt` | раскрывающиеся настройки звука в плеере: скорость, реверб, бас, громкость, эквалайзер |
 | `screens/PlaylistDetailScreen.kt` | плейлист, добавление/удаление треков |
 | `screens/SettingsScreen.kt` | настройки: музыка, тема, шрифты, язык, лицензии |
 | `screens/OnboardingScreen.kt` | первый запуск и выбор папки |
@@ -292,6 +293,7 @@ PIXTONE/
 
 ### 4.11 Звук и DSP
 
+- Все настройки звука — в раскрывающейся панели ЗВУК в раскрытом плеере (кнопка `PlayerSoundSection`). Порядок секций: скорость, реверберация, бас, громкость, эквалайзер.
 - Скорость: один слайдер в раскрытом плеере, диапазон `0.5…1.5`, шаг `0.05`. Применяется через `PlaybackParameters(speed, speed)`, поэтому тон едет вместе со скоростью. Значение живёт в `fx_speed` и применяется на `connect()`.
 - Источник правды — `glyph_prefs` с ключами `fx_*`: UI пишет, `PlaybackService` слушает `OnSharedPreferenceChangeListener` (сильная ссылка в поле сервиса) и применяет эффекты в процессе-владельце `AudioTrack`.
 - `Equalizer`, `BassBoost` и `LoudnessEnhancer` создаются лениво при `audioSessionId > 0` и пересоздаются по `AnalyticsListener.onAudioSessionIdChanged`. При `audioSessionId <= 0` эффекты не создаются вообще. Если конструктор бросил исключение или `hasControl()` вернул `false`, UI показывает «не поддерживается».
@@ -348,7 +350,7 @@ PIXTONE/
   - `openAlbumKey`;
   - `onboardingVisible`.
 - `GlyphRoot` собирает экран из этих состояний; Navigation Compose не используется.
-- Настройки — это внутренние страницы `SettingsPage`: MAIN, AUDIO, THEME, THEME_EDITOR, FONTS, LANGUAGE, LICENSES.
+- Настройки — это внутренние страницы `SettingsPage`: MAIN, THEME, THEME_EDITOR, FONTS, LANGUAGE, LICENSES. Настройки звука живут не здесь, а в раскрывающейся панели ЗВУК в `PlayerOverlay`.
 - Системная «назад» обрабатывается через `BackHandler` в `GlyphRoot` и `SettingsScreen`.
 
 ### Важно про `Text`

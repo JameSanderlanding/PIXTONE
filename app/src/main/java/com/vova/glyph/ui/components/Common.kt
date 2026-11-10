@@ -346,7 +346,9 @@ fun GlyphSlider(
 ) {
     Column(modifier.fillMaxWidth()) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            MicroLabel(label, color = if (enabled) GlyphGray else GlyphDim, fontSize = 8)
+            if (label.isNotBlank()) {
+                MicroLabel(label, color = if (enabled) GlyphGray else GlyphDim, fontSize = 8)
+            }
             Spacer(Modifier.weight(1f))
             Text(
                 valueText,
@@ -415,6 +417,39 @@ fun GlyphToggle(
                     .background(if (checked) GlyphBlack else GlyphDim, RoundedCornerShape(1.dp))
             )
         }
+    }
+}
+
+@Composable
+fun GlyphSection(
+    number: String,
+    title: String,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
+    val shape = RoundedCornerShape(2.dp)
+    Column(
+        modifier
+            .fillMaxWidth()
+            .background(GlyphSurface.copy(alpha = 0.94f), shape)
+            .border(1.dp, GlyphLine, shape)
+            .padding(16.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                number,
+                style = MaterialTheme.typography.labelLarge.copy(
+                    color = GlyphRed,
+                    fontSize = 11.sp,
+                ),
+            )
+            Spacer(Modifier.width(9.dp))
+            Box(Modifier.width(1.dp).height(11.dp).background(GlyphLine))
+            Spacer(Modifier.width(9.dp))
+            MicroLabel(title, color = GlyphGray, fontSize = 9)
+        }
+        Spacer(Modifier.height(14.dp))
+        content()
     }
 }
 
