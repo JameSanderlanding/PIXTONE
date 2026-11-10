@@ -57,8 +57,10 @@ import com.vova.glyph.ui.components.GlyphIconButton
 import com.vova.glyph.ui.components.LicenseTextDialog
 import com.vova.glyph.ui.components.MicroLabel
 import com.vova.glyph.ui.components.Text
+import com.vova.glyph.ui.theme.AdaptivePreset
 import com.vova.glyph.ui.theme.AppFont
 import com.vova.glyph.ui.theme.ColorSlot
+import com.vova.glyph.ui.theme.DefaultPalette
 import com.vova.glyph.ui.theme.FontController
 import com.vova.glyph.ui.theme.FontRole
 import com.vova.glyph.ui.theme.GlyphBlack
@@ -69,6 +71,7 @@ import com.vova.glyph.ui.theme.GlyphRed
 import com.vova.glyph.ui.theme.GlyphSurface
 import com.vova.glyph.ui.theme.GlyphWhite
 import com.vova.glyph.ui.theme.ThemeController
+import com.vova.glyph.ui.theme.ThemePalette
 import com.vova.glyph.ui.theme.ThemePreset
 
 private enum class SettingsPage { MAIN, THEME, THEME_EDITOR, FONTS, LANGUAGE, LICENSES }
@@ -442,6 +445,11 @@ private fun ThemeSettingsPage(
             val custom = ThemeController.customPresets.any { it.id == preset.id }
             PresetRow(
                 preset = preset,
+                palette = if (preset.id == AdaptivePreset.id) {
+                    ThemeController.coverPalette ?: DefaultPalette
+                } else {
+                    preset.palette
+                },
                 selected = ThemeController.presetId == preset.id,
                 onClick = { ThemeController.applyPreset(preset) },
                 onEdit = if (custom) {
@@ -459,6 +467,11 @@ private fun ThemeSettingsPage(
                 },
             )
         }
+        Spacer(Modifier.height(12.dp))
+        Text(
+            "АДАПТИВ берёт тёмные оттенки обложки текущего трека. Без трека — PIXTONE.",
+            style = MaterialTheme.typography.bodySmall.copy(color = GlyphDim, fontSize = 11.sp),
+        )
     }
 
     Spacer(Modifier.height(16.dp))
@@ -829,6 +842,7 @@ private fun SettingsPageHeader(title: String, onBack: () -> Unit) {
 @Composable
 private fun PresetRow(
     preset: ThemePreset,
+    palette: ThemePalette,
     selected: Boolean,
     onClick: () -> Unit,
     onEdit: (() -> Unit)? = null,
@@ -844,11 +858,11 @@ private fun PresetRow(
             .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        PresetSwatch(preset.palette.background)
+        PresetSwatch(palette.background)
         Spacer(Modifier.width(4.dp))
-        PresetSwatch(preset.palette.text)
+        PresetSwatch(palette.text)
         Spacer(Modifier.width(4.dp))
-        PresetSwatch(preset.palette.accent)
+        PresetSwatch(palette.accent)
         Spacer(Modifier.width(10.dp))
         Text(
             preset.name,

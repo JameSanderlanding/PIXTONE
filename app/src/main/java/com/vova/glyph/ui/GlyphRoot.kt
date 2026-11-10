@@ -38,7 +38,9 @@ import com.vova.glyph.ui.screens.OnboardingScreen
 import com.vova.glyph.ui.screens.PlayerOverlay
 import com.vova.glyph.ui.screens.PlaylistDetailScreen
 import com.vova.glyph.ui.screens.SettingsScreen
+import com.vova.glyph.ui.theme.CoverTint
 import com.vova.glyph.ui.theme.GlyphBlack
+import com.vova.glyph.ui.theme.ThemeController
 
 @Composable
 fun GlyphRoot(vm: MainViewModel) {
@@ -50,6 +52,11 @@ fun GlyphRoot(vm: MainViewModel) {
     val openAlbumKey by vm.openAlbumKey.collectAsStateWithLifecycle()
     val currentTrack by vm.currentTrack.collectAsStateWithLifecycle()
     val playerState by vm.playerState.collectAsStateWithLifecycle()
+
+    val artwork = currentTrack?.artwork
+    LaunchedEffect(artwork) {
+        ThemeController.updateCoverPalette(CoverTint.paletteFor(artwork))
+    }
 
     val context = LocalContext.current
     val notificationPermission = rememberLauncherForActivityResult(

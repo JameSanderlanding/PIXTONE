@@ -185,6 +185,8 @@ private val DICT: Map<String, Tr> = mapOf(
     "СТАНДАРТ" to t("DEFAULT", "STANDARD", "PAR DÉFAUT", "默认", "デフォルト"),
     "СВОИ" to t("CUSTOM", "EIGENE", "PERSO", "自定义", "カスタム"),
     "ТЕМА" to t("THEME", "DESIGN", "THÈME", "主题", "テーマ"),
+    "АДАПТИВ" to t("ADAPTIVE", "ADAPTIV", "ADAPTATIF", "自适应", "アダプティブ"),
+    "АДАПТИВ берёт тёмные оттенки обложки текущего трека. Без трека — PIXTONE." to t("ADAPTIVE takes dark tones from the current cover. With no track, PIXTONE.", "ADAPTIV übernimmt dunkle Töne des aktuellen Covers. Ohne Titel: PIXTONE.", "ADAPTATIF reprend les tons sombres de la pochette du titre en cours. Sans titre : PIXTONE.", "自适应取当前封面的深色色调。没有曲目时使用 PIXTONE。", "アダプティブは現在のカバーの暗い色調を使います。曲がないときは PIXTONE。"),
     "ЯЗЫК" to t("LANGUAGE", "SPRACHE", "LANGUE", "语言", "言語"),
     "СВОЯ" to t("CUSTOM", "EIGENE", "PERSO", "自定义", "カスタム"),
     "ПРЕСЕТЫ" to t("PRESETS", "VORGABEN", "PRÉRÉGLAGES", "预设", "プリセット"),
