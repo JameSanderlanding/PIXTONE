@@ -153,6 +153,11 @@ class MainViewModel(
     private val _openAlbumKey = MutableStateFlow<String?>(null)
     val openAlbumKey = _openAlbumKey.asStateFlow()
 
+    private val _artistEditorId = MutableStateFlow<Long?>(null)
+    val artistEditorTrack: StateFlow<Track?> = combine(_artistEditorId, repo.tracks) { id, list ->
+        list.firstOrNull { it.id == id }
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
     val openAlbum: StateFlow<Album?> = combine(_openAlbumKey, albums) { key, list ->
         list.firstOrNull { it.key == key }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
@@ -480,7 +485,7 @@ class MainViewModel(
                         }
                         try {
                             val path = container.coverRepository.downloadCover(
-                                track.artist,
+                                track.effectiveArtist,
                                 track.title,
                                 container.artworkStore.keyFor(track.uri),
                             )
@@ -559,6 +564,11 @@ class MainViewModel(
 
     fun handleBack(): Boolean {
         return when {
+            _artistEditorId.value != null -> {
+                closeArtistEditor()
+                true
+            }
+
             _showPlayer.value -> {
                 _showPlayer.value = false
                 true
@@ -661,7 +671,7 @@ class MainViewModel(
         var waited = 0L
         while (true) {
             val result = runCatching {
-                container.lyricsRepository.fetchLyrics(track.artist, track.title)
+                container.lyricsRepository.fetchLyrics(track.effectiveArtist, track.title)
             }.getOrNull()
 
             if (result != null) {
@@ -776,6 +786,35 @@ class MainViewModel(
 
     fun closeAlbum() {
         _openAlbumKey.value = null
+    }
+
+    fun openArtistEditor(track: Track) {
+        _artistEditorId.value = track.id
+    }
+
+    fun closeArtistEditor() {
+        _artistEditorId.value = null
+    }
+
+    fun setTrackArtist(track: Track, artist: String?) {
+        val value = artist?.trim()?.takeIf { it.isNotBlank() }
+        viewModelScope.launch {
+            runCatching { repo.setCustomArtist(track.id, value) }
+                .onSuccess {
+                    _artistEditorId.value = null
+                    repo.tracks.value.firstOrNull { it.id == track.id }
+                        ?.let(player::updateTrackMetadata)
+                    notify(
+                        when {
+                            value == null && track.hasCustomArtist -> "Исполнитель сброшен"
+                            value == null -> "Исполнитель не задан"
+                            track.hasCustomArtist -> "Исполнитель обновлён"
+                            else -> "Исполнитель добавлен"
+                        }
+                    )
+                }
+                .onFailure { notify(it.message ?: "Не удалось сохранить исполнителя") }
+        }
     }
 
     fun deleteAlbum(album: Album) {

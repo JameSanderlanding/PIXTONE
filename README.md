@@ -54,6 +54,7 @@ PIXTONE plays the music stored on your device. No account, no cloud, no ads, no 
 - **Background playback** — Media3 ExoPlayer + MediaSession, notification controls, headset and Bluetooth support.
 - **Sound tuning** — a panel in the player with equalizer presets and manual bands, bass boost, loudness enhancer, a built-in reverb and playback speed from 0.5× to 1.5× with the pitch following the speed.
 - **Playlists and favorites** — fully offline, stored in a local SQLite database.
+- **Artist search and manual artist** — search matches track titles, artists and albums; set or edit an artist name for any track without touching the audio file.
 - **Albums** — grouped automatically from file tags (album + artist), with a dedicated tab, album screen, multi-select removal from the app and per-album sorting. Audio files always stay on the device.
 - **Sorting** — Sort tracks by title, date added, file modification date, album track number or playlist order; the library and playlist choices persist between launches.
 - **Multi-select** — Long-press albums, tracks or playlists to select several at once, delete them in bulk and use the "select all" checkbox; search results are selected as a group.

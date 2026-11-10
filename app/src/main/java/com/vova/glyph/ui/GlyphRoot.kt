@@ -27,6 +27,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.vova.glyph.MainViewModel
 import com.vova.glyph.Tab
 import com.vova.glyph.data.Track
+import com.vova.glyph.ui.components.ArtistEditDialog
 import com.vova.glyph.ui.components.GlyphBottomNav
 import com.vova.glyph.ui.components.GlyphMessageHost
 import com.vova.glyph.ui.components.MiniPlayer
@@ -50,6 +51,7 @@ fun GlyphRoot(vm: MainViewModel) {
     val showSettings by vm.showSettings.collectAsStateWithLifecycle()
     val openPlaylistId by vm.openPlaylistId.collectAsStateWithLifecycle()
     val openAlbumKey by vm.openAlbumKey.collectAsStateWithLifecycle()
+    val artistEditorTrack by vm.artistEditorTrack.collectAsStateWithLifecycle()
     val currentTrack by vm.currentTrack.collectAsStateWithLifecycle()
     val playerState by vm.playerState.collectAsStateWithLifecycle()
 
@@ -136,6 +138,14 @@ fun GlyphRoot(vm: MainViewModel) {
 
             if (showSettings) {
                 SettingsScreen(vm)
+            }
+
+            artistEditorTrack?.let { track ->
+                ArtistEditDialog(
+                    track = track,
+                    onDismiss = vm::closeArtistEditor,
+                    onSave = { artist -> vm.setTrackArtist(track, artist) },
+                )
             }
         }
 

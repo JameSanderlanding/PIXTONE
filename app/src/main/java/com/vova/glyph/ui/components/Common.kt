@@ -784,6 +784,7 @@ fun TrackRow(
     onFavorite: () -> Unit,
     onLyrics: (() -> Unit)? = null,
     onAddToPlaylist: (() -> Unit)? = null,
+    onEditArtist: (() -> Unit)? = null,
     onRemove: (() -> Unit)? = null,
     onDelete: (() -> Unit)? = null,
     showCover: Boolean = true,
@@ -794,7 +795,9 @@ fun TrackRow(
 ) {
     var menuOpen by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
-    val coverSeed = remember(track.title, track.artist) { track.title + track.artist }
+    val coverSeed = remember(track.title, track.effectiveArtist) {
+        track.title + track.effectiveArtist
+    }
     val durationLabel = remember(track.durationMs) { formatDuration(track.durationMs) }
     Column {
         Row(
@@ -939,6 +942,23 @@ fun TrackRow(
                                 onFavorite()
                             },
                         )
+                        if (onEditArtist != null) {
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        if (track.hasCustomArtist) {
+                                            "Изменить исполнителя"
+                                        } else {
+                                            "Указать исполнителя"
+                                        }
+                                    )
+                                },
+                                onClick = {
+                                    menuOpen = false
+                                    onEditArtist()
+                                },
+                            )
+                        }
                         if (onAddToPlaylist != null) {
                             DropdownMenuItem(
                                 text = { Text("Добавить в плейлист") },
@@ -1031,7 +1051,7 @@ fun MiniPlayer(
         ) {
             GlyphCover(
                 artwork = track.artwork,
-                seed = track.title + track.artist,
+                seed = track.title + track.effectiveArtist,
                 modifier = Modifier.size(42.dp),
             )
             Spacer(Modifier.width(11.dp))

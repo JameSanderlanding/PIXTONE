@@ -131,7 +131,7 @@ fun PlayerOverlay(vm: MainViewModel) {
             ) {
                 GlyphCover(
                     artwork = current.artwork,
-                    seed = current.title + current.artist,
+                    seed = current.title + current.effectiveArtist,
                     modifier = Modifier.fillMaxSize(),
                     corner = 3.dp,
                 )

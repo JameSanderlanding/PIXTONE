@@ -10,7 +10,7 @@ import kotlinx.coroutines.withContext
 
 private const val UNKNOWN_COUNT = -1
 
-class GlyphDb(context: Context) : SQLiteOpenHelper(context, "glyph.db", null, 13) {
+class GlyphDb(context: Context) : SQLiteOpenHelper(context, "glyph.db", null, 14) {
     override fun onCreate(db: SQLiteDatabase) {
         db.execSQL(
             """
@@ -18,6 +18,7 @@ class GlyphDb(context: Context) : SQLiteOpenHelper(context, "glyph.db", null, 13
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 title TEXT NOT NULL,
                 artist TEXT NOT NULL DEFAULT '',
+                custom_artist TEXT,
                 album TEXT NOT NULL DEFAULT '',
                 genre TEXT,
                 genre_checked INTEGER NOT NULL DEFAULT 0,
@@ -105,6 +106,11 @@ class GlyphDb(context: Context) : SQLiteOpenHelper(context, "glyph.db", null, 13
             db.execSQL("ALTER TABLE tracks ADD COLUMN track_no INTEGER NOT NULL DEFAULT 0")
         }
         if (oldVersion < 13) createLyricHighlightsTable(db)
+        if (oldVersion < 14) {
+            if (!db.hasColumn("tracks", "custom_artist")) {
+                db.execSQL("ALTER TABLE tracks ADD COLUMN custom_artist TEXT")
+            }
+        }
     }
 
     override fun onDowngrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
@@ -112,6 +118,15 @@ class GlyphDb(context: Context) : SQLiteOpenHelper(context, "glyph.db", null, 13
         // Keep their data and only make sure this version's tables exist.
         createLyricHighlightsTable(db)
     }
+
+    private fun SQLiteDatabase.hasColumn(table: String, column: String): Boolean =
+        rawQuery("PRAGMA table_info($table)", null).use { cursor ->
+            val name = cursor.getColumnIndexOrThrow("name")
+            while (cursor.moveToNext()) {
+                if (cursor.getString(name) == column) return true
+            }
+            false
+        }
 
     private fun createLyricsTable(db: SQLiteDatabase) {
         db.execSQL(
@@ -294,6 +309,14 @@ class GlyphDb(context: Context) : SQLiteOpenHelper(context, "glyph.db", null, 13
     suspend fun updateArtwork(trackId: Long, artwork: String?) = withContext(Dispatchers.IO) {
         val values = ContentValues().apply {
             if (artwork == null) putNull("artwork") else put("artwork", artwork)
+        }
+        writableDatabase.update("tracks", values, "id = ?", arrayOf(trackId.toString()))
+    }
+
+    suspend fun setCustomArtist(trackId: Long, artist: String?) = withContext(Dispatchers.IO) {
+        val value = artist?.trim()?.takeIf { it.isNotBlank() }
+        val values = ContentValues().apply {
+            if (value == null) putNull("custom_artist") else put("custom_artist", value)
         }
         writableDatabase.update("tracks", values, "id = ?", arrayOf(trackId.toString()))
     }
@@ -545,6 +568,7 @@ class GlyphDb(context: Context) : SQLiteOpenHelper(context, "glyph.db", null, 13
         id = long("id"),
         title = string("title"),
         artist = string("artist"),
+        customArtist = nullableString("custom_artist"),
         album = string("album"),
         fileModifiedAt = long("file_mtime"),
         trackNumber = int("track_no"),

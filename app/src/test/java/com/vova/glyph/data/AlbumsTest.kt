@@ -107,6 +107,24 @@ class AlbumsTest {
         assertEquals(Albums.UNKNOWN_ARTIST, album.artist)
     }
 
+    @Test
+    fun `custom artist is used for album grouping and title`() {
+        val tagTrack = track(1, "One", "Tag Artist", "Album")
+        val customTrack = tagTrack.copy(customArtist = "Custom Artist")
+
+        val albums = Albums.group(
+            listOf(
+                customTrack,
+                track(2, "Two", "Tag Artist", "Album"),
+            )
+        )
+
+        assertEquals(2, albums.size)
+        assertEquals(1, albums.count { it.artist == "Custom Artist" })
+        assertEquals(1, albums.count { it.artist == "Tag Artist" })
+        assertTrue(Albums.keyOf(customTrack) != Albums.keyOf(track(3, "One", "Tag Artist", "Album")))
+    }
+
     private fun track(
         id: Long,
         title: String,

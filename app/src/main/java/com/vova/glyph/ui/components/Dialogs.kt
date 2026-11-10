@@ -38,7 +38,9 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import coil.compose.AsyncImage
+import com.vova.glyph.data.Track
 import com.vova.glyph.ui.theme.GlyphBlack
+import com.vova.glyph.ui.theme.GlyphDim
 import com.vova.glyph.ui.theme.GlyphGray
 import com.vova.glyph.ui.theme.GlyphLine
 import com.vova.glyph.ui.theme.GlyphRed
@@ -326,6 +328,95 @@ fun CreatePlaylistDialog(
                                 onCreate(name.trim(), description.trim())
                             }
                         },
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ArtistEditDialog(
+    track: Track,
+    onDismiss: () -> Unit,
+    onSave: (String) -> Unit,
+) {
+    var value by remember(track.id) { mutableStateOf(track.effectiveArtist) }
+    val shape = RoundedCornerShape(2.dp)
+    val tagArtist = track.artist.trim()
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+    ) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 22.dp)
+                .imePadding()
+                .border(1.dp, GlyphLine, shape),
+            color = GlyphSurface,
+            shape = shape,
+        ) {
+            Column(Modifier.padding(18.dp)) {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    MicroLabel("ИСПОЛНИТЕЛЬ", color = GlyphRed)
+                    Spacer(Modifier.weight(1f))
+                    GlyphIconButton(
+                        glyph = Glyph.Close,
+                        onClick = onDismiss,
+                        size = 32.dp,
+                        iconSize = 16.dp,
+                        tint = GlyphGray,
+                    )
+                }
+                Spacer(Modifier.height(14.dp))
+                Text(
+                    track.title,
+                    style = MaterialTheme.typography.titleLarge.copy(color = GlyphWhite),
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Spacer(Modifier.height(16.dp))
+                GlyphTextField(
+                    value = value,
+                    onValueChange = { value = it.take(120) },
+                    placeholder = "Имя исполнителя",
+                )
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    "Имя хранится в PIXTONE. Файл на устройстве не меняется.",
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        color = GlyphGray,
+                        fontSize = 11.sp,
+                    ),
+                )
+                if (tagArtist.isNotBlank()) {
+                    Spacer(Modifier.height(5.dp))
+                    Text(
+                        "В теге: $tagArtist",
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            color = GlyphDim,
+                            fontSize = 11.sp,
+                        ),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                Spacer(Modifier.height(18.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    GlyphButton(
+                        text = "СБРОСИТЬ",
+                        onClick = { onSave("") },
+                        filled = false,
+                        enabled = track.hasCustomArtist,
+                        modifier = Modifier.weight(1f),
+                    )
+                    GlyphButton(
+                        text = "СОХРАНИТЬ",
+                        onClick = { onSave(value) },
+                        enabled = value.isNotBlank(),
                         modifier = Modifier.weight(1f),
                     )
                 }

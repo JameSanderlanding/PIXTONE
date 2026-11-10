@@ -4,6 +4,7 @@ data class Track(
     val id: Long = 0,
     val title: String,
     val artist: String,
+    val customArtist: String? = null,
     val album: String = "",
     val fileModifiedAt: Long = 0,
     val trackNumber: Int = 0,
@@ -16,7 +17,12 @@ data class Track(
     val addedAt: Long = 0,
     val fileSize: Long = 0,
 ) {
-    val displayArtist: String get() = artist.trim().ifBlank { "НЕИЗВЕСТНЫЙ ИСПОЛНИТЕЛЬ" }
+    val effectiveArtist: String
+        get() = customArtist?.trim().takeUnless { it.isNullOrBlank() } ?: artist.trim()
+
+    val hasCustomArtist: Boolean get() = !customArtist.isNullOrBlank()
+
+    val displayArtist: String get() = effectiveArtist.ifBlank { "НЕИЗВЕСТНЫЙ ИСПОЛНИТЕЛЬ" }
 
     companion object {
         const val SOURCE_LOCAL = "LOCAL"
