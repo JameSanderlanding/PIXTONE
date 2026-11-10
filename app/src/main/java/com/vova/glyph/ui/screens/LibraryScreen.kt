@@ -543,17 +543,22 @@ private fun LibraryLyricsDialog(
     val lyrics by vm.lyrics.collectAsStateWithLifecycle()
     val syncedLyrics by vm.syncedLyrics.collectAsStateWithLifecycle()
     val lyricsLoading by vm.lyricsLoading.collectAsStateWithLifecycle()
+    val lyricQuotes by vm.lyricQuotes.collectAsStateWithLifecycle()
     val progress by vm.progress.collectAsStateWithLifecycle()
 
     LyricsDialog(
         track = track,
         lyrics = lyrics,
         syncedLines = syncedLyrics,
+        quotes = lyricQuotes,
         positionMs = if (isCurrent) progress.positionMs else null,
         durationMs = if (isCurrent) progress.durationMs else 0L,
         onSeek = if (isCurrent) vm::seekToLine else null,
         loading = lyricsLoading,
         onRetry = { vm.fetchLyrics(track) },
+        onSaveQuote = { lines -> vm.saveLyricQuote(track.id, lines) },
+        onDeleteQuote = { quoteId -> vm.deleteLyricQuote(track.id, quoteId) },
+        onRemoveHighlights = { indices -> vm.removeLyricHighlights(track.id, indices) },
         onDismiss = onClose,
     )
 }

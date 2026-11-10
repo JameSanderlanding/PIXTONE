@@ -20,7 +20,7 @@ enum class Glyph {
     Heart, HeartFilled,
     Search, Library, Chat, Settings, Close, Plus, Check,
     Back, Download, More, Shuffle, Repeat, RepeatOne,
-    Folder, Sparkle, Trash, Text, Pencil, Album, Image,
+    Folder, Sparkle, Trash, Text, Pencil, Album, Image, Quote,
 }
 
 @Composable
@@ -267,6 +267,22 @@ fun GlyphIcon(
                     lineTo(15.8f * u, 14f * u)
                     lineTo(19.2f * u, 17.4f * u)
                 }, fill = false, close = false)
+            }
+
+            Glyph.Quote -> {
+                val mark = { x: Float ->
+                    path({
+                        moveTo(x * u, 5.5f * u)
+                        lineTo((x + 3.4f) * u, 5.5f * u)
+                        lineTo((x + 3.4f) * u, 11.2f * u)
+                        lineTo((x + 1.6f) * u, 15f * u)
+                        lineTo((x + 0.2f) * u, 13.8f * u)
+                        lineTo((x + 1.3f) * u, 11.4f * u)
+                        lineTo(x * u, 11.4f * u)
+                    }, fill = true)
+                }
+                mark(4f)
+                mark(13f)
             }
         }
     }

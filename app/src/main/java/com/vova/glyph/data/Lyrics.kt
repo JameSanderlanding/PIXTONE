@@ -57,6 +57,37 @@ data class CachedLyrics(
     val fetchedAt: Long = 0L,
 )
 
+data class LyricQuoteLine(
+    val lineIndex: Int,
+    val text: String,
+    val timeMs: Long,
+) {
+    fun matches(index: Int, text: String, timeMs: Long): Boolean =
+        (lineIndex == index && this.text == text) ||
+            (timeMs > 0L && this.timeMs == timeMs && this.text == text)
+}
+
+data class LyricQuote(
+    val id: Long,
+    val trackId: Long,
+    val lines: List<LyricQuoteLine>,
+    val createdAt: Long = 0L,
+) {
+    val text: String get() = lines.joinToString("\n") { it.text }
+
+    val timeMs: Long get() = lines.minOfOrNull { it.timeMs } ?: 0L
+
+    val firstLineIndex: Int get() = lines.minOfOrNull { it.lineIndex } ?: 0
+}
+
+fun plainLyricLines(text: String): List<String> {
+    if (text.isEmpty()) return emptyList()
+    return text.replace("\r\n", "\n")
+        .replace('\r', '\n')
+        .split('\n')
+        .map { it.trimEnd() }
+}
+
 fun List<LyricLine>.toLrc(): String = joinToString("\n") { line ->
     val minutes = line.timeMs / 60_000
     val seconds = (line.timeMs % 60_000) / 1_000

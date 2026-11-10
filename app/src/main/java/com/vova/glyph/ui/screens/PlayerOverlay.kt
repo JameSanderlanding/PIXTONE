@@ -27,6 +27,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -426,8 +427,16 @@ private fun PlayerLyricsDialog(
     val lyrics by vm.lyrics.collectAsStateWithLifecycle()
     val syncedLyrics by vm.syncedLyrics.collectAsStateWithLifecycle()
     val lyricsLoading by vm.lyricsLoading.collectAsStateWithLifecycle()
+    val lyricQuotes by vm.lyricQuotes.collectAsStateWithLifecycle()
     val progress by vm.progress.collectAsStateWithLifecycle()
 
+    var requestedTrackId by remember { mutableLongStateOf(track.id) }
+    LaunchedEffect(track.id) {
+        if (requestedTrackId != track.id) {
+            requestedTrackId = track.id
+            vm.fetchLyrics(track)
+        }
+    }
     LaunchedEffect(completionCount) {
         if (completionCount > completionBase) onClose()
     }
@@ -436,11 +445,15 @@ private fun PlayerLyricsDialog(
         track = track,
         lyrics = lyrics,
         syncedLines = syncedLyrics,
+        quotes = lyricQuotes,
         positionMs = progress.positionMs,
         durationMs = progress.durationMs,
         onSeek = vm::seekToLine,
         loading = lyricsLoading,
         onRetry = { vm.fetchLyrics(track) },
+        onSaveQuote = { lines -> vm.saveLyricQuote(track.id, lines) },
+        onDeleteQuote = { quoteId -> vm.deleteLyricQuote(track.id, quoteId) },
+        onRemoveHighlights = { indices -> vm.removeLyricHighlights(track.id, indices) },
         onDismiss = onClose,
     )
 }

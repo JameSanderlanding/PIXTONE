@@ -36,7 +36,7 @@
 | UI | Jetpack Compose, Material 3 |
 | Плеер | AndroidX Media3 ExoPlayer + MediaSessionService |
 | Async | Kotlin Coroutines, StateFlow / SharedFlow |
-| БД | SQLiteOpenHelper, схема `glyph.db` версии 12 |
+| БД | SQLiteOpenHelper, схема `glyph.db` версии 13 |
 | Сеть | OkHttp, org.json, Jsoup |
 | Картинки | Coil |
 | Сборка | Gradle 9.6, AGP 9.4.1, JDK 21 |
@@ -145,7 +145,8 @@ PIXTONE/
 | `components/LocalizedText.kt` | **кастомный `Text`**, который прогоняет строку через `tr()` |
 | `components/MessageHost.kt` | очередь всплывающих сообщений, pixel-dissolve, закрытие по тапу |
 | `components/Common.kt` | дизайн-система: кнопки, заголовки, обложки, lower nav, EmptyState и т.д. |
-| `components/Dialogs.kt` | диалоги создания плейлиста, подтверждения, текста песни |
+| `components/Dialogs.kt` | диалоги создания плейлиста, подтверждения |
+| `components/LyricsDialog.kt` | диалог текста песни, выделение строк и сохранённые цитаты |
 | `components/ColorPickerDialog.kt` | RGB-слайдеры + HEX-ввод |
 | `components/LicenseTextDialog.kt` | просмотр текста лицензии из assets |
 | `components/GlyphIcons.kt` | векторные иконки `Glyph.*` (Canvas) |
@@ -210,6 +211,10 @@ PIXTONE/
 7. Успешный/неуспешный результат кэшируется; неудача не блокирует повтор навсегда.
 8. В плеере текст автоматически закрывается, когда трек закончился.
 9. В диалоге есть кнопка «Повторить».
+10. Долгое нажатие на строку включает режим выделения; тап по строкам добавляет и убирает их. В этом режиме тап не перематывает трек.
+11. Строки можно скопировать в буфер обмена или сохранить как цитату трека. Панель действий занимает место нижней кнопки, поэтому не перекрывает список.
+12. Цитаты лежат в `lyric_highlights` и группируются по `quote_id`; они не зависят от кэша `lyrics` и работают офлайн. Повторное добавление уже сохранённых строк не создаёт дубликат.
+13. Кнопка «ЦИТАТЫ · N» в шапке открывает список цитат трека. Тап по цитате перематывает к её первой строке (когда трек играет), корзина удаляет цитату.
 
 ### 4.5 Обложки
 
@@ -296,7 +301,7 @@ PIXTONE/
 
 ## 5. Данные и хранилища
 
-### SQLite (`glyph.db`, версия 12)
+### SQLite (`glyph.db`, версия 13)
 
 | Таблица | Назначение |
 |---|---|
@@ -304,6 +309,7 @@ PIXTONE/
 | `playlists` | плейлисты: name, description, cover, created_at |
 | `playlist_tracks` | связь плейлист↔трек + position |
 | `lyrics` | кэш текстов: plain, synced, found, fetched_at |
+| `lyric_highlights` | сохранённые цитаты: track_id, quote_id, line_index, text, time_ms, created_at |
 
 ### SharedPreferences
 

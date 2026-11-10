@@ -73,4 +73,40 @@ class LyricsTest {
         assertTrue(result[4].instrumental)
         assertEquals(GAP_MARKER, result[4].text)
     }
+
+    @Test
+    fun `splits plain lyrics into lines`() {
+        val lines = plainLyricLines("first\r\nsecond\n\nfourth\r")
+
+        assertEquals(listOf("first", "second", "", "fourth", ""), lines)
+        assertTrue(plainLyricLines("").isEmpty())
+    }
+
+    @Test
+    fun `quote exposes text, first timestamp and first line index`() {
+        val quote = LyricQuote(
+            id = 1L,
+            trackId = 7L,
+            lines = listOf(
+                LyricQuoteLine(2, "first line", 12_000L),
+                LyricQuoteLine(4, "second line", 42_000L),
+            ),
+        )
+
+        assertEquals("first line\nsecond line", quote.text)
+        assertEquals(12_000L, quote.timeMs)
+        assertEquals(2, quote.firstLineIndex)
+    }
+
+    @Test
+    fun `quote line matches by index or by timestamp`() {
+        val synced = LyricQuoteLine(3, "Hello", 10_000L)
+        assertTrue(synced.matches(3, "Hello", 10_000L))
+        assertTrue(synced.matches(9, "Hello", 10_000L))
+        assertTrue(!synced.matches(3, "Other", 10_000L))
+
+        val plain = LyricQuoteLine(5, "Plain", 0L)
+        assertTrue(plain.matches(5, "Plain", 0L))
+        assertTrue(!plain.matches(6, "Plain", 0L))
+    }
 }

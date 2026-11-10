@@ -12,6 +12,8 @@ import androidx.lifecycle.viewModelScope
 import com.vova.glyph.data.Album
 import com.vova.glyph.data.Albums
 import com.vova.glyph.data.LyricLine
+import com.vova.glyph.data.LyricQuote
+import com.vova.glyph.data.LyricQuoteLine
 import com.vova.glyph.data.Playlist
 import com.vova.glyph.data.Track
 import com.vova.glyph.data.TrackSort
@@ -115,6 +117,9 @@ class MainViewModel(
 
     private val _lyricsTrackId = MutableStateFlow<Long?>(null)
     val lyricsTrackId = _lyricsTrackId.asStateFlow()
+
+    private val _lyricQuotes = MutableStateFlow<List<LyricQuote>>(emptyList())
+    val lyricQuotes = _lyricQuotes.asStateFlow()
 
     private val _artworkStatus = MutableStateFlow<String?>(null)
     val artworkStatus = _artworkStatus.asStateFlow()
@@ -609,6 +614,8 @@ class MainViewModel(
         _lyricsLoading.value = true
         _lyrics.value = null
         _syncedLyrics.value = emptyList()
+        _lyricQuotes.value = emptyList()
+        refreshLyricQuotes(track.id)
 
         val cached = runCatching { repo.cachedLyrics(track.id) }.getOrNull()
         val cachedHasText = cached != null &&
@@ -660,8 +667,39 @@ class MainViewModel(
     fun clearLyrics() {
         _lyrics.value = null
         _syncedLyrics.value = emptyList()
+        _lyricQuotes.value = emptyList()
         _lyricsTrackId.value = null
         _lyricsLoading.value = false
+    }
+
+    fun saveLyricQuote(trackId: Long, lines: List<LyricQuoteLine>) {
+        if (lines.isEmpty()) return
+        viewModelScope.launch {
+            runCatching { repo.addLyricQuote(trackId, lines) }
+            refreshLyricQuotes(trackId)
+        }
+    }
+
+    fun deleteLyricQuote(trackId: Long, quoteId: Long) {
+        viewModelScope.launch {
+            runCatching { repo.deleteLyricQuote(trackId, quoteId) }
+            refreshLyricQuotes(trackId)
+        }
+    }
+
+    fun removeLyricHighlights(trackId: Long, lineIndices: List<Int>) {
+        if (lineIndices.isEmpty()) return
+        viewModelScope.launch {
+            runCatching { repo.deleteLyricHighlights(trackId, lineIndices) }
+            refreshLyricQuotes(trackId)
+        }
+    }
+
+    private suspend fun refreshLyricQuotes(trackId: Long) {
+        val quotes = runCatching { repo.lyricQuotes(trackId) }
+            .getOrDefault(emptyList())
+            .sortedBy { it.firstLineIndex }
+        if (_lyricsTrackId.value == trackId) _lyricQuotes.value = quotes
     }
 
     fun toggleFavorite(track: Track) {
