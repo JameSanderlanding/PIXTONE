@@ -584,7 +584,7 @@ class PlayerConnection(private val context: Context) {
             !it.startsWith("http://") && !it.startsWith("https://")
         }?.let(::localArtUri)
         val metadata = MediaMetadata.Builder()
-            .setTitle(title)
+            .setTitle(effectiveTitle)
             .setArtist(effectiveArtist)
             .setAlbumTitle(album.ifBlank { null })
             .apply {

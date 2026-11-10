@@ -784,7 +784,7 @@ fun TrackRow(
     onFavorite: () -> Unit,
     onLyrics: (() -> Unit)? = null,
     onAddToPlaylist: (() -> Unit)? = null,
-    onEditArtist: (() -> Unit)? = null,
+    onEditInfo: (() -> Unit)? = null,
     onRemove: (() -> Unit)? = null,
     onDelete: (() -> Unit)? = null,
     showCover: Boolean = true,
@@ -795,8 +795,8 @@ fun TrackRow(
 ) {
     var menuOpen by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
-    val coverSeed = remember(track.title, track.effectiveArtist) {
-        track.title + track.effectiveArtist
+    val coverSeed = remember(track.effectiveTitle, track.effectiveArtist) {
+        track.effectiveTitle + track.effectiveArtist
     }
     val durationLabel = remember(track.durationMs) { formatDuration(track.durationMs) }
     Column {
@@ -843,7 +843,7 @@ fun TrackRow(
                         Spacer(Modifier.width(7.dp))
                     }
                     Text(
-                        track.title,
+                        track.effectiveTitle,
                         style = MaterialTheme.typography.titleSmall.copy(
                             color = if (isCurrent) GlyphWhite else GlyphWhite.copy(alpha = 0.94f),
                             fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Medium,
@@ -942,20 +942,12 @@ fun TrackRow(
                                 onFavorite()
                             },
                         )
-                        if (onEditArtist != null) {
+                        if (onEditInfo != null) {
                             DropdownMenuItem(
-                                text = {
-                                    Text(
-                                        if (track.hasCustomArtist) {
-                                            "Изменить исполнителя"
-                                        } else {
-                                            "Указать исполнителя"
-                                        }
-                                    )
-                                },
+                                text = { Text("Изменить трек") },
                                 onClick = {
                                     menuOpen = false
-                                    onEditArtist()
+                                    onEditInfo()
                                 },
                             )
                         }
@@ -1009,7 +1001,7 @@ fun TrackRow(
     if (confirmDelete) {
         ConfirmDialog(
             title = "Удалить трек?",
-            message = "Трек «${track.title}» будет убран из приложения. Файл на устройстве останется.",
+            message = "Трек «${track.effectiveTitle}» будет убран из приложения. Файл на устройстве останется.",
             confirmText = "Удалить",
             destructive = true,
             onConfirm = {
@@ -1051,13 +1043,13 @@ fun MiniPlayer(
         ) {
             GlyphCover(
                 artwork = track.artwork,
-                seed = track.title + track.effectiveArtist,
+                seed = track.effectiveTitle + track.effectiveArtist,
                 modifier = Modifier.size(42.dp),
             )
             Spacer(Modifier.width(11.dp))
             Column(Modifier.weight(1f)) {
                 Text(
-                    track.title,
+                    track.effectiveTitle,
                     style = MaterialTheme.typography.titleSmall.copy(
                         color = GlyphWhite,
                         fontWeight = FontWeight.Medium,
@@ -1321,7 +1313,7 @@ fun AddToPlaylistSheet(
             MicroLabel("ДОБАВИТЬ В ПЛЕЙЛИСТ", color = GlyphRed)
             Spacer(Modifier.height(8.dp))
             Text(
-                track.title,
+                track.effectiveTitle,
                 style = MaterialTheme.typography.titleLarge.copy(color = GlyphWhite),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,

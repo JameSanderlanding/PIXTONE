@@ -153,8 +153,8 @@ class MainViewModel(
     private val _openAlbumKey = MutableStateFlow<String?>(null)
     val openAlbumKey = _openAlbumKey.asStateFlow()
 
-    private val _artistEditorId = MutableStateFlow<Long?>(null)
-    val artistEditorTrack: StateFlow<Track?> = combine(_artistEditorId, repo.tracks) { id, list ->
+    private val _trackEditorId = MutableStateFlow<Long?>(null)
+    val trackEditorTrack: StateFlow<Track?> = combine(_trackEditorId, repo.tracks) { id, list ->
         list.firstOrNull { it.id == id }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
@@ -355,7 +355,7 @@ class MainViewModel(
                     _onboardingVisible.value = false
                     _tab.value = Tab.LIBRARY
                     _scanFound.value = 1
-                    notify("Трек «${track.title}» добавлен")
+                    notify("Трек «${track.effectiveTitle}» добавлен")
                 } else {
                     notify("Этот трек уже в библиотеке")
                 }
@@ -486,7 +486,7 @@ class MainViewModel(
                         try {
                             val path = container.coverRepository.downloadCover(
                                 track.effectiveArtist,
-                                track.title,
+                                track.effectiveTitle,
                                 container.artworkStore.keyFor(track.uri),
                             )
                             if (path != null) {
@@ -564,8 +564,8 @@ class MainViewModel(
 
     fun handleBack(): Boolean {
         return when {
-            _artistEditorId.value != null -> {
-                closeArtistEditor()
+            _trackEditorId.value != null -> {
+                closeTrackEditor()
                 true
             }
 
@@ -671,7 +671,7 @@ class MainViewModel(
         var waited = 0L
         while (true) {
             val result = runCatching {
-                container.lyricsRepository.fetchLyrics(track.effectiveArtist, track.title)
+                container.lyricsRepository.fetchLyrics(track.effectiveArtist, track.effectiveTitle)
             }.getOrNull()
 
             if (result != null) {
@@ -744,7 +744,7 @@ class MainViewModel(
     fun toggleFavorite(track: Track) {
         viewModelScope.launch {
             val favorite = runCatching { repo.toggleFavorite(track.id) }.getOrNull() ?: return@launch
-            notify(if (favorite) "«${track.title}» в избранном" else "Убрано из избранного")
+            notify(if (favorite) "«${track.effectiveTitle}» в избранном" else "Убрано из избранного")
         }
     }
 
@@ -788,32 +788,40 @@ class MainViewModel(
         _openAlbumKey.value = null
     }
 
-    fun openArtistEditor(track: Track) {
-        _artistEditorId.value = track.id
+    fun openTrackEditor(track: Track) {
+        _trackEditorId.value = track.id
     }
 
-    fun closeArtistEditor() {
-        _artistEditorId.value = null
+    fun closeTrackEditor() {
+        _trackEditorId.value = null
     }
 
-    fun setTrackArtist(track: Track, artist: String?) {
-        val value = artist?.trim()?.takeIf { it.isNotBlank() }
+    fun saveTrackInfo(track: Track, title: String, artist: String) {
+        val newTitle = title.trim()
+        if (newTitle.isBlank()) {
+            notify("У трека должно быть название")
+            return
+        }
+        val titleOverride = newTitle.takeUnless { it == track.title.trim() }
+        val artistOverride = artist.trim()
+            .takeIf { it.isNotBlank() }
+            ?.takeUnless { it == track.artist.trim() }
+        val nextTitle = titleOverride ?: track.title.trim()
+        val nextArtist = artistOverride ?: track.artist.trim()
+        val changed = nextTitle != track.effectiveTitle || nextArtist != track.effectiveArtist
         viewModelScope.launch {
-            runCatching { repo.setCustomArtist(track.id, value) }
+            runCatching { repo.setTrackInfo(track.id, titleOverride, artistOverride) }
                 .onSuccess {
-                    _artistEditorId.value = null
+                    _trackEditorId.value = null
                     repo.tracks.value.firstOrNull { it.id == track.id }
                         ?.let(player::updateTrackMetadata)
-                    notify(
-                        when {
-                            value == null && track.hasCustomArtist -> "Исполнитель сброшен"
-                            value == null -> "Исполнитель не задан"
-                            track.hasCustomArtist -> "Исполнитель обновлён"
-                            else -> "Исполнитель добавлен"
-                        }
-                    )
+                    val openAlbum = _openAlbumKey.value
+                    if (openAlbum != null && repo.tracks.value.none { Albums.keyOf(it) == openAlbum }) {
+                        closeAlbum()
+                    }
+                    notify(if (changed) "Трек обновлён" else "Изменений нет")
                 }
-                .onFailure { notify(it.message ?: "Не удалось сохранить исполнителя") }
+                .onFailure { notify(it.message ?: "Не удалось сохранить трек") }
         }
     }
 
@@ -859,7 +867,7 @@ class MainViewModel(
                     }
                     notify(
                         if (tracks.size == 1) {
-                            "Трек «${tracks.first().title}» убран из приложения"
+                            "Трек «${tracks.first().effectiveTitle}» убран из приложения"
                         } else {
                             "Убрано треков: ${tracks.size}"
                         }

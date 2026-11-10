@@ -3,6 +3,7 @@ package com.vova.glyph.data
 data class Track(
     val id: Long = 0,
     val title: String,
+    val customTitle: String? = null,
     val artist: String,
     val customArtist: String? = null,
     val album: String = "",
@@ -17,6 +18,11 @@ data class Track(
     val addedAt: Long = 0,
     val fileSize: Long = 0,
 ) {
+    val effectiveTitle: String
+        get() = customTitle?.trim().takeUnless { it.isNullOrBlank() } ?: title.trim()
+
+    val hasCustomTitle: Boolean get() = !customTitle.isNullOrBlank()
+
     val effectiveArtist: String
         get() = customArtist?.trim().takeUnless { it.isNullOrBlank() } ?: artist.trim()
 

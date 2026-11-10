@@ -10,13 +10,14 @@ import kotlinx.coroutines.withContext
 
 private const val UNKNOWN_COUNT = -1
 
-class GlyphDb(context: Context) : SQLiteOpenHelper(context, "glyph.db", null, 14) {
+class GlyphDb(context: Context) : SQLiteOpenHelper(context, "glyph.db", null, 15) {
     override fun onCreate(db: SQLiteDatabase) {
         db.execSQL(
             """
             CREATE TABLE tracks (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 title TEXT NOT NULL,
+                custom_title TEXT,
                 artist TEXT NOT NULL DEFAULT '',
                 custom_artist TEXT,
                 album TEXT NOT NULL DEFAULT '',
@@ -109,6 +110,11 @@ class GlyphDb(context: Context) : SQLiteOpenHelper(context, "glyph.db", null, 14
         if (oldVersion < 14) {
             if (!db.hasColumn("tracks", "custom_artist")) {
                 db.execSQL("ALTER TABLE tracks ADD COLUMN custom_artist TEXT")
+            }
+        }
+        if (oldVersion < 15) {
+            if (!db.hasColumn("tracks", "custom_title")) {
+                db.execSQL("ALTER TABLE tracks ADD COLUMN custom_title TEXT")
             }
         }
     }
@@ -313,10 +319,16 @@ class GlyphDb(context: Context) : SQLiteOpenHelper(context, "glyph.db", null, 14
         writableDatabase.update("tracks", values, "id = ?", arrayOf(trackId.toString()))
     }
 
-    suspend fun setCustomArtist(trackId: Long, artist: String?) = withContext(Dispatchers.IO) {
-        val value = artist?.trim()?.takeIf { it.isNotBlank() }
+    suspend fun setCustomTrackInfo(
+        trackId: Long,
+        title: String?,
+        artist: String?,
+    ) = withContext(Dispatchers.IO) {
+        val titleValue = title?.trim()?.takeIf { it.isNotBlank() }
+        val artistValue = artist?.trim()?.takeIf { it.isNotBlank() }
         val values = ContentValues().apply {
-            if (value == null) putNull("custom_artist") else put("custom_artist", value)
+            if (titleValue == null) putNull("custom_title") else put("custom_title", titleValue)
+            if (artistValue == null) putNull("custom_artist") else put("custom_artist", artistValue)
         }
         writableDatabase.update("tracks", values, "id = ?", arrayOf(trackId.toString()))
     }
@@ -567,6 +579,7 @@ class GlyphDb(context: Context) : SQLiteOpenHelper(context, "glyph.db", null, 14
     private fun Cursor.toTrack(): Track = Track(
         id = long("id"),
         title = string("title"),
+        customTitle = nullableString("custom_title"),
         artist = string("artist"),
         customArtist = nullableString("custom_artist"),
         album = string("album"),

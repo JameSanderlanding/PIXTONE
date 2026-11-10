@@ -18,6 +18,18 @@ class TrackSorterTest {
     }
 
     @Test
+    fun `sorts by the manually assigned title`() {
+        val custom = listOf(
+            track(1, "Zebra").copy(customTitle = "Aardvark"),
+            track(2, "Apple"),
+        )
+
+        val sorted = TrackSorter.apply(custom, TrackSorting())
+
+        assertEquals(listOf(1L, 2L), sorted.map { it.id })
+    }
+
+    @Test
     fun `sorts by added date`() {
         val sorted = TrackSorter.apply(tracks, TrackSorting(by = TrackSort.ADDED))
 

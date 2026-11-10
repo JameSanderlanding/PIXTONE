@@ -431,7 +431,7 @@ fun LibraryScreen(vm: MainViewModel) {
                             showLyrics = true
                         },
                         onAddToPlaylist = { playlistTarget = track },
-                        onEditArtist = { vm.openArtistEditor(track) },
+                        onEditInfo = { vm.openTrackEditor(track) },
                         onDelete = { vm.deleteTrack(track) },
                         selectionMode = selectionType == LibrarySelection.TRACK,
                         selected = track.id in selectedIds,

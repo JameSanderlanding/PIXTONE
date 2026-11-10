@@ -23,6 +23,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -70,6 +72,7 @@ fun PlayerOverlay(vm: MainViewModel) {
     var showPlaylists by remember { mutableStateOf(false) }
     var showSound by remember { mutableStateOf(false) }
     var showLyrics by remember { mutableStateOf(false) }
+    var showTrackMenu by remember { mutableStateOf(false) }
     var lyricsCompletionBase by remember { mutableStateOf(0L) }
 
     val coverPicker = rememberLauncherForActivityResult(
@@ -131,7 +134,7 @@ fun PlayerOverlay(vm: MainViewModel) {
             ) {
                 GlyphCover(
                     artwork = current.artwork,
-                    seed = current.title + current.effectiveArtist,
+                    seed = current.effectiveTitle + current.effectiveArtist,
                     modifier = Modifier.fillMaxSize(),
                     corner = 3.dp,
                 )
@@ -166,7 +169,7 @@ fun PlayerOverlay(vm: MainViewModel) {
                     )
                     Spacer(Modifier.height(7.dp))
                     Text(
-                        current.title,
+                        current.effectiveTitle,
                         style = MaterialTheme.typography.headlineMedium.copy(
                             color = GlyphWhite,
                             fontSize = 23.sp,
@@ -219,6 +222,26 @@ fun PlayerOverlay(vm: MainViewModel) {
                             showLyrics = true
                         },
                     )
+                    Box {
+                        PlayerAction(
+                            glyph = Glyph.More,
+                            tint = GlyphWhite,
+                            label = "НАСТРОЙКИ",
+                            onClick = { showTrackMenu = true },
+                        )
+                        DropdownMenu(
+                            expanded = showTrackMenu,
+                            onDismissRequest = { showTrackMenu = false },
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Изменить трек") },
+                                onClick = {
+                                    showTrackMenu = false
+                                    vm.openTrackEditor(current)
+                                },
+                            )
+                        }
+                    }
                 }
             }
 

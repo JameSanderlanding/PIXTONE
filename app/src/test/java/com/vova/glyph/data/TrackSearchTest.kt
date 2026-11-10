@@ -25,6 +25,14 @@ class TrackSearchTest {
             album = "",
             uri = "content://4",
         ),
+        Track(
+            id = 5,
+            title = "Original Name",
+            customTitle = "Renamed Track",
+            artist = "Artist",
+            album = "Album",
+            uri = "content://5",
+        ),
     )
 
     @Test
@@ -50,6 +58,44 @@ class TrackSearchTest {
     @Test
     fun `search matches the album`() {
         assertEquals(listOf(1L, 2L), TrackSearch.filter(tracks, "abbey").map { it.id })
+    }
+
+    @Test
+    fun `search matches a manually assigned title`() {
+        assertEquals(listOf(5L), TrackSearch.filter(tracks, "renamed").map { it.id })
+    }
+
+    @Test
+    fun `search still matches the original title after renaming`() {
+        assertEquals(listOf(5L), TrackSearch.filter(tracks, "original").map { it.id })
+    }
+
+    @Test
+    fun `custom title overrides the tag title`() {
+        val track = Track(
+            id = 8,
+            title = "Original Name",
+            customTitle = "Renamed Track",
+            artist = "Artist",
+            uri = "content://8",
+        )
+
+        assertEquals("Renamed Track", track.effectiveTitle)
+        assertTrue(track.hasCustomTitle)
+    }
+
+    @Test
+    fun `blank custom title falls back to the tag title`() {
+        val track = Track(
+            id = 9,
+            title = "Original Name",
+            customTitle = "   ",
+            artist = "Artist",
+            uri = "content://9",
+        )
+
+        assertEquals("Original Name", track.effectiveTitle)
+        assertFalse(track.hasCustomTitle)
     }
 
     @Test

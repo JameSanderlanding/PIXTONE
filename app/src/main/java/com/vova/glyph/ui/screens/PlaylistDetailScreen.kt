@@ -222,7 +222,7 @@ fun PlaylistDetailScreen(vm: MainViewModel) {
                     onClick = { vm.playTracks(sorted, index) },
                     onFavorite = { vm.toggleFavorite(track) },
                     onRemove = { vm.removeTrackFromPlaylist(currentPlaylist.id, track) },
-                    onEditArtist = { vm.openArtistEditor(track) },
+                    onEditInfo = { vm.openTrackEditor(track) },
                     onDelete = { vm.deleteTrack(track) },
                 )
             }
@@ -307,13 +307,13 @@ private fun AddTracksSheet(
                         ) {
                             GlyphCover(
                                 artwork = track.artwork,
-                                seed = track.title + track.effectiveArtist,
+                                seed = track.effectiveTitle + track.effectiveArtist,
                                 modifier = Modifier.size(40.dp),
                             )
                             Spacer(Modifier.width(11.dp))
                             Column(Modifier.weight(1f)) {
                                 Text(
-                                    track.title,
+                                    track.effectiveTitle,
                                     style = MaterialTheme.typography.titleSmall.copy(
                                         color = if (added) GlyphDim else GlyphWhite
                                     ),

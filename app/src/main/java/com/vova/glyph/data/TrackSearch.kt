@@ -11,6 +11,7 @@ object TrackSearch {
         val q = query.trim()
         if (q.isBlank()) return true
         return track.title.contains(q, ignoreCase = true) ||
+            track.effectiveTitle.contains(q, ignoreCase = true) ||
             track.artist.contains(q, ignoreCase = true) ||
             track.effectiveArtist.contains(q, ignoreCase = true) ||
             track.album.contains(q, ignoreCase = true)

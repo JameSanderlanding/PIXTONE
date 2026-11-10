@@ -337,14 +337,17 @@ fun CreatePlaylistDialog(
 }
 
 @Composable
-fun ArtistEditDialog(
+fun TrackEditDialog(
     track: Track,
     onDismiss: () -> Unit,
-    onSave: (String) -> Unit,
+    onSave: (title: String, artist: String) -> Unit,
 ) {
-    var value by remember(track.id) { mutableStateOf(track.effectiveArtist) }
+    var title by remember(track.id) { mutableStateOf(track.effectiveTitle) }
+    var artist by remember(track.id) { mutableStateOf(track.effectiveArtist) }
     val shape = RoundedCornerShape(2.dp)
+    val tagTitle = track.title.trim()
     val tagArtist = track.artist.trim()
+    val maxHeight = (LocalConfiguration.current.screenHeightDp * 0.8f).dp
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -359,9 +362,14 @@ fun ArtistEditDialog(
             color = GlyphSurface,
             shape = shape,
         ) {
-            Column(Modifier.padding(18.dp)) {
+            Column(
+                Modifier
+                    .heightIn(max = maxHeight)
+                    .verticalScroll(rememberScrollState())
+                    .padding(18.dp),
+            ) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    MicroLabel("ИСПОЛНИТЕЛЬ", color = GlyphRed)
+                    MicroLabel("НАЗВАНИЕ И ИСПОЛНИТЕЛЬ", color = GlyphRed)
                     Spacer(Modifier.weight(1f))
                     GlyphIconButton(
                         glyph = Glyph.Close,
@@ -371,28 +379,43 @@ fun ArtistEditDialog(
                         tint = GlyphGray,
                     )
                 }
-                Spacer(Modifier.height(14.dp))
-                Text(
-                    track.title,
-                    style = MaterialTheme.typography.titleLarge.copy(color = GlyphWhite),
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
                 Spacer(Modifier.height(16.dp))
+                TrackFieldLabel(
+                    text = "НАЗВАНИЕ",
+                    canReset = track.hasCustomTitle,
+                    onReset = { title = tagTitle },
+                )
+                Spacer(Modifier.height(7.dp))
                 GlyphTextField(
-                    value = value,
-                    onValueChange = { value = it.take(120) },
+                    value = title,
+                    onValueChange = { title = it.take(160) },
+                    placeholder = "Название трека",
+                )
+                if (track.hasCustomTitle) {
+                    Spacer(Modifier.height(5.dp))
+                    Text(
+                        "В теге: $tagTitle",
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            color = GlyphDim,
+                            fontSize = 11.sp,
+                        ),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                Spacer(Modifier.height(16.dp))
+                TrackFieldLabel(
+                    text = "ИСПОЛНИТЕЛЬ",
+                    canReset = track.hasCustomArtist,
+                    onReset = { artist = tagArtist },
+                )
+                Spacer(Modifier.height(7.dp))
+                GlyphTextField(
+                    value = artist,
+                    onValueChange = { artist = it.take(120) },
                     placeholder = "Имя исполнителя",
                 )
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    "Имя хранится в PIXTONE. Файл на устройстве не меняется.",
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        color = GlyphGray,
-                        fontSize = 11.sp,
-                    ),
-                )
-                if (tagArtist.isNotBlank()) {
+                if (track.hasCustomArtist) {
                     Spacer(Modifier.height(5.dp))
                     Text(
                         "В теге: $tagArtist",
@@ -404,23 +427,53 @@ fun ArtistEditDialog(
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    "Название и исполнитель хранятся в PIXTONE. Файл на устройстве не меняется.",
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        color = GlyphGray,
+                        fontSize = 11.sp,
+                    ),
+                )
                 Spacer(Modifier.height(18.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     GlyphButton(
-                        text = "СБРОСИТЬ",
-                        onClick = { onSave("") },
+                        text = "ОТМЕНА",
+                        onClick = onDismiss,
                         filled = false,
-                        enabled = track.hasCustomArtist,
                         modifier = Modifier.weight(1f),
                     )
                     GlyphButton(
                         text = "СОХРАНИТЬ",
-                        onClick = { onSave(value) },
-                        enabled = value.isNotBlank(),
+                        onClick = { onSave(title, artist) },
+                        enabled = title.isNotBlank(),
                         modifier = Modifier.weight(1f),
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun TrackFieldLabel(
+    text: String,
+    canReset: Boolean,
+    onReset: () -> Unit,
+) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        MicroLabel(text, color = GlyphGray)
+        Spacer(Modifier.weight(1f))
+        if (canReset) {
+            Text(
+                "СБРОСИТЬ",
+                modifier = Modifier.clickable(onClick = onReset),
+                style = MaterialTheme.typography.labelSmall.copy(
+                    color = GlyphRed,
+                    fontSize = 8.sp,
+                    letterSpacing = 0.8.sp,
+                ),
+            )
         }
     }
 }
