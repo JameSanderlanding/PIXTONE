@@ -446,12 +446,19 @@ class PlayerConnection(private val context: Context) {
         prefs.resetFx()
         controller?.setPlaybackParameters(PlaybackParameters(1f, 1f))
         _dsp.update { current ->
-            DspUiState(
-                queried = current.queried,
-                attached = current.attached,
+            current.copy(
                 bands = current.bands.map { band -> band.copy(levelMb = 0) },
-                levelMinMb = current.levelMinMb,
-                levelMaxMb = current.levelMaxMb,
+                eqEnabled = false,
+                eqPreset = EqPreset.FLAT,
+                bassEnabled = false,
+                bassStrength = 0,
+                loudnessEnabled = false,
+                loudnessGainMb = 0,
+                speed = 1f,
+                reverbEnabled = false,
+                reverbRoom = 70,
+                reverbDamp = 40,
+                reverbWet = 30,
             )
         }
     }
