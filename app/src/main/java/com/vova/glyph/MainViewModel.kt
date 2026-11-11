@@ -14,6 +14,7 @@ import com.vova.glyph.data.Albums
 import com.vova.glyph.data.LyricLine
 import com.vova.glyph.data.LyricQuote
 import com.vova.glyph.data.LyricQuoteLine
+import com.vova.glyph.data.OnlineTrack
 import com.vova.glyph.data.Playlist
 import com.vova.glyph.data.Track
 import com.vova.glyph.data.TrackSort
@@ -34,6 +35,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -47,10 +49,20 @@ import java.util.concurrent.atomic.AtomicInteger
 enum class SortTarget { LIBRARY, ALBUM, PLAYLIST }
 
 enum class Tab(val title: String) {
+    ONLINE("ПОИСК"),
     LIBRARY("БИБЛИОТЕКА"),
     ALBUMS("АЛЬБОМЫ"),
     FAVORITES("ИЗБРАННОЕ"),
 }
+
+enum class OnlineStatus { IDLE, LOADING, READY, EMPTY, FAILED }
+
+data class OnlineUiState(
+    val query: String = "",
+    val status: OnlineStatus = OnlineStatus.IDLE,
+    val results: List<OnlineTrack> = emptyList(),
+    val message: String? = null,
+)
 
 class MainViewModel(
     private val app: Application,
@@ -63,6 +75,7 @@ class MainViewModel(
     val tracks = repo.tracks
     val favorites = repo.favorites
     val playlists = repo.playlists
+    val onlineHistory = repo.onlineHistory
     val playerState: StateFlow<PlayerUiState> = player.state
     val progress: StateFlow<PlayerProgress> = player.progress
     val dsp: StateFlow<DspUiState> = player.dsp
@@ -146,9 +159,20 @@ class MainViewModel(
 
     private val _hiddenAlbums = MutableStateFlow(prefs.hiddenAlbumKeys)
 
+    val localTracks: StateFlow<List<Track>> = repo.tracks
+        .map { list -> list.filter { it.source == Track.SOURCE_LOCAL } }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
     val albums: StateFlow<List<Album>> = combine(repo.tracks, _hiddenAlbums) { tracks, hidden ->
-        Albums.group(tracks).filter { it.key !in hidden }
+        Albums.group(tracks.filter { it.source == Track.SOURCE_LOCAL }).filter { it.key !in hidden }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    private val _online = MutableStateFlow(OnlineUiState())
+    val online: StateFlow<OnlineUiState> = _online.asStateFlow()
+
+    private var onlineSearchJob: Job? = null
+
+    private var onlineDebounceJob: Job? = null
 
     private val _openAlbumKey = MutableStateFlow<String?>(null)
     val openAlbumKey = _openAlbumKey.asStateFlow()
@@ -181,6 +205,7 @@ class MainViewModel(
         viewModelScope.launch {
             runCatching { repo.refresh() }
             startMetadataBackfill()
+            runCatching { repo.pruneOnlineTracks(player.state.value.trackId) }
         }
         viewModelScope.launch {
             player.state.map { it.error }.collect { error ->
@@ -190,6 +215,151 @@ class MainViewModel(
                 }
             }
         }
+        viewModelScope.launch {
+            player.state.map { it.trackId }.distinctUntilChanged().collect { trackId ->
+                if (trackId != null) runCatching { repo.markOnlinePlayed(trackId) }
+            }
+        }
+    }
+
+    fun updateOnlineQuery(value: String) {
+        _online.update { it.copy(query = value) }
+        onlineDebounceJob?.cancel()
+        val query = value.trim()
+        if (query.length < MIN_ONLINE_QUERY) {
+            onlineSearchJob?.cancel()
+            _online.update {
+                it.copy(status = OnlineStatus.IDLE, results = emptyList(), message = null)
+            }
+            return
+        }
+        onlineSearchJob?.cancel()
+        onlineDebounceJob = viewModelScope.launch {
+            delay(ONLINE_DEBOUNCE_MS)
+            searchOnline(query)
+        }
+    }
+
+    fun retryOnlineSearch() {
+        val query = _online.value.query.trim()
+        if (query.length < MIN_ONLINE_QUERY) return
+        searchOnline(query)
+    }
+
+    private fun searchOnline(query: String) {
+        onlineSearchJob?.cancel()
+        onlineSearchJob = viewModelScope.launch {
+            if (!hasInternet()) {
+                _online.update {
+                    it.copy(
+                        status = OnlineStatus.FAILED,
+                        results = emptyList(),
+                        message = "Нет интернета — онлайн-каталог недоступен",
+                    )
+                }
+                return@launch
+            }
+            _online.update { it.copy(status = OnlineStatus.LOADING, message = null) }
+            runCatching { container.jioSaavn.search(query) }
+                .onSuccess { tracks ->
+                    _online.update {
+                        it.copy(
+                            status = if (tracks.isEmpty()) OnlineStatus.EMPTY else OnlineStatus.READY,
+                            results = tracks,
+                            message = null,
+                        )
+                    }
+                }
+                .onFailure { error ->
+                    if (error is CancellationException) throw error
+                    _online.update {
+                        it.copy(
+                            status = OnlineStatus.FAILED,
+                            results = emptyList(),
+                            message = "Каталог не отвечает. Проверьте интернет и попробуйте снова.",
+                        )
+                    }
+                }
+        }
+    }
+
+    fun playOnlineResult(track: OnlineTrack) {
+        val playable = _online.value.results.filter { it.streamUrl != null }
+        if (playable.none { it.id == track.id }) {
+            notify("Трек недоступен")
+            return
+        }
+        if (!hasInternet()) {
+            notify("Нет интернета — трек не загрузится")
+            return
+        }
+        viewModelScope.launch {
+            val rows = runCatching { repo.saveOnlineTracks(playable.map { it.toTrack() }) }
+                .getOrNull()
+                .orEmpty()
+            val start = rows.indexOfFirst { it.sourceId == track.id }
+            if (start < 0) {
+                notify("Не удалось открыть трек")
+                return@launch
+            }
+            player.playQueue(rows, start)
+        }
+    }
+
+    fun addOnlineToQueue(track: OnlineTrack) {
+        if (track.streamUrl == null) {
+            notify("Трек недоступен")
+            return
+        }
+        if (!hasInternet()) {
+            notify("Нет интернета — трек не загрузится")
+            return
+        }
+        viewModelScope.launch {
+            val row = saveOnlineRow(track) ?: return@launch
+            player.addToQueue(row)
+            notify("Добавлено в очередь")
+        }
+    }
+
+    fun toggleOnlineFavorite(track: OnlineTrack) {
+        viewModelScope.launch {
+            val row = saveOnlineRow(track) ?: return@launch
+            val favorite = runCatching { repo.toggleFavorite(row.id) }.getOrNull() ?: return@launch
+            notify(if (favorite) "«${track.title}» в избранном" else "Убрано из избранного")
+        }
+    }
+
+    fun addOnlineToPlaylist(playlistId: Long, track: OnlineTrack) {
+        viewModelScope.launch {
+            val row = saveOnlineRow(track) ?: return@launch
+            addTrackToPlaylist(playlistId, row)
+        }
+    }
+
+    fun playOnlineHistory(tracksToPlay: List<Track>, startIndex: Int) {
+        if (tracksToPlay.isEmpty()) return
+        if (!hasInternet()) {
+            notify("Нет интернета — трек не загрузится")
+            return
+        }
+        playTracks(tracksToPlay, startIndex)
+    }
+
+    fun removeOnlineFromHistory(track: Track) {
+        viewModelScope.launch {
+            runCatching { repo.removeOnlineFromHistory(track.id) }
+                .onSuccess { notify("Удалено из истории") }
+                .onFailure { notify(it.message ?: "Не удалось удалить из истории") }
+        }
+    }
+
+    private suspend fun saveOnlineRow(track: OnlineTrack): Track? {
+        val saved = runCatching { repo.saveOnlineTracks(listOf(track.toTrack())) }
+            .getOrNull()
+            .orEmpty()
+        if (saved.isEmpty()) notify("Не удалось сохранить трек")
+        return saved.firstOrNull()
     }
 
     fun skipOnboarding() {
@@ -960,6 +1130,10 @@ class MainViewModel(
         const val MAX_NETWORK_ERRORS = 4
 
         const val MAX_LYRICS_RETRY_MS = 4 * 60_000L
+
+        const val ONLINE_DEBOUNCE_MS = 600L
+
+        const val MIN_ONLINE_QUERY = 2
     }
 
     class Factory(private val app: Application) : ViewModelProvider.Factory {

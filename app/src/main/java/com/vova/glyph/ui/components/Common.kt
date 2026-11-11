@@ -35,6 +35,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -62,6 +63,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -774,6 +776,56 @@ fun GlyphTextField(
     )
 }
 
+@Composable
+fun GlyphSearchField(
+    query: String,
+    onQueryChange: (String) -> Unit,
+    placeholder: String,
+    modifier: Modifier = Modifier,
+    onSearch: (() -> Unit)? = null,
+) {
+    Row(
+        modifier
+            .fillMaxWidth()
+            .background(GlyphSurface, RoundedCornerShape(2.dp))
+            .border(1.dp, GlyphLine, RoundedCornerShape(2.dp))
+            .padding(horizontal = 13.dp, vertical = 11.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        GlyphIcon(Glyph.Search, tint = GlyphGray, modifier = Modifier.size(16.dp), stroke = 1.5.dp)
+        Spacer(Modifier.width(10.dp))
+        Box(Modifier.weight(1f)) {
+            if (query.isEmpty()) {
+                Text(
+                    placeholder,
+                    style = MaterialTheme.typography.bodySmall.copy(color = GlyphDim),
+                )
+            }
+            BasicTextField(
+                value = query,
+                onValueChange = onQueryChange,
+                singleLine = true,
+                textStyle = TextStyle(
+                    color = GlyphWhite,
+                    fontSize = 13.sp,
+                ),
+                cursorBrush = SolidColor(GlyphRed),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                keyboardActions = KeyboardActions(onSearch = { onSearch?.invoke() }),
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+        if (query.isNotEmpty()) {
+            Box(
+                Modifier.size(26.dp).clickable { onQueryChange("") },
+                contentAlignment = Alignment.Center,
+            ) {
+                GlyphIcon(Glyph.Close, tint = GlyphGray, modifier = Modifier.size(13.dp))
+            }
+        }
+    }
+}
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun TrackRow(
@@ -853,12 +905,25 @@ fun TrackRow(
                     )
                 }
                 Spacer(Modifier.height(3.dp))
-                Text(
-                    track.displayArtist,
-                    style = MaterialTheme.typography.bodySmall.copy(color = GlyphGray),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        track.displayArtist,
+                        style = MaterialTheme.typography.bodySmall.copy(color = GlyphGray),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false),
+                    )
+                    if (track.isOnline) {
+                        Spacer(Modifier.width(7.dp))
+                        Box(
+                            Modifier
+                                .border(1.dp, GlyphLine, RoundedCornerShape(1.dp))
+                                .padding(horizontal = 4.dp, vertical = 1.dp)
+                        ) {
+                            MicroLabel("ОНЛАЙН", color = GlyphRed, fontSize = 6)
+                        }
+                    }
+                }
             }
             Spacer(Modifier.width(8.dp))
             Text(
@@ -1241,6 +1306,7 @@ fun GlyphBottomNav(
     onSelect: (com.vova.glyph.Tab) -> Unit,
 ) {
     val items = listOf(
+        Triple(com.vova.glyph.Tab.ONLINE, Glyph.Online, "ПОИСК"),
         Triple(com.vova.glyph.Tab.LIBRARY, Glyph.Library, "БИБЛИОТЕКА"),
         Triple(com.vova.glyph.Tab.ALBUMS, Glyph.Album, "АЛЬБОМЫ"),
         Triple(com.vova.glyph.Tab.FAVORITES, Glyph.Heart, "ИЗБРАННОЕ"),

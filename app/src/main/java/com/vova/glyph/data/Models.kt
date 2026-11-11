@@ -30,8 +30,12 @@ data class Track(
 
     val displayArtist: String get() = effectiveArtist.ifBlank { "НЕИЗВЕСТНЫЙ ИСПОЛНИТЕЛЬ" }
 
+    val isOnline: Boolean get() = source != SOURCE_LOCAL
+
     companion object {
         const val SOURCE_LOCAL = "LOCAL"
+
+        const val SOURCE_JIOSAAVN = "JIOSAAVN"
     }
 }
 

@@ -35,6 +35,7 @@ import com.vova.glyph.ui.screens.AlbumDetailScreen
 import com.vova.glyph.ui.screens.AlbumsScreen
 import com.vova.glyph.ui.screens.FavoritesScreen
 import com.vova.glyph.ui.screens.LibraryScreen
+import com.vova.glyph.ui.screens.OnlineScreen
 import com.vova.glyph.ui.screens.OnboardingScreen
 import com.vova.glyph.ui.screens.PlayerOverlay
 import com.vova.glyph.ui.screens.PlaylistDetailScreen
@@ -115,6 +116,8 @@ fun GlyphRoot(vm: MainViewModel) {
                         }
 
                         Tab.FAVORITES -> FavoritesScreen(vm)
+
+                        Tab.ONLINE -> OnlineScreen(vm)
                     }
                 }
                 currentTrack?.let { track ->

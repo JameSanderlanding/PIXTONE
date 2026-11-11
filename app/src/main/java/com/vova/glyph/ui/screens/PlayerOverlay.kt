@@ -154,7 +154,7 @@ fun PlayerOverlay(vm: MainViewModel) {
                         .border(1.dp, GlyphLine, RoundedCornerShape(2.dp))
                         .padding(horizontal = 8.dp, vertical = 5.dp)
                 ) {
-                    MicroLabel("ЛОКАЛЬНЫЙ ФАЙЛ", color = GlyphWhite, fontSize = 7)
+                    MicroLabel(if (current.isOnline) "ОНЛАЙН" else "ЛОКАЛЬНЫЙ ФАЙЛ", color = GlyphWhite, fontSize = 7)
                 }
             }
 

@@ -10,7 +10,7 @@ import kotlinx.coroutines.withContext
 
 private const val UNKNOWN_COUNT = -1
 
-class GlyphDb(context: Context) : SQLiteOpenHelper(context, "glyph.db", null, 15) {
+class GlyphDb(context: Context) : SQLiteOpenHelper(context, "glyph.db", null, 16) {
     override fun onCreate(db: SQLiteDatabase) {
         db.execSQL(
             """
@@ -32,7 +32,8 @@ class GlyphDb(context: Context) : SQLiteOpenHelper(context, "glyph.db", null, 15
                 added_at INTEGER NOT NULL DEFAULT 0,
                 file_size INTEGER NOT NULL DEFAULT 0,
                 file_mtime INTEGER NOT NULL DEFAULT 0,
-                track_no INTEGER NOT NULL DEFAULT 0
+                track_no INTEGER NOT NULL DEFAULT 0,
+                played_at INTEGER NOT NULL DEFAULT 0
             )
             """.trimIndent()
         )
@@ -115,6 +116,11 @@ class GlyphDb(context: Context) : SQLiteOpenHelper(context, "glyph.db", null, 15
         if (oldVersion < 15) {
             if (!db.hasColumn("tracks", "custom_title")) {
                 db.execSQL("ALTER TABLE tracks ADD COLUMN custom_title TEXT")
+            }
+        }
+        if (oldVersion < 16) {
+            if (!db.hasColumn("tracks", "played_at")) {
+                db.execSQL("ALTER TABLE tracks ADD COLUMN played_at INTEGER NOT NULL DEFAULT 0")
             }
         }
     }
@@ -234,9 +240,124 @@ class GlyphDb(context: Context) : SQLiteOpenHelper(context, "glyph.db", null, 15
         db.update("tracks", values, "id = ?", arrayOf(id.toString()))
     }
 
+    suspend fun upsertOnline(track: Track): Long = withContext(Dispatchers.IO) {
+        val sourceId = track.sourceId.orEmpty()
+        if (sourceId.isBlank()) throw IllegalArgumentException("У онлайн-трека нет идентификатора")
+        val db = writableDatabase
+        db.query(
+            "tracks", arrayOf("id"), "source = ? AND source_id = ?",
+            arrayOf(track.source, sourceId), null, null, null,
+        ).use { cursor ->
+            if (cursor.moveToFirst()) {
+                val id = cursor.getLong(0)
+                val values = onlineValues(track).apply {
+                    put("added_at", System.currentTimeMillis())
+                }
+                db.update("tracks", values, "id = ?", arrayOf(id.toString()))
+                return@withContext id
+            }
+        }
+        val values = onlineValues(track).apply {
+            put("source", track.source)
+            put("source_id", sourceId)
+            put("favorite", if (track.favorite) 1 else 0)
+            put("added_at", System.currentTimeMillis())
+        }
+        db.insertOrThrow("tracks", null, values)
+    }
+
+    private fun onlineValues(track: Track): ContentValues = ContentValues().apply {
+        put("title", track.title)
+        put("artist", track.artist)
+        put("album", track.album)
+        put("duration", track.durationMs)
+        put("uri", track.uri)
+        if (track.artwork.isNullOrBlank()) putNull("artwork") else put("artwork", track.artwork)
+    }
+
+    suspend fun pruneOnlineTracks(keepId: Long?): List<Long> = withContext(Dispatchers.IO) {
+        val db = writableDatabase
+        val cutoff = System.currentTimeMillis() - ONLINE_TTL_MS
+        val selection = buildString {
+            append("source != ? AND favorite = 0 AND played_at = 0 AND added_at < ?")
+            append(" AND id NOT IN (SELECT track_id FROM playlist_tracks)")
+            if (keepId != null) append(" AND id != ?")
+        }
+        val args = buildList {
+            add(Track.SOURCE_LOCAL)
+            add(cutoff.toString())
+            if (keepId != null) add(keepId.toString())
+        }.toTypedArray()
+        val ids = mutableListOf<Long>()
+        db.query("tracks", arrayOf("id"), selection, args, null, null, null).use { cursor ->
+            while (cursor.moveToNext()) ids += cursor.getLong(0)
+        }
+        if (ids.isNotEmpty()) deleteTracks(ids)
+        ids
+    }
+
+    suspend fun markOnlinePlayed(trackId: Long): Boolean = withContext(Dispatchers.IO) {
+        val values = ContentValues().apply { put("played_at", System.currentTimeMillis()) }
+        writableDatabase.update(
+            "tracks", values, "id = ? AND source != ?",
+            arrayOf(trackId.toString(), Track.SOURCE_LOCAL),
+        ) > 0
+    }
+
+    suspend fun onlineHistory(limit: Int): List<Track> = withContext(Dispatchers.IO) {
+        readableDatabase.query(
+            "tracks", null, "played_at > 0 AND source != ?",
+            arrayOf(Track.SOURCE_LOCAL), null, null, "played_at DESC", limit.toString(),
+        ).use { it.toTracks() }
+    }
+
+    suspend fun trimOnlineHistory(limit: Int) = withContext(Dispatchers.IO) {
+        val db = writableDatabase
+        val extra = mutableListOf<Long>()
+        db.query(
+            "tracks", arrayOf("id"), "played_at > 0 AND source != ?",
+            arrayOf(Track.SOURCE_LOCAL), null, null, "played_at DESC",
+            "$limit, ${Int.MAX_VALUE}",
+        ).use { cursor ->
+            while (cursor.moveToNext()) extra += cursor.getLong(0)
+        }
+        if (extra.isEmpty()) return@withContext
+        val removable = extra.filter { !isSavedTrack(db, it) }
+        if (removable.isNotEmpty()) deleteTracks(removable)
+        val rest = extra - removable.toSet()
+        if (rest.isNotEmpty()) clearPlayedAt(db, rest)
+    }
+
+    suspend fun removeOnlineHistory(trackId: Long) = withContext(Dispatchers.IO) {
+        clearPlayedAt(writableDatabase, listOf(trackId))
+    }
+
+    private fun isSavedTrack(db: SQLiteDatabase, trackId: Long): Boolean {
+        db.query(
+            "tracks", arrayOf("favorite"), "id = ?", arrayOf(trackId.toString()),
+            null, null, null,
+        ).use { cursor ->
+            if (cursor.moveToFirst() && cursor.getInt(0) != 0) return true
+        }
+        db.query(
+            "playlist_tracks", arrayOf("track_id"), "track_id = ?",
+            arrayOf(trackId.toString()), null, null, null, "1",
+        ).use { return it.moveToFirst() }
+    }
+
+    private fun clearPlayedAt(db: SQLiteDatabase, ids: List<Long>) {
+        val values = ContentValues().apply { put("played_at", 0) }
+        ids.chunked(DELETE_CHUNK).forEach { chunk ->
+            val placeholders = chunk.joinToString(",") { "?" }
+            val args = chunk.map { it.toString() }.toTypedArray()
+            db.update("tracks", values, "id IN ($placeholders)", args)
+        }
+    }
+
     suspend fun tracksWithoutFileDate(): List<Pair<Long, String>> = withContext(Dispatchers.IO) {
         readableDatabase.query(
-            "tracks", arrayOf("id", "uri"), "file_mtime = 0", null, null, null, "id ASC"
+            "tracks", arrayOf("id", "uri"), "file_mtime = 0 AND source = ?",
+            arrayOf(Track.SOURCE_LOCAL), null, null, "id ASC"
         ).use { cursor ->
             buildList {
                 while (cursor.moveToNext()) {
@@ -253,7 +374,8 @@ class GlyphDb(context: Context) : SQLiteOpenHelper(context, "glyph.db", null, 15
 
     suspend fun tracksWithoutTrackNumber(): List<Pair<Long, String>> = withContext(Dispatchers.IO) {
         readableDatabase.query(
-            "tracks", arrayOf("id", "uri"), "track_no = 0", null, null, null, "id ASC"
+            "tracks", arrayOf("id", "uri"), "track_no = 0 AND source = ?",
+            arrayOf(Track.SOURCE_LOCAL), null, null, "id ASC"
         ).use { cursor ->
             buildList {
                 while (cursor.moveToNext()) {
@@ -609,5 +731,7 @@ class GlyphDb(context: Context) : SQLiteOpenHelper(context, "glyph.db", null, 15
 
     private companion object {
         const val DELETE_CHUNK = 500
+
+        const val ONLINE_TTL_MS = 7L * 24 * 60 * 60 * 1000
     }
 }

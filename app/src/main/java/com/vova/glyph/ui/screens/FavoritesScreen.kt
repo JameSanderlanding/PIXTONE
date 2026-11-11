@@ -56,7 +56,7 @@ fun FavoritesScreen(vm: MainViewModel) {
 
     Column(Modifier.fillMaxSize()) {
         ScreenHeader(
-            index = "03",
+            index = "04",
             title = "Избранное",
             subtitle = "${favorites.size} ТРЕКОВ · СОБРАНО ВРУЧНУЮ",
             onSettings = vm::openSettings,
@@ -81,7 +81,10 @@ fun FavoritesScreen(vm: MainViewModel) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(Modifier.size(5.dp).background(GlyphRed, CircleShape))
                     Spacer(Modifier.size(7.dp))
-                    MicroLabel("НА УСТРОЙСТВЕ", color = GlyphDim)
+                    MicroLabel(
+                        if (favorites.any { it.isOnline }) "ЛОКАЛЬНО И ОНЛАЙН" else "НА УСТРОЙСТВЕ",
+                        color = GlyphDim,
+                    )
                 }
             }
         }

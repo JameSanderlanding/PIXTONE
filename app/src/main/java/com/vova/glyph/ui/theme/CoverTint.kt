@@ -5,9 +5,13 @@ import android.graphics.BitmapFactory
 import android.util.LruCache
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import com.vova.glyph.data.OnlineEndpoints
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import java.io.File
+import java.util.concurrent.TimeUnit
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.pow
@@ -22,6 +26,11 @@ object CoverTint {
     private const val MIN_ACCENT_CONTRAST = 3.5
 
     private val cache = LruCache<String, ThemePalette>(CACHE_SIZE)
+
+    private val httpClient = OkHttpClient.Builder()
+        .connectTimeout(HTTP_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+        .readTimeout(HTTP_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+        .build()
 
     suspend fun paletteFor(path: String?): ThemePalette? {
         if (path.isNullOrBlank()) return null
@@ -74,6 +83,9 @@ object CoverTint {
     )
 
     private fun dominantColor(path: String): Color? {
+        if (path.startsWith("http://") || path.startsWith("https://")) {
+            return remoteDominantColor(path)
+        }
         val file = File(path)
         if (!file.isFile || file.length() == 0L) return null
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
@@ -90,6 +102,31 @@ object CoverTint {
             bitmap.recycle()
         }
     }
+
+    private fun remoteDominantColor(url: String): Color? = runCatching {
+        val request = Request.Builder()
+            .url(url)
+            .header("User-Agent", OnlineEndpoints.USER_AGENT)
+            .build()
+        httpClient.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) return null
+            val bytes = response.body?.bytes() ?: return null
+            val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
+            val side = min(bounds.outWidth, bounds.outHeight)
+            if (side <= 0) return null
+            val options = BitmapFactory.Options().apply {
+                inSampleSize = max(1, side / SAMPLE_SIDE)
+            }
+            val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
+                ?: return null
+            try {
+                dominantColor(bitmap)
+            } finally {
+                bitmap.recycle()
+            }
+        }
+    }.getOrNull()
 
     private fun dominantColor(bitmap: Bitmap): Color? {
         val width = bitmap.width
@@ -148,4 +185,6 @@ object CoverTint {
     }
 
     private const val ALPHA_MASK = 0xFF shl 24
+
+    private const val HTTP_TIMEOUT_SECONDS = 10L
 }

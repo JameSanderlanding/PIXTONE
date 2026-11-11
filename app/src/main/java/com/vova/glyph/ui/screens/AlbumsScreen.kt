@@ -81,7 +81,7 @@ fun AlbumsScreen(vm: MainViewModel) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     Column(Modifier.fillMaxWidth()) {
                         ScreenHeader(
-                            index = "02",
+                            index = "03",
                             title = "Альбомы",
                             subtitle = "АЛЬБОМОВ: ${albums.size}",
                             onSettings = vm::openSettings,

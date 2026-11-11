@@ -63,7 +63,7 @@ import com.vova.glyph.ui.theme.GlyphWhite
 fun PlaylistDetailScreen(vm: MainViewModel) {
     val playlist by vm.openPlaylist.collectAsStateWithLifecycle()
     val tracks by vm.playlistTracks.collectAsStateWithLifecycle()
-    val allTracks by vm.tracks.collectAsStateWithLifecycle()
+    val allTracks by vm.localTracks.collectAsStateWithLifecycle()
     val currentTrack by vm.currentTrack.collectAsStateWithLifecycle()
     val playerState by vm.playerState.collectAsStateWithLifecycle()
     var showAddTracks by remember { mutableStateOf(false) }
@@ -93,7 +93,10 @@ fun PlaylistDetailScreen(vm: MainViewModel) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(Modifier.size(4.dp).background(com.vova.glyph.ui.theme.GlyphRed, androidx.compose.foundation.shape.CircleShape))
                     Spacer(Modifier.width(6.dp))
-                    MicroLabel("ЛОКАЛЬНО", color = GlyphDim)
+                    MicroLabel(
+                        if (tracks.any { it.isOnline }) "ЛОКАЛЬНО И ОНЛАЙН" else "ЛОКАЛЬНО",
+                        color = GlyphDim,
+                    )
                 }
             }
             Spacer(Modifier.width(6.dp))
