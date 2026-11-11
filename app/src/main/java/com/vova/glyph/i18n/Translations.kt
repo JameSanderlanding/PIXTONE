@@ -238,6 +238,13 @@ private val DICT: Map<String, Tr> = mapOf(
     "ПОДТВЕРЖДЕНИЕ" to t("CONFIRMATION", "BESTÄTIGUNG", "CONFIRMATION", "确认", "確認"),
     "Ищу текст…" to t("Searching lyrics…", "Suche Text…", "Recherche des paroles…", "正在搜索歌词…", "歌詞を検索中…"),
     "Повторите попытку" to t("Try again", "Erneut versuchen", "Réessayez", "请重试", "もう一度お試しください"),
+    "Повторите попытку\nВозможное решение: измените название трека или исполнителя, убрав лишние символы" to t(
+        "Try again\nPossible fix: remove extra characters from the track or artist name",
+        "Erneut versuchen\nMögliche Lösung: Entfernen Sie überflüssige Zeichen aus dem Titel oder Künstlernamen",
+        "Réessayez\nSolution possible : supprimez les caractères superflus du titre ou du nom de l'artiste",
+        "请重试\n可能的解决方法：删除歌曲或艺术家名称中的多余字符",
+        "もう一度お試しください\n解決策：曲名またはアーティスト名から余分な文字を削除してください",
+    ),
     "ТЕКСТ ПЕСНИ" to t("SONG LYRICS", "SONGTEXT", "PAROLES", "歌词", "歌詞"),
     "СИНХРОНИЗАЦИЯ" to t("SYNC", "SYNC", "SYNCHRO", "同步", "同期"),
     "Повторить" to t("Retry", "Wiederholen", "Réessayer", "重试", "再試行"),

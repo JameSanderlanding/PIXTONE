@@ -244,7 +244,10 @@ fun LyricsDialog(
                         )
 
                         loading -> CenteredLyricsMessage("Ищу текст…")
-                        !hasLyrics -> CenteredLyricsMessage("Повторите попытку")
+                        !hasLyrics -> CenteredLyricsMessage(
+                            "Повторите попытку\n" +
+                                "Возможное решение: измените название трека или исполнителя, убрав лишние символы"
+                        )
                         else -> LyricsLinesView(
                             rows = rows,
                             activeRow = activeRow,
@@ -379,6 +382,7 @@ private fun CenteredLyricsMessage(text: String) {
         Text(
             text,
             style = MaterialTheme.typography.bodyMedium.copy(color = GlyphGray),
+            textAlign = TextAlign.Center,
         )
     }
 }
