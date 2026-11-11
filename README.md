@@ -114,85 +114,85 @@ All screenshots show the English interface with a generated demo library. Track 
   <tr>
     <td align="left" valign="top" width="33%">
       <b>Local-first library</b><br>
-      <sub>Music is read through the Storage Access Framework; nothing is uploaded anywhere.</sub>
+      <sub>Music stays on device</sub>
     </td>
     <td align="left" valign="top" width="33%">
       <b>Folder scanning</b><br>
-      <sub>MP3, M4A, FLAC, WAV, OGG, OPUS and AAC with tags and embedded artwork.</sub>
+      <sub>MP3, FLAC, OGG, AAC</sub>
     </td>
     <td align="left" valign="top" width="33%">
       <b>Background playback</b><br>
-      <sub>Media3 ExoPlayer + MediaSession, notification controls, headset and Bluetooth support.</sub>
+      <sub>Notification and Bluetooth</sub>
     </td>
   </tr>
   <tr>
     <td align="left" valign="top" width="33%">
       <b>Sound tuning</b><br>
-      <sub>Equalizer presets and manual bands, bass boost, loudness enhancer, built-in reverb and playback speed from 0.5× to 1.5× with the pitch following the speed.</sub>
+      <sub>EQ, bass, reverb, speed</sub>
     </td>
     <td align="left" valign="top" width="33%">
       <b>Playlists and favorites</b><br>
-      <sub>Fully offline, stored in a local SQLite database.</sub>
+      <sub>Offline SQLite storage</sub>
     </td>
     <td align="left" valign="top" width="33%">
-      <b>Artist search and manual track info</b><br>
-      <sub>Search matches titles, artists and albums; edit a title or artist without touching the audio file.</sub>
+      <b>Track search and edit</b><br>
+      <sub>Search, edit, override</sub>
     </td>
   </tr>
   <tr>
     <td align="left" valign="top" width="33%">
       <b>Albums</b><br>
-      <sub>Grouped automatically from tags (album + artist), with a dedicated tab, album screen and per-album sorting.</sub>
+      <sub>Grouped by tags</sub>
     </td>
     <td align="left" valign="top" width="33%">
       <b>Sorting</b><br>
-      <sub>By title, date added, file modification date, album track number or playlist order; library and playlist choices persist between launches.</sub>
+      <sub>Five modes, persistent</sub>
     </td>
     <td align="left" valign="top" width="33%">
       <b>Multi-select</b><br>
-      <sub>Long-press albums, tracks or playlists to select several at once, delete them in bulk and use the "select all" checkbox.</sub>
+      <sub>Bulk select, delete</sub>
     </td>
   </tr>
   <tr>
     <td align="left" valign="top" width="33%">
       <b>Own images</b><br>
-      <sub>Pick a cover from the gallery for any track and add individual audio files without choosing a folder.</sub>
+      <sub>Covers from gallery</sub>
     </td>
     <td align="left" valign="top" width="33%">
-      <b>Sticky headers and collapsing search</b><br>
-      <sub>Section headers stay pinned while scrolling, and the search field folds away to give the list more room.</sub>
+      <b>Sticky headers</b><br>
+      <sub>Search folds away</sub>
     </td>
     <td align="left" valign="top" width="33%">
       <b>Lyrics</b><br>
-      <sub>Search across LRCLIB, lyrics.ovh and Genius; plain and synced LRC with tap-to-seek. Select any lines to copy them or keep them as a quote, then jump back to the moment a quote is sung.</sub>
+      <sub>Synced LRC, quotes</sub>
     </td>
   </tr>
   <tr>
     <td align="left" valign="top" width="33%">
       <b>Smart cover art</b><br>
-      <sub>Genius, Deezer and iTunes are queried in parallel; scraped covers are replaced with real ones.</sub>
+      <sub>Genius, Deezer, iTunes</sub>
     </td>
     <td align="left" valign="top" width="33%">
       <b>Themes</b><br>
-      <sub>Six built-in presets and a full custom palette editor (8 colors, RGB sliders and HEX input), with saved custom presets that can be edited and deleted.</sub>
+      <sub>Six presets, custom palettes</sub>
     </td>
     <td align="left" valign="top" width="33%">
       <b>Custom typography</b><br>
-      <sub>Three font roles (body, headings, accent) can use Doto, Pixelify Sans, Space Grotesk or the system font.</sub>
+      <sub>Four fonts, three roles</sub>
     </td>
   </tr>
   <tr>
     <td align="left" valign="top" width="33%">
       <b>Six languages</b><br>
-      <sub>Russian, English, German, French, Chinese and Japanese, switchable at runtime. English is enabled by default.</sub>
+      <sub>Switch on the fly</sub>
     </td>
     <td align="left" valign="top" width="33%">
-      <b>Message queue with pixel dissolve</b><br>
-      <sub>Every toast can be dismissed with a tap.</sub>
+      <b>Pixel dissolve toasts</b><br>
+      <sub>Tap to dismiss</sub>
     </td>
     <td align="left" valign="top" width="33%">
       <b>Lightweight and private</b><br>
-      <sub>No bundled media, artwork or tracking SDKs, so the APK stays at 16.5 MB. No trackers, crash reporting or analytics.</sub>
+      <sub>No trackers, no ads</sub>
     </td>
   </tr>
 </table>
