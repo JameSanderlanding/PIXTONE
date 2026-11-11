@@ -110,92 +110,26 @@ All screenshots show the English interface with a generated demo library. Track 
 
 ## 02 — Features
 
-<table>
-  <tr>
-    <td align="left" valign="top" width="33%">
-      <b>Local-first library</b><br>
-      <sub>Music stays on device</sub>
-    </td>
-    <td align="left" valign="top" width="33%">
-      <b>Folder scanning</b><br>
-      <sub>MP3, FLAC, OGG, AAC</sub>
-    </td>
-    <td align="left" valign="top" width="33%">
-      <b>Background playback</b><br>
-      <sub>Notification and Bluetooth</sub>
-    </td>
-  </tr>
-  <tr>
-    <td align="left" valign="top" width="33%">
-      <b>Sound tuning</b><br>
-      <sub>EQ, bass, reverb, speed</sub>
-    </td>
-    <td align="left" valign="top" width="33%">
-      <b>Playlists and favorites</b><br>
-      <sub>Offline SQLite storage</sub>
-    </td>
-    <td align="left" valign="top" width="33%">
-      <b>Track search and edit</b><br>
-      <sub>Search, edit, override</sub>
-    </td>
-  </tr>
-  <tr>
-    <td align="left" valign="top" width="33%">
-      <b>Albums</b><br>
-      <sub>Grouped by tags</sub>
-    </td>
-    <td align="left" valign="top" width="33%">
-      <b>Sorting</b><br>
-      <sub>Five modes, persistent</sub>
-    </td>
-    <td align="left" valign="top" width="33%">
-      <b>Multi-select</b><br>
-      <sub>Bulk select, delete</sub>
-    </td>
-  </tr>
-  <tr>
-    <td align="left" valign="top" width="33%">
-      <b>Own images</b><br>
-      <sub>Covers from gallery</sub>
-    </td>
-    <td align="left" valign="top" width="33%">
-      <b>Sticky headers</b><br>
-      <sub>Search folds away</sub>
-    </td>
-    <td align="left" valign="top" width="33%">
-      <b>Lyrics</b><br>
-      <sub>Synced LRC, quotes</sub>
-    </td>
-  </tr>
-  <tr>
-    <td align="left" valign="top" width="33%">
-      <b>Smart cover art</b><br>
-      <sub>Genius, Deezer, iTunes</sub>
-    </td>
-    <td align="left" valign="top" width="33%">
-      <b>Themes</b><br>
-      <sub>Six presets, custom palettes</sub>
-    </td>
-    <td align="left" valign="top" width="33%">
-      <b>Custom typography</b><br>
-      <sub>Four fonts, three roles</sub>
-    </td>
-  </tr>
-  <tr>
-    <td align="left" valign="top" width="33%">
-      <b>Six languages</b><br>
-      <sub>Switch on the fly</sub>
-    </td>
-    <td align="left" valign="top" width="33%">
-      <b>Pixel dissolve toasts</b><br>
-      <sub>Tap to dismiss</sub>
-    </td>
-    <td align="left" valign="top" width="33%">
-      <b>Lightweight and private</b><br>
-      <sub>No trackers, no ads</sub>
-    </td>
-  </tr>
-</table>
+| Feature | Details |
+|---|---|
+| **Local-first library** | Music stays on device |
+| **Folder scanning** | MP3, FLAC, OGG, AAC |
+| **Background playback** | Notification and Bluetooth |
+| **Sound tuning** | EQ, bass, reverb, speed |
+| **Playlists and favorites** | Offline SQLite storage |
+| **Track search and edit** | Search, edit, override |
+| **Albums** | Grouped by tags |
+| **Sorting** | Five modes, persistent |
+| **Multi-select** | Bulk select, delete |
+| **Own images** | Covers from gallery |
+| **Sticky headers** | Search folds away |
+| **Lyrics** | Synced LRC, quotes |
+| **Smart cover art** | Genius, Deezer, iTunes |
+| **Themes** | Six presets, custom palettes |
+| **Custom typography** | Four fonts, three roles |
+| **Six languages** | Switch on the fly |
+| **Pixel dissolve toasts** | Tap to dismiss |
+| **Lightweight and private** | No trackers, no ads |
 
 ## 03 — Tech stack
 
@@ -272,15 +206,7 @@ app/build/outputs/apk/debug/Pixtone-1.1.0.apk
 
 `local.properties` with your own `sdk.dir` is ignored by Git.
 
-## 07 — Branches
-
-| Branch | Purpose |
-|---|---|
-| `mobile` | Default branch. The Android application. |
-| `windows` | Placeholder for a future Windows port. |
-| `linux` | Placeholder for a future Linux port. |
-
-## 08 — Third-party licenses
+## 07 — Third-party licenses
 
 Fonts — Doto, Pixelify Sans, Space Grotesk — are licensed under the **SIL Open Font License 1.1**.
 
@@ -288,11 +214,11 @@ Libraries are licensed under **Apache License 2.0** (AndroidX, Compose, Media3, 
 
 Full license texts are bundled in `app/src/main/assets/licenses/` and available inside the app under **Settings → Licenses**.
 
-## 09 — Disclaimer
+## 08 — Disclaimer
 
 PIXTONE is a player for music you already own and is intended for **personal, non-commercial use only**. Track metadata, lyrics and cover art fetched from third-party services belong to their respective owners and are used only for local display. The project is not affiliated with any music service or brand.
 
-## 10 — License
+## 09 — License
 
 Released under the [MIT License](LICENSE).
 
