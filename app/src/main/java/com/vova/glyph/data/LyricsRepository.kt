@@ -351,7 +351,7 @@ class LyricsRepository(
     }
 
     private companion object {
-        const val APP_UA = "Pixtone Music Player/1.0 (Android)"
+        const val APP_UA = "Pixton Music Player/2.0 (Android)"
         const val BROWSER_UA =
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
                 "(KHTML, like Gecko) Chrome/124.0 Safari/537.36"

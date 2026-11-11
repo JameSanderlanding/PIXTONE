@@ -13,8 +13,8 @@ android {
         applicationId = "com.vova.glyph"
         minSdk = 26
         targetSdk = 37
-        versionCode = 2
-        versionName = "1.1.0"
+        versionCode = 3
+        versionName = "2.0.0"
     }
 
     buildTypes {
@@ -41,7 +41,7 @@ android {
 androidComponents {
     onVariants { variant ->
         variant.outputs.forEach { output ->
-            output.outputFileName.set("Pixtone-${output.versionName.get()}.apk")
+            output.outputFileName.set("Pixton ${output.versionName.get()}.apk")
         }
     }
 }

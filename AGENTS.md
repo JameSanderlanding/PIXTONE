@@ -36,12 +36,12 @@
 | UI | Jetpack Compose, Material 3 |
 | Плеер | AndroidX Media3 ExoPlayer + MediaSessionService |
 | Async | Kotlin Coroutines, StateFlow / SharedFlow |
-| БД | SQLiteOpenHelper, схема `glyph.db` версии 15 |
+| БД | SQLiteOpenHelper, схема `glyph.db` версии 16 |
 | Сеть | OkHttp, org.json, Jsoup |
 | Картинки | Coil |
 | Сборка | Gradle 9.6, AGP 9.4.1, JDK 21 |
 | SDK | minSdk 26, targetSdk 37, compileSdk 37 |
-| versionCode / versionName | 2 / 1.1.0 |
+| versionCode / versionName | 3 / 2.0.0 |
 | Лицензия | MIT |
 
 ---
@@ -343,7 +343,7 @@ PIXTONE/
 
 ## 5. Данные и хранилища
 
-### SQLite (`glyph.db`, версия 15)
+### SQLite (`glyph.db`, версия 16)
 
 | Таблица | Назначение |
 |---|---|
@@ -437,7 +437,7 @@ PIXTONE/
 
 ### Изменение release-процесса
 
-- APK называется автоматически: `Pixtone-<versionName>.apk` (правило в `app/build.gradle.kts`, `androidComponents`).
+- APK называется автоматически: `Pixton <versionName>.apk` (правило в `app/build.gradle.kts`, `androidComponents`).
 - После изменения `versionName` APK переименуется сам.
 - Релиз создаётся через GitHub Releases, тег вида `v1.0.0`.
 - APK прикрепляется к релизу как asset.
@@ -456,7 +456,7 @@ PIXTONE/
 Результат:
 
 ```
-app/build/outputs/apk/debug/Pixtone-1.0.1.apk
+app/build/outputs/apk/debug/Pixton 2.0.0.apk
 ```
 
 Полезные команды:
@@ -546,7 +546,7 @@ Android Studio: открыть корень проекта, использова
 - Public.
 - Default branch: `mobile`.
 - Releases: `v1.0.0` и новее.
-- В release прикладывается `Pixtone-<version>.apk`.
+- В release прикладывается `Pixton <version>.apk`.
 - Токен для публикации не хранить; после использования отзывать.
 
 Если нужен новый релиз:

@@ -17,10 +17,10 @@
   <sub>No account · no cloud · no ads · no analytics</sub>
 </p>
 
-PIXTONE plays the music stored on your device. Just a folder, a queue and an interface built around dots, segments and pixels. Nothing is uploaded anywhere: network access is used only for optional lyrics and cover lookup.
+PIXTONE plays the music stored on your device. Just a folder, a queue and an interface built around dots, segments and pixels. Nothing is uploaded anywhere: network access is used only for optional lyrics, cover lookup and the online catalog.
 
 <p align="center">
-  <code>52 KOTLIN FILES</code> · <code>13,149 LINES</code> · <code>6 LANGUAGES</code> · <code>0 TRACKERS</code> · <code>16.5 MB APK</code>
+  <code>59 KOTLIN FILES</code> · <code>16,369 LINES</code> · <code>6 LANGUAGES</code> · <code>0 TRACKERS</code> · <code>17.1 MB APK</code>
 </p>
 
 <p align="center">
@@ -113,6 +113,7 @@ All screenshots show the English interface with a generated demo library. Track 
 | Feature | Details |
 |---|---|
 | **Local-first library** | Music stays on device |
+| **Online catalog** | JioSaavn search and streaming |
 | **Folder scanning** | MP3, FLAC, OGG, AAC |
 | **Background playback** | Notification and Bluetooth |
 | **Sound tuning** | EQ, bass, reverb, speed |
@@ -153,6 +154,7 @@ MainActivity
   └── GlyphTheme (colors + typography from user settings)
         └── GlyphRoot (state-driven navigation)
               ├── LibraryScreen / FavoritesScreen
+              ├── OnlineScreen (JioSaavn catalog)
               ├── PlayerOverlay (with the sound panel)
               ├── SettingsScreen (theme, fonts, language, licenses)
               └── MessageHost (queued toasts)
@@ -161,10 +163,11 @@ MainViewModel ── MusicRepository ── GlyphDb (SQLite)
       ├── MusicScanner / ArtworkStore
       ├── LyricsRepository ── LRCLIB / lyrics.ovh / Genius
       ├── CoverRepository  ── Genius / Deezer / iTunes
+      ├── JioSaavnClient   ── online search and streaming
       └── PlayerConnection ── PlaybackService (Media3)
 ```
 
-The app has no backend and no network dependency for playback. Network access is used only for optional lyrics and cover lookup.
+The app has no backend and no network dependency for local playback. Network access is used only for optional lyrics, cover lookup and the online catalog.
 
 ## 05 — Project structure
 
@@ -201,7 +204,7 @@ cd PIXTONE
 The debug APK is produced at:
 
 ```text
-app/build/outputs/apk/debug/Pixtone-1.1.0.apk
+app/build/outputs/apk/debug/Pixton 2.0.0.apk
 ```
 
 `local.properties` with your own `sdk.dir` is ignored by Git.

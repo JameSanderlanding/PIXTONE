@@ -19,5 +19,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Pixtone"
+rootProject.name = "Pixton"
 include(":app")
