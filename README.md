@@ -34,29 +34,29 @@ All screenshots show the English interface with a generated demo library. Track 
 <table>
   <tr>
     <td align="center" width="33%">
-      <img src="docs/screenshots/02_library_en.png" width="220" alt="Library"><br>
+      <img src="docs/screenshots/1.jpg" width="220" alt="Library"><br>
       <sub><b>01</b> · LIBRARY</sub>
     </td>
     <td align="center" width="33%">
-      <img src="docs/screenshots/03_player_en.png" width="220" alt="Player"><br>
+      <img src="docs/screenshots/2.jpg" width="220" alt="Player"><br>
       <sub><b>02</b> · PLAYER</sub>
     </td>
     <td align="center" width="33%">
-      <img src="docs/screenshots/10_lyrics_en.png" width="220" alt="Lyrics"><br>
+      <img src="docs/screenshots/3.jpg" width="220" alt="Lyrics"><br>
       <sub><b>03</b> · LYRICS</sub>
     </td>
   </tr>
   <tr>
     <td align="center" width="33%">
-      <img src="docs/screenshots/06_themes_en.png" width="220" alt="Themes"><br>
+      <img src="docs/screenshots/4.jpg" width="220" alt="Themes"><br>
       <sub><b>04</b> · THEMES</sub>
     </td>
     <td align="center" width="33%">
-      <img src="docs/screenshots/13_playlist_en.png" width="220" alt="Playlist"><br>
+      <img src="docs/screenshots/5.jpg" width="220" alt="Playlist"><br>
       <sub><b>05</b> · PLAYLIST</sub>
     </td>
     <td align="center" width="33%">
-      <img src="docs/screenshots/11_playlist_create_en.png" width="220" alt="Create playlist"><br>
+      <img src="docs/screenshots/6.jpg" width="220" alt="Create playlist"><br>
       <sub><b>06</b> · CREATE PLAYLIST</sub>
     </td>
   </tr>
