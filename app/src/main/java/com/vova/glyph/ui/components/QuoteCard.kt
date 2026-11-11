@@ -343,7 +343,11 @@ private fun ellipsize(text: String, paint: Paint, maxWidth: Float): String {
 private suspend fun loadCoverBitmap(context: Context, artwork: String?, size: Int): Bitmap? {
     if (artwork.isNullOrBlank()) return null
     return if (artwork.startsWith("http://") || artwork.startsWith("https://")) {
-        val request = ImageRequest.Builder(context).data(artwork).size(size).build()
+        val request = ImageRequest.Builder(context)
+            .data(artwork)
+            .size(size)
+            .allowHardware(false)
+            .build()
         when (val result = context.imageLoader.execute(request)) {
             is SuccessResult -> drawableToBitmap(result.drawable, size)
             else -> null
