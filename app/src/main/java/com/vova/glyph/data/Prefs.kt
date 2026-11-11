@@ -137,6 +137,10 @@ class Prefs(context: Context) {
         get() = sp.getString("quote_size", null)
         set(value) = sp.edit().putString("quote_size", value).apply()
 
+    var onlineProxy: String
+        get() = sp.getString("online_proxy", OnlineEndpoints.DEFAULT_PROXY).orEmpty()
+        set(value) = sp.edit().putString("online_proxy", value.trim()).apply()
+
     fun isAlbumHidden(key: String): Boolean = key in hiddenAlbumKeys
 
     fun hideAlbums(keys: Collection<String>) {

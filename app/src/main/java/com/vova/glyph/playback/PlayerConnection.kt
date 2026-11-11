@@ -248,6 +248,21 @@ class PlayerConnection(private val context: Context) {
         refreshProgress(player, detectLoop = false)
     }
 
+    fun addToQueue(track: Track) {
+        val player = controller ?: return
+        if (player.mediaItemCount == 0) {
+            playQueue(listOf(track), 0)
+            return
+        }
+        if (originalItems.isEmpty()) {
+            originalItems = (0 until player.mediaItemCount).map { player.getMediaItemAt(it) }
+        }
+        val item = track.toMediaItem()
+        player.addMediaItem(item)
+        originalItems = originalItems + item
+        updateState(player)
+    }
+
     fun togglePlayPause() {
         val player = controller ?: return
         if (player.isPlaying) {
@@ -596,11 +611,12 @@ class PlayerConnection(private val context: Context) {
             }
             .build()
         val mediaUri = if (uri.contains("://")) Uri.parse(uri) else Uri.fromFile(File(uri))
-        return MediaItem.Builder()
+        val builder = MediaItem.Builder()
             .setMediaId(id.toString())
             .setUri(mediaUri)
             .setMediaMetadata(metadata)
-            .build()
+        if (isOnline) builder.setMimeType("audio/mp4")
+        return builder.build()
     }
 
     private fun localArtUri(path: String): Uri? = runCatching {

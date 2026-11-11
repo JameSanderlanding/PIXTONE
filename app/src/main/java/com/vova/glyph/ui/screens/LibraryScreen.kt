@@ -36,7 +36,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -49,12 +48,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -75,6 +72,7 @@ import com.vova.glyph.ui.components.Glyph
 import com.vova.glyph.ui.components.GlyphButton
 import com.vova.glyph.ui.components.GlyphCover
 import com.vova.glyph.ui.components.GlyphIcon
+import com.vova.glyph.ui.components.GlyphSearchField
 import com.vova.glyph.ui.components.LyricsDialog
 import com.vova.glyph.ui.components.MicroLabel
 import com.vova.glyph.ui.components.ScreenHeader
@@ -96,7 +94,7 @@ private enum class LibrarySelection { TRACK, PLAYLIST }
 
 @Composable
 fun LibraryScreen(vm: MainViewModel) {
-    val tracks by vm.tracks.collectAsStateWithLifecycle()
+    val tracks by vm.localTracks.collectAsStateWithLifecycle()
     val favorites by vm.favorites.collectAsStateWithLifecycle()
     val playlists by vm.playlists.collectAsStateWithLifecycle()
     val currentTrack by vm.currentTrack.collectAsStateWithLifecycle()
@@ -233,7 +231,7 @@ fun LibraryScreen(vm: MainViewModel) {
         }
 
         ScreenHeader(
-            index = "01",
+            index = "02",
             title = "Библиотека",
             subtitle = librarySubtitle,
             onSettings = vm::openSettings,
@@ -248,9 +246,10 @@ fun LibraryScreen(vm: MainViewModel) {
                     shrinkVertically(animationSpec = tween(180), shrinkTowards = Alignment.Top),
             ) {
                 Column {
-                    LibrarySearchField(
+                    GlyphSearchField(
                         query = query,
                         onQueryChange = { query = it },
+                        placeholder = "Поиск по названию или исполнителю",
                         modifier = Modifier.padding(horizontal = 20.dp),
                     )
                     Spacer(Modifier.height(10.dp))
@@ -553,52 +552,6 @@ private fun LibraryLyricsDialog(
         onRemoveHighlights = { indices -> vm.removeLyricHighlights(track.id, indices) },
         onDismiss = onClose,
     )
-}
-
-@Composable
-private fun LibrarySearchField(
-    query: String,
-    onQueryChange: (String) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Row(
-        modifier
-            .fillMaxWidth()
-            .background(GlyphSurface, RoundedCornerShape(2.dp))
-            .border(1.dp, GlyphLine, RoundedCornerShape(2.dp))
-            .padding(horizontal = 13.dp, vertical = 11.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        GlyphIcon(Glyph.Search, tint = GlyphGray, modifier = Modifier.size(16.dp), stroke = 1.5.dp)
-        Spacer(Modifier.width(10.dp))
-        Box(Modifier.weight(1f)) {
-            if (query.isEmpty()) {
-                Text(
-                    "Поиск по названию или исполнителю",
-                    style = MaterialTheme.typography.bodySmall.copy(color = GlyphDim),
-                )
-            }
-            BasicTextField(
-                value = query,
-                onValueChange = onQueryChange,
-                singleLine = true,
-                textStyle = TextStyle(
-                    color = GlyphWhite,
-                    fontSize = 13.sp,
-                ),
-                cursorBrush = SolidColor(GlyphRed),
-                modifier = Modifier.fillMaxWidth(),
-            )
-        }
-        if (query.isNotEmpty()) {
-            Box(
-                Modifier.size(26.dp).clickable { onQueryChange("") },
-                contentAlignment = Alignment.Center,
-            ) {
-                GlyphIcon(Glyph.Close, tint = GlyphGray, modifier = Modifier.size(13.dp))
-            }
-        }
-    }
 }
 
 @OptIn(ExperimentalFoundationApi::class)

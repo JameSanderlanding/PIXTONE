@@ -19,6 +19,7 @@ enum class Glyph {
     Play, Pause, Next, Previous,
     Heart, HeartFilled,
     Search, Library, Chat, Settings, Close, Plus, Check,
+    Online,
     Back, Download, More, Shuffle, Repeat, RepeatOne,
     Folder, Sparkle, Trash, Text, Pencil, Album, Image, Quote,
 }
@@ -97,6 +98,16 @@ fun GlyphIcon(
                 line(4f, 12f, 20f, 12f)
                 line(4f, 18f, 13f, 18f)
                 strokeCircle(17.5f, 18f, 1.6f, fill = true)
+            }
+
+            Glyph.Online -> {
+                strokeCircle(12f, 12f, 8.5f)
+                line(3.5f, 12f, 20.5f, 12f)
+                path({
+                    moveTo(12f * u, 3.5f * u)
+                    cubicTo(7.5f * u, 6.2f * u, 7.5f * u, 17.8f * u, 12f * u, 20.5f * u)
+                    cubicTo(16.5f * u, 17.8f * u, 16.5f * u, 6.2f * u, 12f * u, 3.5f * u)
+                }, fill = false)
             }
 
             Glyph.Chat -> {

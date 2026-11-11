@@ -147,7 +147,7 @@ private fun SettingsMain(
     val scanFound by vm.scanFound.collectAsStateWithLifecycle()
     val artworkStatus by vm.artworkStatus.collectAsStateWithLifecycle()
     val coverPaused by vm.coverPaused.collectAsStateWithLifecycle()
-    val tracks by vm.tracks.collectAsStateWithLifecycle()
+    val tracks by vm.localTracks.collectAsStateWithLifecycle()
     val favoritesList by vm.favorites.collectAsStateWithLifecycle()
     var showCoverDialog by remember { mutableStateOf(false) }
     var showResetCoversConfirm by remember { mutableStateOf(false) }
