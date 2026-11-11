@@ -259,6 +259,13 @@ private val DICT: Map<String, Tr> = mapOf(
     "СКОПИРОВАНО" to t("COPIED", "KOPIERT", "COPIÉ", "已复制", "コピーしました"),
     "ДОБАВЛЕНО В ЦИТАТЫ" to t("ADDED TO QUOTES", "ZU ZITATEN HINZUGEFÜGT", "AJOUTÉ AUX CITATIONS", "已加入引用", "引用に追加しました"),
     "УБРАНО ИЗ ЦИТАТ" to t("REMOVED FROM QUOTES", "AUS ZITATEN ENTFERNT", "RETIRÉ DES CITATIONS", "已从引用移除", "引用から削除しました"),
+    "КАРТИНКА ЦИТАТЫ" to t("QUOTE IMAGE", "ZITATBILD", "IMAGE DE LA CITATION", "引用图片", "引用画像"),
+    "ШРИФТ" to t("FONT", "SCHRIFT", "POLICE", "字体", "フォント"),
+    "РАЗМЕР" to t("SIZE", "GRÖSSE", "TAILLE", "大小", "サイズ"),
+    "Поделиться" to t("Share", "Teilen", "Partager", "分享", "共有"),
+    "ПОДЕЛИТЬСЯ" to t("SHARE", "TEILEN", "PARTAGER", "分享", "共有"),
+    "НЕ УДАЛОСЬ ПОСТРОИТЬ КАРТИНКУ" to t("COULD NOT BUILD THE IMAGE", "BILD KONNTE NICHT ERSTELLT WERDEN", "IMPOSSIBLE DE CRÉER L'IMAGE", "无法生成图片", "画像を作成できませんでした"),
+    "НЕ УДАЛОСЬ ПОДЕЛИТЬСЯ" to t("COULD NOT SHARE", "TEILEN NICHT MÖGLICH", "PARTAGE IMPOSSIBLE", "无法分享", "共有できませんでした"),
 
     "ПЕРВЫЙ ЗАПУСК / 00" to t("FIRST LAUNCH / 00", "ERSTER START / 00", "PREMIER LANCEMENT / 00", "首次启动 / 00", "初回起動 / 00"),
     "ЗНАКОМСТВО" to t("INTRO", "VORSTELLUNG", "INTRODUCTION", "初见", "はじめに"),

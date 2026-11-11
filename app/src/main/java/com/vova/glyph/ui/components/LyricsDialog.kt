@@ -31,6 +31,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
@@ -232,6 +234,7 @@ fun LyricsDialog(
                 ) {
                     when {
                         showQuotes -> QuotesView(
+                            track = track,
                             quotes = quotes,
                             onOpenMoment = onSeek?.let { seek ->
                                 { timeMs ->
@@ -586,11 +589,14 @@ private fun SelectionPanel(
 
 @Composable
 private fun QuotesView(
+    track: Track,
     quotes: List<LyricQuote>,
     onOpenMoment: ((Long) -> Unit)?,
     onDelete: ((Long) -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
+    var imageQuote by remember(track.id) { mutableStateOf<LyricQuote?>(null) }
+
     if (quotes.isEmpty()) {
         Box(modifier, contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -622,7 +628,8 @@ private fun QuotesView(
                 QuoteItem(
                     quote = quote,
                     onOpenMoment = onOpenMoment,
-                    onDelete = onDelete,
+                    onShareImage = { imageQuote = quote },
+                    onDelete = onDelete?.let { remove -> { remove(quote.id) } },
                 )
                 Box(
                     Modifier
@@ -643,15 +650,27 @@ private fun QuotesView(
             )
         }
     }
+
+    imageQuote?.let { quote ->
+        QuoteImageDialog(
+            track = track,
+            quote = quote,
+            onDismiss = { imageQuote = null },
+        )
+    }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun QuoteItem(
     quote: LyricQuote,
     onOpenMoment: ((Long) -> Unit)?,
-    onDelete: ((Long) -> Unit)?,
+    onShareImage: () -> Unit,
+    onDelete: (() -> Unit)?,
 ) {
     val seekable = onOpenMoment != null && quote.timeMs > 0
+    val haptic = LocalHapticFeedback.current
+    var menuOpen by remember(quote.id) { mutableStateOf(false) }
     Row(
         Modifier
             .fillMaxWidth()
@@ -662,12 +681,12 @@ private fun QuoteItem(
             Modifier
                 .weight(1f)
                 .clip(RoundedCornerShape(2.dp))
-                .then(
-                    if (seekable) {
-                        Modifier.clickable { onOpenMoment?.invoke(quote.timeMs) }
-                    } else {
-                        Modifier
-                    }
+                .combinedClickable(
+                    onClick = { if (seekable) onOpenMoment?.invoke(quote.timeMs) },
+                    onLongClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        menuOpen = true
+                    },
                 )
                 .padding(vertical = 2.dp),
         ) {
@@ -697,15 +716,40 @@ private fun QuoteItem(
                 }
             }
         }
-        if (onDelete != null) {
-            Spacer(Modifier.width(4.dp))
+        Spacer(Modifier.width(4.dp))
+        Box {
             GlyphIconButton(
-                glyph = Glyph.Trash,
-                onClick = { onDelete?.invoke(quote.id) },
+                glyph = Glyph.More,
+                onClick = { menuOpen = true },
                 size = 32.dp,
                 iconSize = 15.dp,
                 tint = GlyphDim,
             )
+            DropdownMenu(
+                expanded = menuOpen,
+                onDismissRequest = { menuOpen = false },
+            ) {
+                DropdownMenuItem(
+                    text = { Text("Поделиться") },
+                    onClick = {
+                        menuOpen = false
+                        onShareImage()
+                    },
+                )
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            "Удалить",
+                            style = MaterialTheme.typography.bodyMedium.copy(color = GlyphRed),
+                        )
+                    },
+                    onClick = {
+                        menuOpen = false
+                        onDelete?.invoke()
+                    },
+                    enabled = onDelete != null,
+                )
+            }
         }
     }
 }

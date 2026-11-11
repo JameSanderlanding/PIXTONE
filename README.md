@@ -123,7 +123,7 @@ All screenshots show the English interface with a generated demo library. Track 
 | **Multi-select** | Bulk select, delete |
 | **Own images** | Covers from gallery |
 | **Sticky headers** | Search folds away |
-| **Lyrics** | Synced LRC, quotes |
+| **Lyrics** | Synced LRC, quotes, quote images |
 | **Smart cover art** | Genius, Deezer, iTunes |
 | **Themes** | Six presets, custom palettes |
 | **Custom typography** | Four fonts, three roles |

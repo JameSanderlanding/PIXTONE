@@ -129,6 +129,14 @@ class Prefs(context: Context) {
         get() = sp.getString("sort_playlist", null)
         set(value) = sp.edit().putString("sort_playlist", value).apply()
 
+    var quoteFont: String?
+        get() = sp.getString("quote_font", null)
+        set(value) = sp.edit().putString("quote_font", value).apply()
+
+    var quoteSize: String?
+        get() = sp.getString("quote_size", null)
+        set(value) = sp.edit().putString("quote_size", value).apply()
+
     fun isAlbumHidden(key: String): Boolean = key in hiddenAlbumKeys
 
     fun hideAlbums(keys: Collection<String>) {

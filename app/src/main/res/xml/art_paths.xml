@@ -2,4 +2,5 @@
 <paths>
     <files-path name="art" path="art/" />
     <files-path name="covers" path="covers/" />
+    <cache-path name="share" path="share/" />
 </paths>

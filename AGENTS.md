@@ -120,6 +120,7 @@ PIXTONE/
 | `QueryText.kt` | нормализация и транслитерация поисковых запросов |
 | `Lyrics.kt` | `LyricsResult`, `LyricLine`, `CachedLyrics`, парсинг LRC, gap-маркеры |
 | `TrackSearch.kt` | поиск по названию и исполнителю (включая ручные значения) и альбому |
+| `QuoteTextLayout.kt` | перенос строк цитаты и подбор размера шрифта под квадрат; чистые функции, покрыты unit-тестами |
 
 ### `playback/`
 
@@ -155,6 +156,8 @@ PIXTONE/
 | `components/Common.kt` | дизайн-система: кнопки, заголовки, обложки, lower nav, EmptyState и т.д. |
 | `components/Dialogs.kt` | диалоги создания плейлиста, подтверждения |
 | `components/LyricsDialog.kt` | диалог текста песни, выделение строк и сохранённые цитаты |
+| `components/QuoteCard.kt` | рендер картинки-цитаты 1:1: обложка, тень, исполнитель и название, PNG для шаринга |
+| `components/QuoteShareDialog.kt` | действия по долгому нажатию на цитату и превью картинки перед отправкой |
 | `components/ColorPickerDialog.kt` | RGB-слайдеры + HEX-ввод |
 | `components/LicenseTextDialog.kt` | просмотр текста лицензии из assets |
 | `components/GlyphIcons.kt` | векторные иконки `Glyph.*` (Canvas) |
@@ -223,7 +226,9 @@ PIXTONE/
 10. Долгое нажатие на строку включает режим выделения; тап по строкам добавляет и убирает их. В этом режиме тап не перематывает трек.
 11. Строки можно скопировать в буфер обмена или сохранить как цитату трека. Панель действий занимает место нижней кнопки, поэтому не перекрывает список.
 12. Цитаты лежат в `lyric_highlights` и группируются по `quote_id`; они не зависят от кэша `lyrics` и работают офлайн. Повторное добавление уже сохранённых строк не создаёт дубликат.
-13. Кнопка «ЦИТАТЫ · N» в шапке открывает список цитат трека. Тап по цитате перематывает к её первой строке (когда трек играет), корзина удаляет цитату.
+13. Кнопка «ЦИТАТЫ · N» в шапке открывает список цитат трека. Тап по цитате перематывает к её первой строке (когда трек играет), кнопка «…» справа открывает меню действий.
+14. Кнопка «…» и долгое нажатие на цитату открывают меню «Поделиться» (превью картинки) и «Удалить». Картинка — квадрат 1080×1080: обложка трека фоном, крупный знак `“` в акцентном цвете в левом верхнем углу, строки цитаты по центру жирным шрифтом с тенью и тонкой чёрной обводкой, с сохранением переносов; под ними исполнитель и название из `effectiveArtist`/`effectiveTitle`.
+15. Цвета картинки берутся из `CoverTint.paletteFor(artwork)` — как в теме `АДАПТИВ`: фон, текст и акцент выводятся из обложки; для серой обложки или без неё используется палитра приложения. В превью есть выбор шрифта цитаты и размера текста (S / M / L). В списке шрифтов — все четыре шрифта из настроек приложения (`AppFont.entries`): DOTO / PIXEL / GROTESK / SYSTEM; по умолчанию выбран основной шрифт приложения (`FontController.body`). Знак кавычек рисуется тем же шрифтом, что и цитата, поэтому его стиль меняется вместе со шрифтом. Выборы хранятся в `glyph_prefs` под ключами `quote_font` (`doto` / `pixel` / `grotesk` / `system`, по умолчанию `body`-шрифт) и `quote_size`. Пока идёт перерендер после смены шрифта/размера, в превью остаётся предыдущий Bitmap, чтобы диалог не моргал. «Поделиться» пишет PNG в `cache/share/` и отдаёт файл через `FileProvider` (`ACTION_SEND`, `image/png`), закрытие возвращает к списку цитат.
 
 ### 4.5 Обложки
 
@@ -352,7 +357,7 @@ PIXTONE/
 
 | Файл | Ключи |
 |---|---|
-| `glyph_prefs` | `onboarding_done`, `folder_uri`, `folder_name`, `shuffle`, `sort_library`, `sort_playlist`, `hidden_albums`, `fx_speed`, `fx_eq_enabled`, `fx_eq_preset`, `fx_eq_bands`, `fx_bass_enabled`, `fx_bass_strength`, `fx_loudness_enabled`, `fx_loudness_gain`, `fx_reverb_enabled`, `fx_reverb_room`, `fx_reverb_damp`, `fx_reverb_wet` |
+| `glyph_prefs` | `onboarding_done`, `folder_uri`, `folder_name`, `shuffle`, `sort_library`, `sort_playlist`, `quote_font`, `quote_size`, `hidden_albums`, `fx_speed`, `fx_eq_enabled`, `fx_eq_preset`, `fx_eq_bands`, `fx_bass_enabled`, `fx_bass_strength`, `fx_loudness_enabled`, `fx_loudness_gain`, `fx_reverb_enabled`, `fx_reverb_room`, `fx_reverb_damp`, `fx_reverb_wet` |
 | `glyph_theme` | `preset`, 8 цветов, `custom_presets` (JSON) |
 | `glyph_fonts` | `body`, `display`, `brand` |
 | `glyph_language` | `language` |
@@ -361,7 +366,8 @@ PIXTONE/
 ### Файлы приложения
 
 - `files/art/` — обложки треков (`embedded_*`, `net_*`);
-- `files/covers/` — обложки плейлистов.
+- `files/covers/` — обложки плейлистов;
+- `cache/share/` — PNG-картинки цитат, подготовленные для шаринга.
 
 ---
 
