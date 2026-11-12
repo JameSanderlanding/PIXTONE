@@ -58,6 +58,7 @@ fun AlbumDetailScreen(vm: MainViewModel) {
     val playlists by vm.playlists.collectAsStateWithLifecycle()
     val currentTrack by vm.currentTrack.collectAsStateWithLifecycle()
     val playerState by vm.playerState.collectAsStateWithLifecycle()
+    val unavailableIds by vm.unavailableIds.collectAsStateWithLifecycle()
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var playlistTarget by remember { mutableStateOf<Track?>(null) }
     val sorting by vm.albumSorting.collectAsStateWithLifecycle()
@@ -200,6 +201,7 @@ fun AlbumDetailScreen(vm: MainViewModel) {
                     track = track,
                     isCurrent = currentTrack?.id == track.id,
                     isPlaying = playerState.isPlaying && currentTrack?.id == track.id,
+                    unavailable = track.id in unavailableIds,
                     onClick = { vm.playTracks(sorted, index) },
                     onFavorite = { vm.toggleFavorite(track) },
                     onAddToPlaylist = { playlistTarget = track },

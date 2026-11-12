@@ -30,6 +30,7 @@ import com.vova.glyph.data.Track
 import com.vova.glyph.ui.components.GlyphBottomNav
 import com.vova.glyph.ui.components.GlyphMessageHost
 import com.vova.glyph.ui.components.MiniPlayer
+import com.vova.glyph.ui.components.MissingTrackDialog
 import com.vova.glyph.ui.components.TrackEditDialog
 import com.vova.glyph.ui.screens.AlbumDetailScreen
 import com.vova.glyph.ui.screens.AlbumsScreen
@@ -55,6 +56,7 @@ fun GlyphRoot(vm: MainViewModel) {
     val trackEditorTrack by vm.trackEditorTrack.collectAsStateWithLifecycle()
     val currentTrack by vm.currentTrack.collectAsStateWithLifecycle()
     val playerState by vm.playerState.collectAsStateWithLifecycle()
+    val unavailableTrack by vm.unavailableTrack.collectAsStateWithLifecycle()
 
     val artwork = currentTrack?.artwork
     LaunchedEffect(artwork) {
@@ -148,6 +150,13 @@ fun GlyphRoot(vm: MainViewModel) {
                     track = track,
                     onDismiss = vm::closeTrackEditor,
                     onSave = { title, artist -> vm.saveTrackInfo(track, title, artist) },
+                )
+            }
+
+            unavailableTrack?.let { track ->
+                MissingTrackDialog(
+                    trackTitle = track.effectiveTitle,
+                    onDismiss = vm::dismissUnavailableDialog,
                 )
             }
         }

@@ -275,6 +275,8 @@ private val DICT: Map<String, Tr> = mapOf(
     "СИНХРОНИЗАЦИЯ" to t("SYNC", "SYNC", "SYNCHRO", "同步", "同期"),
     "Повторить" to t("Retry", "Wiederholen", "Réessayer", "重试", "再試行"),
     "Закрыть" to t("Close", "Schließen", "Fermer", "关闭", "閉じる"),
+    "ТРЕК НЕДОСТУПЕН" to t("TRACK UNAVAILABLE", "TITEL NICHT VERFÜGBAR", "TITRE INDISPONIBLE", "曲目不可用", "トラックを利用できません"),
+    "Трек удалён или переименован. Запустите сканирование заново." to t("The track has been deleted or renamed. Scan again to resolve.", "Der Titel wurde gelöscht oder umbenannt. Starten Sie einen neuen Scan.", "Le morceau a été supprimé ou renommé. Relancez l'analyse.", "曲目已被删除或重命名。请重新扫描。", "曲目が削除または名前変更されました。再スキャンしてください。"),
     "ЦИТАТЫ" to t("QUOTES", "ZITATE", "CITATIONS", "引用", "引用"),
     "НЕТ СОХРАНЁННЫХ ЦИТАТ" to t("NO SAVED QUOTES", "KEINE GESPEICHERTEN ZITATE", "AUCUNE CITATION ENREGISTRÉE", "没有已保存的引用", "保存された引用はありません"),
     "Выделите строку долгим нажатием и добавьте её в цитаты." to t("Long-press a line and add it to your quotes.", "Halten Sie eine Zeile gedrückt und fügen Sie sie Ihren Zitaten hinzu.", "Appuyez longuement sur une ligne et ajoutez-la à vos citations.", "长按一行并将其加入引用。", "行を長押しして引用に追加します。"),

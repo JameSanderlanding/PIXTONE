@@ -45,6 +45,7 @@ data class PlayerUiState(
     val hasNext: Boolean = false,
     val hasPrevious: Boolean = false,
     val error: String? = null,
+    val errorTrackId: Long? = null,
 
     val completedTrackId: Long? = null,
 
@@ -120,8 +121,13 @@ class PlayerConnection(private val context: Context) {
         }
 
         override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
+            val failedId = controller?.currentMediaItem?.mediaId?.toLongOrNull()
+                ?: _state.value.trackId
             _state.update {
-                it.copy(error = error.localizedMessage ?: "Ошибка воспроизведения")
+                it.copy(
+                    error = error.localizedMessage ?: "Ошибка воспроизведения",
+                    errorTrackId = failedId,
+                )
             }
         }
 
@@ -489,7 +495,7 @@ class PlayerConnection(private val context: Context) {
     }
 
     fun clearError() {
-        _state.update { it.copy(error = null) }
+        _state.update { it.copy(error = null, errorTrackId = null) }
     }
 
     private fun applySpeed(player: Player) {

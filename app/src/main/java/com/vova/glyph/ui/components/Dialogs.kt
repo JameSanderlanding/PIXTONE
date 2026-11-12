@@ -456,6 +456,49 @@ fun TrackEditDialog(
 }
 
 @Composable
+fun MissingTrackDialog(
+    trackTitle: String,
+    onDismiss: () -> Unit,
+) {
+    val shape = RoundedCornerShape(2.dp)
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .border(1.dp, GlyphLine, shape),
+            color = GlyphSurface,
+            shape = shape,
+        ) {
+            Column(Modifier.padding(20.dp)) {
+                MicroLabel("ТРЕК НЕДОСТУПЕН", color = GlyphRed)
+                Spacer(Modifier.height(14.dp))
+                Text(
+                    trackTitle,
+                    style = MaterialTheme.typography.titleSmall.copy(color = GlyphWhite),
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    "Трек удалён или переименован. Запустите сканирование заново.",
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        color = GlyphGray,
+                        fontSize = 11.sp,
+                    ),
+                )
+                Spacer(Modifier.height(18.dp))
+                GlyphButton(
+                    text = "Закрыть",
+                    onClick = onDismiss,
+                    filled = false,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        }
+    }
+}
+
+@Composable
 private fun TrackFieldLabel(
     text: String,
     canReset: Boolean,

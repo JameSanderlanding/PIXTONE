@@ -357,7 +357,7 @@ PIXTONE/
 
 | Файл | Ключи |
 |---|---|
-| `glyph_prefs` | `onboarding_done`, `folder_uri`, `folder_name`, `shuffle`, `sort_library`, `sort_playlist`, `quote_font`, `quote_size`, `hidden_albums`, `fx_speed`, `fx_eq_enabled`, `fx_eq_preset`, `fx_eq_bands`, `fx_bass_enabled`, `fx_bass_strength`, `fx_loudness_enabled`, `fx_loudness_gain`, `fx_reverb_enabled`, `fx_reverb_room`, `fx_reverb_damp`, `fx_reverb_wet` |
+| `glyph_prefs` | `onboarding_done`, `folder_uri`, `folder_name`, `shuffle`, `sort_library`, `sort_playlist`, `quote_font`, `quote_size`, `hidden_albums`, `fx_speed`, `fx_eq_enabled`, `fx_eq_preset`, `fx_eq_bands`, `fx_bass_enabled`, `fx_bass_strength`, `fx_loudness_enabled`, `fx_loudness_gain`, `fx_reverb_enabled`, `fx_reverb_room`, `fx_reverb_damp`, `fx_reverb_wet`, `unavailable_tracks` |
 | `glyph_theme` | `preset`, 8 цветов, `custom_presets` (JSON) |
 | `glyph_fonts` | `body`, `display`, `brand` |
 | `glyph_language` | `language` |

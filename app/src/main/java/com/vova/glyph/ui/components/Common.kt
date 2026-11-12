@@ -843,6 +843,7 @@ fun TrackRow(
     divider: Boolean = true,
     selectionMode: Boolean = false,
     selected: Boolean = false,
+    unavailable: Boolean = false,
     onLongClick: (() -> Unit)? = null,
 ) {
     var menuOpen by remember { mutableStateOf(false) }
@@ -926,6 +927,32 @@ fun TrackRow(
                 }
             }
             Spacer(Modifier.width(8.dp))
+            if (unavailable) {
+                Box(
+                    Modifier
+                        .size(16.dp)
+                        .background(GlyphRed, CircleShape),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(2.dp),
+                    ) {
+                        Box(
+                            Modifier
+                                .width(2.dp)
+                                .height(7.dp)
+                                .background(Color.White),
+                        )
+                        Box(
+                            Modifier
+                                .size(2.dp)
+                                .background(Color.White),
+                        )
+                    }
+                }
+                Spacer(Modifier.width(6.dp))
+            }
             Text(
                 durationLabel,
                 style = TextStyle(

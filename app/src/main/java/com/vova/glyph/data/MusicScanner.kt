@@ -87,6 +87,14 @@ class MusicScanner(
         )
     }
 
+    suspend fun exists(uri: String): Boolean = withContext(Dispatchers.IO) {
+        val parsed = Uri.parse(uri)
+        if (parsed.scheme == "file") {
+            return@withContext java.io.File(parsed.path.orEmpty()).exists()
+        }
+        DocumentFile.fromSingleUri(appContext, parsed)?.exists() == true
+    }
+
     suspend fun scanFile(uri: Uri): Track? = withContext(Dispatchers.IO) {
         val doc = DocumentFile.fromSingleUri(appContext, uri) ?: return@withContext null
         val name = doc.name.orEmpty()

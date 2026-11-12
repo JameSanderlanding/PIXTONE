@@ -99,6 +99,7 @@ fun LibraryScreen(vm: MainViewModel) {
     val playlists by vm.playlists.collectAsStateWithLifecycle()
     val currentTrack by vm.currentTrack.collectAsStateWithLifecycle()
     val playerState by vm.playerState.collectAsStateWithLifecycle()
+    val unavailableIds by vm.unavailableIds.collectAsStateWithLifecycle()
     val folderName by vm.folderName.collectAsStateWithLifecycle()
     val scanning by vm.scanning.collectAsStateWithLifecycle()
     val scanStatus by vm.scanStatus.collectAsStateWithLifecycle()
@@ -414,6 +415,7 @@ fun LibraryScreen(vm: MainViewModel) {
                         track = track,
                         isCurrent = currentTrack?.id == track.id,
                         isPlaying = playerState.isPlaying && currentTrack?.id == track.id,
+                        unavailable = track.id in unavailableIds,
                         onClick = {
                             when (selectionType) {
                                 LibrarySelection.TRACK ->

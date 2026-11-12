@@ -66,6 +66,7 @@ fun PlaylistDetailScreen(vm: MainViewModel) {
     val allTracks by vm.localTracks.collectAsStateWithLifecycle()
     val currentTrack by vm.currentTrack.collectAsStateWithLifecycle()
     val playerState by vm.playerState.collectAsStateWithLifecycle()
+    val unavailableIds by vm.unavailableIds.collectAsStateWithLifecycle()
     var showAddTracks by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
     val sorting by vm.playlistSorting.collectAsStateWithLifecycle()
@@ -222,6 +223,7 @@ fun PlaylistDetailScreen(vm: MainViewModel) {
                     track = track,
                     isCurrent = currentTrack?.id == track.id,
                     isPlaying = playerState.isPlaying && currentTrack?.id == track.id,
+                    unavailable = track.id in unavailableIds,
                     onClick = { vm.playTracks(sorted, index) },
                     onFavorite = { vm.toggleFavorite(track) },
                     onRemove = { vm.removeTrackFromPlaylist(currentPlaylist.id, track) },

@@ -104,6 +104,12 @@ class MainViewModel(
     private val _onboardingError = MutableStateFlow<String?>(null)
     val onboardingError = _onboardingError.asStateFlow()
 
+    private val _unavailableIds = MutableStateFlow<Set<Long>>(emptySet())
+    val unavailableIds = _unavailableIds.asStateFlow()
+
+    private val _unavailableTrack = MutableStateFlow<Track?>(null)
+    val unavailableTrack = _unavailableTrack.asStateFlow()
+
     private val _folderName = MutableStateFlow(prefs.folderName)
     val folderName = _folderName.asStateFlow()
 
@@ -202,18 +208,39 @@ class MainViewModel(
         .stateIn(viewModelScope, SharingStarted.Eagerly, 0)
 
     init {
+        _unavailableIds.value = prefs.unavailableTracks
+        viewModelScope.launch {
+            _unavailableIds.collect { prefs.unavailableTracks = it }
+        }
         viewModelScope.launch {
             runCatching { repo.refresh() }
+            resolveUnavailable()
             startMetadataBackfill()
             runCatching { repo.pruneOnlineTracks(player.state.value.trackId) }
         }
         viewModelScope.launch {
             player.state.map { it.error }.collect { error ->
                 if (!error.isNullOrBlank()) {
-                    notify(error)
+                    val state = player.state.value
+                    val id = state.errorTrackId ?: state.trackId
+                    val track = id?.let { trackId -> tracks.value.firstOrNull { it.id == trackId } }
+                    if (track != null && !track.isOnline) {
+                        _unavailableIds.update { it + track.id }
+                        _unavailableTrack.value = track
+                    } else {
+                        notify(error)
+                    }
                     player.clearError()
                 }
             }
+        }
+        viewModelScope.launch {
+            player.state.map { it.trackId to it.isPlaying }.distinctUntilChanged()
+                .collect { (trackId, playing) ->
+                    if (trackId != null && playing) {
+                        _unavailableIds.update { it - trackId }
+                    }
+                }
         }
         viewModelScope.launch {
             player.state.map { it.trackId }.distinctUntilChanged().collect { trackId ->
@@ -468,6 +495,7 @@ class MainViewModel(
                     return@launch
                 }
                 val saved = repo.addLocalTracks(result.added)
+                resolveUnavailable()
                 _scanStatus.value = "ГОТОВО"
                 prefs.onboardingDone = true
                 _onboardingVisible.value = false
@@ -520,6 +548,7 @@ class MainViewModel(
                     return@launch
                 }
                 val saved = repo.addLocalTracks(listOf(track))
+                resolveUnavailable()
                 if (saved > 0) {
                     prefs.onboardingDone = true
                     _onboardingVisible.value = false
@@ -548,6 +577,16 @@ class MainViewModel(
             return
         }
         onFolderPicked(uri, fromOnboarding = false)
+    }
+
+    private suspend fun resolveUnavailable() {
+        val ids = _unavailableIds.value
+        if (ids.isEmpty() || tracks.value.isEmpty()) return
+        val stillMissing = ids.filterTo(mutableSetOf()) { id ->
+            val track = tracks.value.firstOrNull { it.id == id } ?: return@filterTo false
+            !container.scanner.exists(track.uri)
+        }
+        _unavailableIds.value = stillMissing
     }
 
     fun findMissingCovers() {
@@ -770,11 +809,28 @@ class MainViewModel(
 
     fun playTracks(tracksToPlay: List<Track>, startIndex: Int, openPlayer: Boolean = false) {
         if (tracksToPlay.isEmpty()) return
+        val start = tracksToPlay.getOrNull(startIndex) ?: tracksToPlay.first()
+        if (start.id in _unavailableIds.value) {
+            _unavailableTrack.value = start
+            return
+        }
         player.playQueue(tracksToPlay, startIndex)
         if (openPlayer) _showPlayer.value = true
     }
 
-    fun togglePlayPause() = player.togglePlayPause()
+    fun togglePlayPause() {
+        val current = currentTrack.value
+        if (current != null && !playerState.value.isPlaying && current.id in _unavailableIds.value) {
+            _unavailableTrack.value = current
+            return
+        }
+        player.togglePlayPause()
+    }
+
+    fun dismissUnavailableDialog() {
+        _unavailableTrack.value = null
+    }
+
     fun next() = player.next()
     fun previous() = player.previous()
     fun seekTo(positionMs: Long) = player.seekTo(positionMs)
@@ -1031,6 +1087,8 @@ class MainViewModel(
             runCatching { repo.deleteTracks(ids.toList()) }
                 .onSuccess {
                     tracks.forEach { container.artworkStore.deleteReplacedArt(it.artwork) }
+                    _unavailableIds.update { it - ids }
+                    if (_unavailableTrack.value?.id in ids) _unavailableTrack.value = null
                     if (_lyricsTrackId.value in ids) clearLyrics()
                     if (openPlaylist != null) {
                         _playlistTracks.value = repo.playlistTracks(openPlaylist)

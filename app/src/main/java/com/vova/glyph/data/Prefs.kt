@@ -19,6 +19,14 @@ class Prefs(context: Context) {
         get() = sp.getString("folder_name", null)
         set(value) = sp.edit().putString("folder_name", value).apply()
 
+    var unavailableTracks: Set<Long>
+        get() = sp.getStringSet("unavailable_tracks", emptySet()).orEmpty()
+            .mapNotNull { it.toLongOrNull() }
+            .toSet()
+        set(value) = sp.edit()
+            .putStringSet("unavailable_tracks", value.map { it.toString() }.toSet())
+            .apply()
+
     var shuffle: Boolean
         get() = sp.getBoolean("shuffle", false)
         set(value) = sp.edit().putBoolean("shuffle", value).apply()

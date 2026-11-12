@@ -52,6 +52,7 @@ fun FavoritesScreen(vm: MainViewModel) {
     val playlists by vm.playlists.collectAsStateWithLifecycle()
     val currentTrack by vm.currentTrack.collectAsStateWithLifecycle()
     val playerState by vm.playerState.collectAsStateWithLifecycle()
+    val unavailableIds by vm.unavailableIds.collectAsStateWithLifecycle()
     var playlistTarget by remember { mutableStateOf<Track?>(null) }
 
     Column(Modifier.fillMaxSize()) {
@@ -152,6 +153,7 @@ fun FavoritesScreen(vm: MainViewModel) {
                     track = track,
                     isCurrent = currentTrack?.id == track.id,
                     isPlaying = playerState.isPlaying && currentTrack?.id == track.id,
+                    unavailable = track.id in unavailableIds,
                     onClick = { vm.playTracks(favorites, index) },
                     onFavorite = { vm.toggleFavorite(track) },
                     onAddToPlaylist = { playlistTarget = track },
