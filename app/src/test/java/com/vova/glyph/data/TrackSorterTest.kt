@@ -96,6 +96,39 @@ class TrackSorterTest {
     }
 
     @Test
+    fun `newest file dates go first and unknown dates stay last`() {
+        val tracks = listOf(
+            track(1, "No date", addedAt = 0, fileModifiedAt = 0),
+            track(2, "New", addedAt = 0, fileModifiedAt = 900),
+            track(3, "Old", addedAt = 0, fileModifiedAt = 300),
+            track(4, "Middle", addedAt = 0, fileModifiedAt = 600),
+        )
+
+        val sorted = TrackSorter.apply(
+            tracks,
+            TrackSorting(by = TrackSort.MODIFIED, reverse = true),
+        )
+
+        assertEquals(listOf("New", "Middle", "Old", "No date"), sorted.map { it.title })
+    }
+
+    @Test
+    fun `reversed track numbers keep unknown numbers last`() {
+        val numbered = listOf(
+            track(1, "Third", trackNumber = 3),
+            track(2, "Unknown", trackNumber = 0),
+            track(3, "First", trackNumber = 1),
+        )
+
+        val sorted = TrackSorter.apply(
+            numbered,
+            TrackSorting(by = TrackSort.TRACK_NO, reverse = true),
+        )
+
+        assertEquals(listOf("Third", "First", "Unknown"), sorted.map { it.title })
+    }
+
+    @Test
     fun `encoding round trips through prefs value`() {
         val sorting = TrackSorting(by = TrackSort.MODIFIED, reverse = true)
 
