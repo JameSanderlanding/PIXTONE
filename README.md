@@ -125,7 +125,7 @@ All screenshots show the English interface with a generated demo library. Track 
 | **Own images** | Covers from gallery |
 | **Sticky headers** | Search folds away |
 | **Lyrics** | Synced LRC, quotes, quote images |
-| **Smart cover art** | Genius, Deezer, iTunes |
+| **Smart cover art** | Genius, Deezer, iTunes, per-track refresh |
 | **Themes** | Six presets, custom palettes |
 | **Custom typography** | Four fonts, three roles |
 | **Six languages** | Switch on the fly |

@@ -1022,6 +1022,47 @@ class MainViewModel(
         }
     }
 
+    fun updateTrackCover(track: Track) {
+        if (track.isOnline) {
+            notify("Обложку можно обновить только для локального трека")
+            return
+        }
+        if (artworkJob?.isActive == true) {
+            notify("Дождитесь окончания обновления обложек")
+            return
+        }
+        if (!hasInternet()) {
+            notify("Нет интернета — обложку обновить не получится")
+            return
+        }
+        viewModelScope.launch {
+            val path = runCatching {
+                container.coverRepository.downloadCover(
+                    track.effectiveArtist,
+                    track.effectiveTitle,
+                    container.artworkStore.keyFor(track.uri),
+                )
+            }.getOrNull()
+            if (path == null) {
+                notify("Не удалось найти обложку — попробуйте позже")
+                return@launch
+            }
+            val saved = runCatching {
+                repo.setArtwork(track.id, path)
+                repo.refresh()
+            }.isSuccess
+            if (!saved) {
+                container.artworkStore.deleteReplacedArt(path)
+                notify("Не удалось обновить обложку")
+                return@launch
+            }
+            if (track.artwork != path) {
+                container.artworkStore.deleteReplacedArt(track.artwork)
+            }
+            notify("Обложка обновлена")
+        }
+    }
+
     fun setCustomCover(track: Track, uri: Uri) {
         viewModelScope.launch {
             val path = container.artworkStore.saveCustomCover(uri)

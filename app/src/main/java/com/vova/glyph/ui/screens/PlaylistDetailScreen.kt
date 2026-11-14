@@ -228,6 +228,7 @@ fun PlaylistDetailScreen(vm: MainViewModel) {
                     onFavorite = { vm.toggleFavorite(track) },
                     onRemove = { vm.removeTrackFromPlaylist(currentPlaylist.id, track) },
                     onEditInfo = { vm.openTrackEditor(track) },
+                    onUpdateCover = if (track.isOnline) null else ({ vm.updateTrackCover(track) }),
                     onDelete = { vm.deleteTrack(track) },
                 )
             }

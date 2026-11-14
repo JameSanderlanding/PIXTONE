@@ -240,6 +240,15 @@ fun PlayerOverlay(vm: MainViewModel) {
                                     vm.openTrackEditor(current)
                                 },
                             )
+                            if (!current.isOnline) {
+                                DropdownMenuItem(
+                                    text = { Text("Обновить обложку") },
+                                    onClick = {
+                                        showTrackMenu = false
+                                        vm.updateTrackCover(current)
+                                    },
+                                )
+                            }
                         }
                     }
                 }

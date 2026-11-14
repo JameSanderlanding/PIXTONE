@@ -433,6 +433,7 @@ fun LibraryScreen(vm: MainViewModel) {
                         },
                         onAddToPlaylist = { playlistTarget = track },
                         onEditInfo = { vm.openTrackEditor(track) },
+                        onUpdateCover = if (track.isOnline) null else ({ vm.updateTrackCover(track) }),
                         onDelete = { vm.deleteTrack(track) },
                         selectionMode = selectionType == LibrarySelection.TRACK,
                         selected = track.id in selectedIds,

@@ -837,6 +837,7 @@ fun TrackRow(
     onLyrics: (() -> Unit)? = null,
     onAddToPlaylist: (() -> Unit)? = null,
     onEditInfo: (() -> Unit)? = null,
+    onUpdateCover: (() -> Unit)? = null,
     onRemove: (() -> Unit)? = null,
     onDelete: (() -> Unit)? = null,
     showCover: Boolean = true,
@@ -1040,6 +1041,15 @@ fun TrackRow(
                                 onClick = {
                                     menuOpen = false
                                     onEditInfo()
+                                },
+                            )
+                        }
+                        if (onUpdateCover != null) {
+                            DropdownMenuItem(
+                                text = { Text("Обновить обложку") },
+                                onClick = {
+                                    menuOpen = false
+                                    onUpdateCover()
                                 },
                             )
                         }

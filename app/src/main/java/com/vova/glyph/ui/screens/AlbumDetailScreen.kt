@@ -206,6 +206,7 @@ fun AlbumDetailScreen(vm: MainViewModel) {
                     onFavorite = { vm.toggleFavorite(track) },
                     onAddToPlaylist = { playlistTarget = track },
                     onEditInfo = { vm.openTrackEditor(track) },
+                    onUpdateCover = if (track.isOnline) null else ({ vm.updateTrackCover(track) }),
                     onDelete = { vm.deleteTrack(track) },
                 )
             }
