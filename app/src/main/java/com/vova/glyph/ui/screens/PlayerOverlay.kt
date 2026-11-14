@@ -61,7 +61,6 @@ import com.vova.glyph.ui.theme.GlyphDim
 import com.vova.glyph.ui.theme.GlyphGray
 import com.vova.glyph.ui.theme.GlyphLine
 import com.vova.glyph.ui.theme.GlyphRed
-import com.vova.glyph.ui.theme.GlyphSurface
 import com.vova.glyph.ui.theme.GlyphWhite
 
 @Composable
@@ -201,30 +200,14 @@ fun PlayerOverlay(vm: MainViewModel) {
                 Spacer(Modifier.width(10.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     PlayerAction(
-                        glyph = Glyph.Image,
-                        tint = GlyphWhite,
-                        label = "ОБЛОЖКА",
-                        onClick = { coverPicker.launch("image/*") },
-                    )
-                    PlayerAction(
                         glyph = if (current.favorite) Glyph.HeartFilled else Glyph.Heart,
                         tint = if (current.favorite) GlyphRed else GlyphWhite,
                         label = "ИЗБРАННОЕ",
                         onClick = { vm.toggleFavorite(current) },
                     )
-                    PlayerAction(
-                        glyph = Glyph.Text,
-                        tint = GlyphWhite,
-                        label = "ТЕКСТ",
-                        onClick = {
-                            lyricsCompletionBase = playerState.completionCount
-                            vm.fetchLyrics(current)
-                            showLyrics = true
-                        },
-                    )
                     Box {
                         PlayerAction(
-                            glyph = Glyph.More,
+                            glyph = Glyph.Settings,
                             tint = GlyphWhite,
                             label = "НАСТРОЙКИ",
                             onClick = { showTrackMenu = true },
@@ -234,10 +217,10 @@ fun PlayerOverlay(vm: MainViewModel) {
                             onDismissRequest = { showTrackMenu = false },
                         ) {
                             DropdownMenuItem(
-                                text = { Text("Изменить трек") },
+                                text = { Text("Сменить обложку") },
                                 onClick = {
                                     showTrackMenu = false
-                                    vm.openTrackEditor(current)
+                                    coverPicker.launch("image/*")
                                 },
                             )
                             if (!current.isOnline) {
@@ -249,8 +232,25 @@ fun PlayerOverlay(vm: MainViewModel) {
                                     },
                                 )
                             }
+                            DropdownMenuItem(
+                                text = { Text("Изменить трек") },
+                                onClick = {
+                                    showTrackMenu = false
+                                    vm.openTrackEditor(current)
+                                },
+                            )
                         }
                     }
+                    PlayerAction(
+                        glyph = Glyph.Text,
+                        tint = GlyphWhite,
+                        label = "ТЕКСТ",
+                        onClick = {
+                            lyricsCompletionBase = playerState.completionCount
+                            vm.fetchLyrics(current)
+                            showLyrics = true
+                        },
+                    )
                 }
             }
 
@@ -313,61 +313,6 @@ fun PlayerOverlay(vm: MainViewModel) {
 
             Spacer(Modifier.height(20.dp))
 
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .background(GlyphSurface, RoundedCornerShape(2.dp))
-                    .border(1.dp, GlyphLine, RoundedCornerShape(2.dp))
-                    .padding(horizontal = 14.dp, vertical = 11.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                GlyphIcon(Glyph.Folder, tint = GlyphDim, modifier = Modifier.size(14.dp))
-                Spacer(Modifier.width(9.dp))
-                Text(
-                    "ОЧЕРЕДЬ · ${if (playerState.hasNext) "ЕСТЬ СЛЕДУЮЩИЙ" else "ПОСЛЕДНИЙ ТРЕК"}",
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        color = GlyphDim,
-                        fontSize = 7.sp,
-                    ),
-                    modifier = Modifier.weight(1f),
-                )
-                Column(horizontalAlignment = Alignment.End) {
-                    Text(
-                        if (playerState.shuffle) "ПЕРЕМЕШКА ВКЛ" else "ПЕРЕМЕШКА ВЫКЛ",
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            color = if (playerState.shuffle) GlyphRed else GlyphDim,
-                            fontSize = 7.sp,
-                        ),
-                        maxLines = 1,
-                    )
-                    if (playerState.repeatMode != Player.REPEAT_MODE_OFF) {
-                        Spacer(Modifier.height(2.dp))
-                        Text(
-                            if (playerState.repeatMode == Player.REPEAT_MODE_ONE) {
-                                "ПОВТОР ОДНОГО ТРЕКА"
-                            } else {
-                                "ПОВТОР ВСЕГО СПИСКА"
-                            },
-                            style = MaterialTheme.typography.labelSmall.copy(
-                                color = GlyphRed,
-                                fontSize = 7.sp,
-                            ),
-                            maxLines = 1,
-                        )
-                    }
-                }
-            }
-
-            Spacer(Modifier.height(14.dp))
-
-            PlayerSoundSection(
-                vm = vm,
-                expanded = showSound,
-                onToggle = { showSound = !showSound },
-            )
-
-            Spacer(Modifier.height(14.dp))
-
             Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
                 GlyphButton(
                     text = "В ПЛЕЙЛИСТ",
@@ -388,6 +333,16 @@ fun PlayerOverlay(vm: MainViewModel) {
                 )
             }
 
+            Spacer(Modifier.height(9.dp))
+
+            GlyphButton(
+                text = "ЗВУК",
+                onClick = { showSound = true },
+                filled = false,
+                leading = Glyph.Note,
+                modifier = Modifier.fillMaxWidth(),
+            )
+
             Spacer(Modifier.height(6.dp))
         }
     }
@@ -403,6 +358,10 @@ fun PlayerOverlay(vm: MainViewModel) {
                 showPlaylists = false
             },
         )
+    }
+
+    if (showSound) {
+        SoundDialog(vm = vm, onDismiss = { showSound = false })
     }
 
     if (showLyrics && current != null) {

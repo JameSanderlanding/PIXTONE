@@ -155,7 +155,7 @@ MainActivity
         └── GlyphRoot (state-driven navigation)
               ├── LibraryScreen / FavoritesScreen
               ├── OnlineScreen (JioSaavn catalog)
-              ├── PlayerOverlay (with the sound panel)
+              ├── PlayerOverlay (with the sound window)
               ├── SettingsScreen (theme, fonts, language, licenses)
               └── MessageHost (queued toasts)
 

@@ -248,6 +248,7 @@ private val DICT: Map<String, Tr> = mapOf(
     "НОВЫЙ ПЛЕЙЛИСТ" to t("NEW PLAYLIST", "NEUE PLAYLIST", "NOUVELLE PLAYLIST", "新建播放列表", "新しいプレイリスト"),
     "Обложка плейлиста" to t("Playlist cover", "Playlist-Cover", "Pochette de la playlist", "播放列表封面", "プレイリストのカバー"),
     "ОБЛОЖКА" to t("COVER", "COVER", "POCHETTE", "封面", "カバー"),
+    "Сменить обложку" to t("Change cover", "Cover ändern", "Changer la pochette", "更换封面", "カバーを変更"),
     "Выберите .PNG или .JPG" to t("Choose .PNG or .JPG", ".PNG oder .JPG wählen", "Choisissez .PNG ou .JPG", "选择 .PNG 或 .JPG", ".PNG または .JPG を選択"),
     "Обложка выбрана" to t("Cover selected", "Cover gewählt", "Pochette choisie", "已选择封面", "カバーを選択済み"),
     "Необязательно. Без обложки PIXTONE сам нарисует точечный узор." to t("Optional. Without a cover PIXTONE draws a dot pattern.", "Optional. Ohne Cover zeichnet PIXTONE ein Punktmuster.", "Facultatif. Sans pochette, PIXTONE dessine un motif de points.", "可选。没有封面时 PIXTONE 会绘制点阵图案。", "任意。カバーがない場合、PIXTONE がドット模様を描きます。"),

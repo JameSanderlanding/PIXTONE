@@ -10,12 +10,15 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -24,9 +27,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.vova.glyph.MainViewModel
 import com.vova.glyph.data.SoundPreset
@@ -56,54 +62,59 @@ import kotlin.math.abs
 import kotlin.math.roundToInt
 
 @Composable
-fun PlayerSoundSection(
+fun SoundDialog(
     vm: MainViewModel,
-    expanded: Boolean,
-    onToggle: () -> Unit,
+    onDismiss: () -> Unit,
 ) {
+    val shape = RoundedCornerShape(2.dp)
+    val maxHeight = (LocalConfiguration.current.screenHeightDp * 0.86f).dp
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+    ) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 18.dp)
+                .border(1.dp, GlyphLine, shape),
+            color = GlyphSurface,
+            shape = shape,
+        ) {
+            Column(
+                Modifier
+                    .heightIn(max = maxHeight)
+                    .verticalScroll(rememberScrollState())
+                    .padding(18.dp),
+            ) {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    MicroLabel("ЗВУК", color = GlyphRed)
+                    Spacer(Modifier.weight(1f))
+                    GlyphIconButton(
+                        glyph = Glyph.Close,
+                        onClick = onDismiss,
+                        size = 32.dp,
+                        iconSize = 16.dp,
+                        tint = GlyphGray,
+                    )
+                }
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    "Настройки действуют на всё воспроизведение и хранятся в PIXTONE.",
+                    style = MaterialTheme.typography.bodySmall.copy(color = GlyphDim, fontSize = 11.sp),
+                )
+                Spacer(Modifier.height(16.dp))
+                SoundSettings(vm)
+            }
+        }
+    }
+}
+
+@Composable
+fun SoundSettings(vm: MainViewModel) {
     val dsp by vm.dsp.collectAsStateWithLifecycle()
     val presets by vm.soundPresets.collectAsStateWithLifecycle()
     var showSavePreset by remember { mutableStateOf(false) }
-    val shape = RoundedCornerShape(2.dp)
-
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .background(GlyphSurface, shape)
-            .border(1.dp, if (expanded) GlyphRed else GlyphLine, shape)
-            .clickable(onClick = onToggle)
-            .padding(horizontal = 14.dp, vertical = 11.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        GlyphIcon(
-            glyph = Glyph.Settings,
-            tint = if (expanded) GlyphRed else GlyphDim,
-            modifier = Modifier.size(14.dp),
-        )
-        Spacer(Modifier.width(9.dp))
-        MicroLabel("ЗВУК", color = GlyphWhite, fontSize = 9)
-        Spacer(Modifier.weight(1f))
-        Text(
-            String.format(Locale.US, "×%.2f", dsp.speed),
-            style = MaterialTheme.typography.bodySmall.copy(color = GlyphGray, fontSize = 11.sp),
-        )
-        Spacer(Modifier.width(8.dp))
-        MicroLabel(
-            if (dsp.anyEffectEnabled) "ВКЛ" else "ВЫКЛ",
-            color = if (dsp.anyEffectEnabled) GlyphRed else GlyphDim,
-            fontSize = 8,
-        )
-        Spacer(Modifier.width(10.dp))
-        GlyphIcon(
-            glyph = Glyph.Plus,
-            tint = GlyphRed,
-            modifier = Modifier
-                .size(13.dp)
-                .rotate(if (expanded) 45f else 0f),
-        )
-    }
-
-    if (!expanded) return
 
     Spacer(Modifier.height(10.dp))
 

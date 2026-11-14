@@ -22,7 +22,7 @@ enum class Glyph {
     Online,
     Back, Download, More, Shuffle, Repeat, RepeatOne,
     Folder, Sparkle, Trash, Text, Pencil, Album, Image, Quote,
-    Filter,
+    Filter, Note,
 }
 
 @Composable
@@ -243,6 +243,15 @@ fun GlyphIcon(
                 }, fill = false, close = false)
                 line(10.5f, 9.5f, 11f, 17f)
                 line(13.5f, 9.5f, 13f, 17f)
+            }
+
+            Glyph.Note -> {
+                strokeCircle(8.6f, 17.4f, 3.2f, fill = true)
+                line(11.8f, 17.4f, 11.8f, 4.6f)
+                path({
+                    moveTo(11.8f * u, 4.6f * u)
+                    cubicTo(14.4f * u, 5.8f * u, 17.2f * u, 7.2f * u, 16.6f * u, 11.4f * u)
+                }, fill = false, close = false)
             }
 
             Glyph.Album -> {
