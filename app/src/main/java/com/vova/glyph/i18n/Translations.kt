@@ -313,6 +313,7 @@ private val DICT: Map<String, Tr> = mapOf(
     "НАЗВАНИЕ" to t("TITLE", "TITEL", "TITRE", "标题", "タイトル"),
     "ДОБАВЛЕНО" to t("ADDED", "HINZUGEFÜGT", "AJOUTÉ", "添加时间", "追加日"),
     "ИЗМЕНЕНО" to t("MODIFIED", "GEÄNDERT", "MODIFIÉ", "修改时间", "更新日"),
+    "СОРТИРОВКА" to t("SORTING", "SORTIERUNG", "TRI", "排序", "並び替え"),
     "РЕВЕРС" to t("REVERSE", "UMGEKEHRT", "INVERSÉ", "倒序", "逆順"),
     "НОМЕР" to t("NUMBER", "NUMMER", "NUMÉRO", "编号", "番号"),
     "ПОРЯДОК" to t("ORDER", "REIHENFOLGE", "ORDRE", "顺序", "順序"),

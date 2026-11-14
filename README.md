@@ -120,7 +120,7 @@ All screenshots show the English interface with a generated demo library. Track 
 | **Playlists and favorites** | Offline SQLite storage |
 | **Track search and edit** | Search, edit, override |
 | **Albums** | Grouped by tags |
-| **Sorting** | Five modes, persistent |
+| **Sorting** | Five modes, filter dialog, persistent |
 | **Multi-select** | Bulk select, delete |
 | **Own images** | Covers from gallery |
 | **Sticky headers** | Search folds away |

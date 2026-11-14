@@ -35,6 +35,7 @@ import com.vova.glyph.i18n.tr
 import com.vova.glyph.ui.components.AddToPlaylistSheet
 import com.vova.glyph.ui.components.ConfirmDialog
 import com.vova.glyph.ui.components.EmptyState
+import com.vova.glyph.ui.components.FilterButton
 import com.vova.glyph.ui.components.Glyph
 import com.vova.glyph.ui.components.GlyphButton
 import com.vova.glyph.ui.components.GlyphCover
@@ -42,7 +43,7 @@ import com.vova.glyph.ui.components.GlyphIconButton
 import com.vova.glyph.ui.components.Hairline
 import com.vova.glyph.ui.components.MicroLabel
 import com.vova.glyph.ui.components.SectionHeader
-import com.vova.glyph.ui.components.SortRow
+import com.vova.glyph.ui.components.SortDialog
 import com.vova.glyph.ui.components.Text
 import com.vova.glyph.ui.components.TrackRow
 import com.vova.glyph.ui.theme.GlyphBlack
@@ -60,6 +61,7 @@ fun AlbumDetailScreen(vm: MainViewModel) {
     val playerState by vm.playerState.collectAsStateWithLifecycle()
     val unavailableIds by vm.unavailableIds.collectAsStateWithLifecycle()
     var showDeleteConfirm by remember { mutableStateOf(false) }
+    var showSort by remember { mutableStateOf(false) }
     var playlistTarget by remember { mutableStateOf<Track?>(null) }
     val sorting by vm.albumSorting.collectAsStateWithLifecycle()
 
@@ -162,25 +164,18 @@ fun AlbumDetailScreen(vm: MainViewModel) {
             }
         }
         item { Hairline(Modifier.padding(horizontal = 20.dp)) }
-        item {
-            SortRow(
-                options = listOf(
-                    TrackSort.TRACK_NO to "НОМЕР",
-                    TrackSort.TITLE to "НАЗВАНИЕ",
-                    TrackSort.ADDED to "ДОБАВЛЕНО",
-                    TrackSort.MODIFIED to "ИЗМЕНЕНО",
-                ),
-                sorting = sorting,
-                onSortBy = { vm.setSortBy(SortTarget.ALBUM, it) },
-                onReverse = { vm.setSortReverse(SortTarget.ALBUM, it) },
-                modifier = Modifier.padding(vertical = 8.dp),
-            )
-        }
         stickyHeader(key = "tracks") {
             SectionHeader(
                 number = "01",
                 title = "ТРЕКИ",
                 modifier = Modifier.background(GlyphBlack),
+                action = {
+                    FilterButton(
+                        onClick = { showSort = true },
+                        active = sorting.reverse,
+                        size = 30,
+                    )
+                },
             )
         }
         if (tracks.isEmpty()) {
@@ -237,6 +232,21 @@ fun AlbumDetailScreen(vm: MainViewModel) {
                 vm.addTrackToPlaylist(playlist.id, track)
                 playlistTarget = null
             },
+        )
+    }
+
+    if (showSort) {
+        SortDialog(
+            options = listOf(
+                TrackSort.TRACK_NO to "НОМЕР",
+                TrackSort.TITLE to "НАЗВАНИЕ",
+                TrackSort.ADDED to "ДОБАВЛЕНО",
+                TrackSort.MODIFIED to "ИЗМЕНЕНО",
+            ),
+            sorting = sorting,
+            onSortBy = { vm.setSortBy(SortTarget.ALBUM, it) },
+            onReverse = { vm.setSortReverse(SortTarget.ALBUM, it) },
+            onDismiss = { showSort = false },
         )
     }
 }

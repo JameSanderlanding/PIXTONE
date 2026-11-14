@@ -68,6 +68,7 @@ import com.vova.glyph.ui.components.ConfirmDialog
 import com.vova.glyph.ui.components.CreatePlaylistDialog
 import com.vova.glyph.ui.components.DotSpinner
 import com.vova.glyph.ui.components.EmptyState
+import com.vova.glyph.ui.components.FilterButton
 import com.vova.glyph.ui.components.Glyph
 import com.vova.glyph.ui.components.GlyphButton
 import com.vova.glyph.ui.components.GlyphCover
@@ -78,7 +79,7 @@ import com.vova.glyph.ui.components.MicroLabel
 import com.vova.glyph.ui.components.ScreenHeader
 import com.vova.glyph.ui.components.SectionHeader
 import com.vova.glyph.ui.components.SelectionBar
-import com.vova.glyph.ui.components.SortRow
+import com.vova.glyph.ui.components.SortDialog
 import com.vova.glyph.ui.components.Text
 import com.vova.glyph.ui.components.TrackRow
 import com.vova.glyph.ui.theme.DotoFamily
@@ -108,6 +109,7 @@ fun LibraryScreen(vm: MainViewModel) {
 
     var query by remember { mutableStateOf("") }
     var showCreate by remember { mutableStateOf(false) }
+    var showSort by remember { mutableStateOf(false) }
     var coverUri by remember { mutableStateOf<Uri?>(null) }
     var playlistTarget by remember { mutableStateOf<Track?>(null) }
     var showLyrics by remember { mutableStateOf(false) }
@@ -253,17 +255,6 @@ fun LibraryScreen(vm: MainViewModel) {
                         placeholder = "Поиск по названию или исполнителю",
                         modifier = Modifier.padding(horizontal = 20.dp),
                     )
-                    Spacer(Modifier.height(10.dp))
-                    SortRow(
-                        options = listOf(
-                            TrackSort.TITLE to "НАЗВАНИЕ",
-                            TrackSort.ADDED to "ДОБАВЛЕНО",
-                            TrackSort.MODIFIED to "ИЗМЕНЕНО",
-                        ),
-                        sorting = sorting,
-                        onSortBy = { vm.setSortBy(SortTarget.LIBRARY, it) },
-                        onReverse = { vm.setSortReverse(SortTarget.LIBRARY, it) },
-                    )
                 }
             }
         }
@@ -347,9 +338,9 @@ fun LibraryScreen(vm: MainViewModel) {
                     title = if (query.isBlank()) "ВСЕ ТРЕКИ" else "РЕЗУЛЬТАТЫ: ${sorted.size}",
                     modifier = Modifier.background(GlyphBlack).padding(top = 10.dp),
                     action = {
-                        if (query.isBlank() && selectionType == null) {
+                        if (selectionType == null) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                if (tracks.isNotEmpty()) {
+                                if (query.isBlank() && tracks.isNotEmpty()) {
                                     Row(
                                         Modifier.clickable { folderPicker.launch(null) },
                                         verticalAlignment = Alignment.CenterVertically,
@@ -360,14 +351,22 @@ fun LibraryScreen(vm: MainViewModel) {
                                     }
                                     Spacer(Modifier.width(12.dp))
                                 }
-                                Row(
-                                    Modifier.clickable { filePicker.launch(arrayOf("audio/*")) },
-                                    verticalAlignment = Alignment.CenterVertically,
-                                ) {
-                                    GlyphIcon(Glyph.Plus, tint = GlyphWhite, modifier = Modifier.size(12.dp))
-                                    Spacer(Modifier.width(5.dp))
-                                    MicroLabel("ФАЙЛ", color = GlyphWhite)
+                                if (query.isBlank()) {
+                                    Row(
+                                        Modifier.clickable { filePicker.launch(arrayOf("audio/*")) },
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        GlyphIcon(Glyph.Plus, tint = GlyphWhite, modifier = Modifier.size(12.dp))
+                                        Spacer(Modifier.width(5.dp))
+                                        MicroLabel("ФАЙЛ", color = GlyphWhite)
+                                    }
+                                    Spacer(Modifier.width(12.dp))
                                 }
+                                FilterButton(
+                                    onClick = { showSort = true },
+                                    active = sorting.reverse,
+                                    size = 30,
+                                )
                             }
                         }
                     },
@@ -524,6 +523,20 @@ fun LibraryScreen(vm: MainViewModel) {
                 },
             )
         }
+    }
+
+    if (showSort) {
+        SortDialog(
+            options = listOf(
+                TrackSort.TITLE to "НАЗВАНИЕ",
+                TrackSort.ADDED to "ДОБАВЛЕНО",
+                TrackSort.MODIFIED to "ИЗМЕНЕНО",
+            ),
+            sorting = sorting,
+            onSortBy = { vm.setSortBy(SortTarget.LIBRARY, it) },
+            onReverse = { vm.setSortReverse(SortTarget.LIBRARY, it) },
+            onDismiss = { showSort = false },
+        )
     }
 }
 
