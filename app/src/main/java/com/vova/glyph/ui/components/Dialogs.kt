@@ -499,6 +499,76 @@ fun MissingTrackDialog(
 }
 
 @Composable
+fun SaveSoundPresetDialog(
+    onSave: (name: String) -> Unit,
+    onClose: () -> Unit,
+) {
+    var name by remember { mutableStateOf("") }
+    var error by remember { mutableStateOf(false) }
+    val shape = RoundedCornerShape(2.dp)
+
+    Dialog(onDismissRequest = onClose) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .border(1.dp, GlyphLine, shape),
+            color = GlyphSurface,
+            shape = shape,
+        ) {
+            Column(Modifier.padding(20.dp)) {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    MicroLabel("НОВЫЙ ПРЕСЕТ", color = GlyphRed)
+                    Spacer(Modifier.weight(1f))
+                    GlyphIconButton(
+                        glyph = Glyph.Close,
+                        onClick = onClose,
+                        size = 32.dp,
+                        iconSize = 16.dp,
+                        tint = GlyphGray,
+                    )
+                }
+                Spacer(Modifier.height(16.dp))
+                GlyphTextField(
+                    value = name,
+                    onValueChange = {
+                        name = it.take(60)
+                        error = false
+                    },
+                    placeholder = "Название пресета",
+                )
+                if (error) {
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "Введите название пресета",
+                        style = MaterialTheme.typography.bodySmall.copy(color = GlyphRed),
+                    )
+                }
+                Spacer(Modifier.height(18.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    GlyphButton(
+                        text = "ЗАКРЫТЬ",
+                        onClick = onClose,
+                        filled = false,
+                        modifier = Modifier.weight(1f),
+                    )
+                    GlyphButton(
+                        text = "СОХРАНИТЬ",
+                        onClick = {
+                            if (name.isBlank()) {
+                                error = true
+                            } else {
+                                onSave(name.trim())
+                            }
+                        },
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
 private fun TrackFieldLabel(
     text: String,
     canReset: Boolean,

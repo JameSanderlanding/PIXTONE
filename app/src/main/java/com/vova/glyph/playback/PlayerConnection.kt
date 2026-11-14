@@ -18,6 +18,7 @@ import androidx.media3.session.SessionToken
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import com.vova.glyph.data.Prefs
+import com.vova.glyph.data.SoundPreset
 import com.vova.glyph.data.Track
 import com.vova.glyph.playback.dsp.EqCurve
 import com.vova.glyph.playback.dsp.EqPreset
@@ -471,6 +472,49 @@ class PlayerConnection(private val context: Context) {
         prefs.fxReverbWet = wet
         prefs.fxReverbEnabled = true
         _dsp.update { it.copy(reverbWet = wet, reverbEnabled = true) }
+    }
+
+    fun applySoundPreset(preset: SoundPreset) {
+        val speed = preset.speed.coerceIn(MIN_SPEED, MAX_SPEED)
+        prefs.fxSpeed = speed
+        controller?.setPlaybackParameters(PlaybackParameters(speed, speed))
+        prefs.fxEqPreset = preset.eqPreset
+        prefs.fxEqBands = encodeBands(preset.bands)
+        prefs.fxEqEnabled = preset.eqEnabled
+        prefs.fxBassEnabled = preset.bassEnabled
+        prefs.fxBassStrength = preset.bassStrength
+        prefs.fxLoudnessEnabled = preset.loudnessEnabled
+        prefs.fxLoudnessGain = preset.loudnessGainMb
+        prefs.fxReverbEnabled = preset.reverbEnabled
+        prefs.fxReverbRoom = preset.reverbRoom
+        prefs.fxReverbDamp = preset.reverbDamp
+        prefs.fxReverbWet = preset.reverbWet
+        val current = _dsp.value
+        val eqPreset = EqPreset.fromName(preset.eqPreset)
+        val bands = if (eqPreset == EqPreset.CUSTOM) {
+            current.bands.mapIndexed { index, band ->
+                band.copy(
+                    levelMb = preset.bands.getOrElse(index) { band.levelMb }
+                        .coerceIn(current.levelMinMb, current.levelMaxMb),
+                )
+            }
+        } else {
+            bandsForPreset(current, eqPreset, speed)
+        }
+        _dsp.value = current.copy(
+            speed = speed,
+            eqEnabled = preset.eqEnabled,
+            eqPreset = eqPreset,
+            bands = bands,
+            bassEnabled = preset.bassEnabled,
+            bassStrength = preset.bassStrength,
+            loudnessEnabled = preset.loudnessEnabled,
+            loudnessGainMb = preset.loudnessGainMb,
+            reverbEnabled = preset.reverbEnabled,
+            reverbRoom = preset.reverbRoom,
+            reverbDamp = preset.reverbDamp,
+            reverbWet = preset.reverbWet,
+        )
     }
 
     fun resetDsp() {

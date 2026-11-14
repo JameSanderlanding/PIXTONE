@@ -16,6 +16,7 @@ import com.vova.glyph.data.LyricQuote
 import com.vova.glyph.data.LyricQuoteLine
 import com.vova.glyph.data.OnlineTrack
 import com.vova.glyph.data.Playlist
+import com.vova.glyph.data.SoundPreset
 import com.vova.glyph.data.Track
 import com.vova.glyph.data.TrackSort
 import com.vova.glyph.data.TrackSorting
@@ -43,6 +44,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import java.io.IOException
+import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -109,6 +111,9 @@ class MainViewModel(
 
     private val _unavailableTrack = MutableStateFlow<Track?>(null)
     val unavailableTrack = _unavailableTrack.asStateFlow()
+
+    private val _soundPresets = MutableStateFlow(prefs.soundPresets)
+    val soundPresets = _soundPresets.asStateFlow()
 
     private val _folderName = MutableStateFlow(prefs.folderName)
     val folderName = _folderName.asStateFlow()
@@ -868,6 +873,49 @@ class MainViewModel(
     fun setReverbWet(value: Int) = player.setReverbWet(value)
 
     fun resetDsp() = player.resetDsp()
+
+    fun saveSoundPreset(name: String) {
+        val trimmed = name.trim()
+        if (trimmed.isEmpty()) return
+        val state = dsp.value
+        val preset = SoundPreset(
+            id = UUID.randomUUID().toString(),
+            name = trimmed,
+            speed = state.speed,
+            eqEnabled = state.eqEnabled,
+            eqPreset = state.eqPreset.name,
+            bands = state.bands.map { it.levelMb },
+            bassEnabled = state.bassEnabled,
+            bassStrength = state.bassStrength,
+            loudnessEnabled = state.loudnessEnabled,
+            loudnessGainMb = state.loudnessGainMb,
+            reverbEnabled = state.reverbEnabled,
+            reverbRoom = state.reverbRoom,
+            reverbDamp = state.reverbDamp,
+            reverbWet = state.reverbWet,
+        )
+        val existing = _soundPresets.value
+        val sameName = existing.firstOrNull { it.name.equals(trimmed, ignoreCase = true) }
+        val updated = if (sameName == null) {
+            existing + preset
+        } else {
+            existing.map { if (it.id == sameName.id) preset.copy(id = sameName.id) else it }
+        }
+        _soundPresets.value = updated
+        prefs.soundPresets = updated
+        notify("Пресет сохранён")
+    }
+
+    fun applySoundPreset(preset: SoundPreset) {
+        player.applySoundPreset(preset)
+    }
+
+    fun deleteSoundPreset(preset: SoundPreset) {
+        val updated = _soundPresets.value.filterNot { it.id == preset.id }
+        _soundPresets.value = updated
+        prefs.soundPresets = updated
+        notify("Пресет удалён")
+    }
 
     fun fetchLyrics(track: Track) {
         if (_lyricsTrackId.value == track.id && (_lyrics.value != null || _lyricsLoading.value)) return

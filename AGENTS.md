@@ -321,6 +321,7 @@ PIXTONE/
 - Реверб — свой `AudioProcessor` на `BaseAudioProcessor`, стоит до Sonic, поэтому хвост растягивается вместе со скоростью. `roomSize`, `damp` и `wet` — `@Volatile` и читаются на каждом буфере; `onFlush` и `onReset` чистят линии задержки после seek. При выключенном ревербе PCM проходит байт-в-байт.
 - При скорости ≠ 1.0 Media3 отключает audio offload сам — на слабых устройствах растёт расход батареи.
 - Кнопка СБРОСИТЬ НАСТРОЙКИ в панели возвращает все `fx_*` к дефолтам: скорость `1.0`, эффекты выключены, реверб `70/40/30`.
+- Пользовательские пресеты звука: раскрывающийся блок ПРЕСЕТЫ под заголовком ЗВУК и кнопка СОХРАНИТЬ ПРЕСЕТ внизу панели. Пресет хранит скорость, состояние и значения эквалайзера (включая CUSTOM-полосы), баса, громкости и реверба; список лежит в `glyph_prefs` под ключом `sound_presets` (JSON). Тап по пресету применяет все настройки сразу, корзина удаляет его после подтверждения, сохранение под существующим именем перезаписывает пресет.
 
 ### 4.12 Сообщения
 
@@ -357,7 +358,7 @@ PIXTONE/
 
 | Файл | Ключи |
 |---|---|
-| `glyph_prefs` | `onboarding_done`, `folder_uri`, `folder_name`, `shuffle`, `sort_library`, `sort_playlist`, `quote_font`, `quote_size`, `hidden_albums`, `fx_speed`, `fx_eq_enabled`, `fx_eq_preset`, `fx_eq_bands`, `fx_bass_enabled`, `fx_bass_strength`, `fx_loudness_enabled`, `fx_loudness_gain`, `fx_reverb_enabled`, `fx_reverb_room`, `fx_reverb_damp`, `fx_reverb_wet`, `unavailable_tracks` |
+| `glyph_prefs` | `onboarding_done`, `folder_uri`, `folder_name`, `shuffle`, `sort_library`, `sort_playlist`, `quote_font`, `quote_size`, `hidden_albums`, `fx_speed`, `fx_eq_enabled`, `fx_eq_preset`, `fx_eq_bands`, `fx_bass_enabled`, `fx_bass_strength`, `fx_loudness_enabled`, `fx_loudness_gain`, `fx_reverb_enabled`, `fx_reverb_room`, `fx_reverb_damp`, `fx_reverb_wet`, `sound_presets`, `unavailable_tracks` |
 | `glyph_theme` | `preset`, 8 цветов, `custom_presets` (JSON) |
 | `glyph_fonts` | `body`, `display`, `brand` |
 | `glyph_language` | `language` |

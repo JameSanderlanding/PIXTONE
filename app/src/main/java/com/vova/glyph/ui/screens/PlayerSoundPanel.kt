@@ -18,22 +18,32 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.vova.glyph.MainViewModel
+import com.vova.glyph.data.SoundPreset
+import com.vova.glyph.playback.DspUiState
 import com.vova.glyph.playback.dsp.EqPreset
+import com.vova.glyph.ui.components.ConfirmDialog
 import com.vova.glyph.ui.components.Glyph
 import com.vova.glyph.ui.components.GlyphButton
 import com.vova.glyph.ui.components.GlyphChip
 import com.vova.glyph.ui.components.GlyphIcon
+import com.vova.glyph.ui.components.GlyphIconButton
 import com.vova.glyph.ui.components.GlyphSection
 import com.vova.glyph.ui.components.GlyphSlider
 import com.vova.glyph.ui.components.GlyphToggle
+import com.vova.glyph.ui.components.Hairline
 import com.vova.glyph.ui.components.MicroLabel
+import com.vova.glyph.ui.components.SaveSoundPresetDialog
 import com.vova.glyph.ui.components.Text
 import com.vova.glyph.ui.theme.GlyphDim
 import com.vova.glyph.ui.theme.GlyphGray
@@ -42,6 +52,7 @@ import com.vova.glyph.ui.theme.GlyphRed
 import com.vova.glyph.ui.theme.GlyphSurface
 import com.vova.glyph.ui.theme.GlyphWhite
 import java.util.Locale
+import kotlin.math.abs
 import kotlin.math.roundToInt
 
 @Composable
@@ -51,6 +62,8 @@ fun PlayerSoundSection(
     onToggle: () -> Unit,
 ) {
     val dsp by vm.dsp.collectAsStateWithLifecycle()
+    val presets by vm.soundPresets.collectAsStateWithLifecycle()
+    var showSavePreset by remember { mutableStateOf(false) }
     val shape = RoundedCornerShape(2.dp)
 
     Row(
@@ -91,6 +104,15 @@ fun PlayerSoundSection(
     }
 
     if (!expanded) return
+
+    Spacer(Modifier.height(10.dp))
+
+    SoundPresetsDropdown(
+        presets = presets,
+        activeId = presets.firstOrNull { presetMatches(it, dsp) }?.id,
+        onApply = vm::applySoundPreset,
+        onDelete = vm::deleteSoundPreset,
+    )
 
     Spacer(Modifier.height(10.dp))
 
@@ -264,12 +286,150 @@ fun PlayerSoundSection(
     Spacer(Modifier.height(12.dp))
 
     GlyphButton(
+        text = "СОХРАНИТЬ ПРЕСЕТ",
+        onClick = { showSavePreset = true },
+        leading = Glyph.Plus,
+        modifier = Modifier.fillMaxWidth(),
+    )
+
+    Spacer(Modifier.height(10.dp))
+
+    GlyphButton(
         text = "СБРОСИТЬ НАСТРОЙКИ",
         onClick = vm::resetDsp,
         filled = false,
         modifier = Modifier.fillMaxWidth(),
     )
+
+    if (showSavePreset) {
+        SaveSoundPresetDialog(
+            onSave = { name ->
+                vm.saveSoundPreset(name)
+                showSavePreset = false
+            },
+            onClose = { showSavePreset = false },
+        )
+    }
 }
+
+@Composable
+private fun SoundPresetsDropdown(
+    presets: List<SoundPreset>,
+    activeId: String?,
+    onApply: (SoundPreset) -> Unit,
+    onDelete: (SoundPreset) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(true) }
+    var pendingDelete by remember { mutableStateOf<SoundPreset?>(null) }
+    val shape = RoundedCornerShape(2.dp)
+
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .background(GlyphSurface.copy(alpha = 0.94f), shape)
+            .border(1.dp, GlyphLine, shape),
+    ) {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .clickable { expanded = !expanded }
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            MicroLabel("ПРЕСЕТЫ", color = GlyphWhite, fontSize = 9)
+            Spacer(Modifier.weight(1f))
+            if (presets.isNotEmpty()) {
+                MicroLabel("${presets.size}", color = GlyphDim, fontSize = 8)
+                Spacer(Modifier.width(10.dp))
+            }
+            GlyphIcon(
+                glyph = Glyph.Plus,
+                tint = GlyphRed,
+                modifier = Modifier
+                    .size(12.dp)
+                    .rotate(if (expanded) 45f else 0f),
+            )
+        }
+        if (!expanded) return@Column
+        Hairline()
+        if (presets.isEmpty()) {
+            Text(
+                "Пока нет пресетов. Настройте звук ниже и нажмите «Сохранить пресет».",
+                style = MaterialTheme.typography.bodySmall.copy(color = GlyphDim, fontSize = 11.sp),
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+            )
+        } else {
+            presets.forEach { preset ->
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .clickable { onApply(preset) }
+                        .padding(start = 16.dp, end = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(
+                        Modifier
+                            .weight(1f)
+                            .padding(vertical = 9.dp),
+                    ) {
+                        Text(
+                            preset.name,
+                            style = MaterialTheme.typography.bodyMedium.copy(color = GlyphWhite),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        Spacer(Modifier.height(2.dp))
+                        MicroLabel(
+                            String.format(Locale.US, "×%.2f", preset.speed),
+                            color = GlyphDim,
+                            fontSize = 7,
+                        )
+                    }
+                    if (preset.id == activeId) {
+                        MicroLabel("ВКЛ", color = GlyphRed, fontSize = 8)
+                        Spacer(Modifier.width(6.dp))
+                    }
+                    GlyphIconButton(
+                        glyph = Glyph.Trash,
+                        onClick = { pendingDelete = preset },
+                        tint = GlyphDim,
+                        size = 32.dp,
+                        iconSize = 13.dp,
+                        description = "Удалить пресет",
+                    )
+                }
+            }
+        }
+    }
+
+    pendingDelete?.let { preset ->
+        ConfirmDialog(
+            title = "Удалить пресет?",
+            message = "Пресет будет удалён с устройства. Настройки звука останутся как есть.",
+            confirmText = "УДАЛИТЬ",
+            onConfirm = {
+                pendingDelete = null
+                onDelete(preset)
+            },
+            onDismiss = { pendingDelete = null },
+            destructive = true,
+        )
+    }
+}
+
+private fun presetMatches(preset: SoundPreset, dsp: DspUiState): Boolean =
+    abs(preset.speed - dsp.speed) < 0.001f &&
+        preset.eqEnabled == dsp.eqEnabled &&
+        preset.eqPreset == dsp.eqPreset.name &&
+        (preset.eqPreset != EqPreset.CUSTOM.name || preset.bands == dsp.bands.map { it.levelMb }) &&
+        preset.bassEnabled == dsp.bassEnabled &&
+        preset.bassStrength == dsp.bassStrength &&
+        preset.loudnessEnabled == dsp.loudnessEnabled &&
+        preset.loudnessGainMb == dsp.loudnessGainMb &&
+        preset.reverbEnabled == dsp.reverbEnabled &&
+        preset.reverbRoom == dsp.reverbRoom &&
+        preset.reverbDamp == dsp.reverbDamp &&
+        preset.reverbWet == dsp.reverbWet
 
 private val AudioPresets = listOf(
     EqPreset.FLAT to "ПЛОСКИЙ",

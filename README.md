@@ -116,7 +116,7 @@ All screenshots show the English interface with a generated demo library. Track 
 | **Online catalog** | JioSaavn search and streaming |
 | **Folder scanning** | MP3, FLAC, OGG, AAC |
 | **Background playback** | Notification and Bluetooth |
-| **Sound tuning** | EQ, bass, reverb, speed |
+| **Sound tuning** | EQ, bass, reverb, speed, custom presets |
 | **Playlists and favorites** | Offline SQLite storage |
 | **Track search and edit** | Search, edit, override |
 | **Albums** | Grouped by tags |

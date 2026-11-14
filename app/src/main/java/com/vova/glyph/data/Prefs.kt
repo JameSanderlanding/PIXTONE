@@ -3,6 +3,7 @@ package com.vova.glyph.data
 import android.content.Context
 import android.content.SharedPreferences
 import android.net.Uri
+import org.json.JSONArray
 
 class Prefs(context: Context) {
     private val sp = context.applicationContext.getSharedPreferences("glyph_prefs", Context.MODE_PRIVATE)
@@ -26,6 +27,23 @@ class Prefs(context: Context) {
         set(value) = sp.edit()
             .putStringSet("unavailable_tracks", value.map { it.toString() }.toSet())
             .apply()
+
+    var soundPresets: List<SoundPreset>
+        get() {
+            val raw = sp.getString("sound_presets", null).orEmpty()
+            if (raw.isBlank()) return emptyList()
+            return runCatching {
+                val array = JSONArray(raw)
+                List(array.length()) { index ->
+                    array.optJSONObject(index)?.let(SoundPreset::fromJson)
+                }.filterNotNull()
+            }.getOrDefault(emptyList())
+        }
+        set(value) {
+            val array = JSONArray()
+            value.forEach { array.put(it.toJson()) }
+            sp.edit().putString("sound_presets", array.toString()).apply()
+        }
 
     var shuffle: Boolean
         get() = sp.getBoolean("shuffle", false)
