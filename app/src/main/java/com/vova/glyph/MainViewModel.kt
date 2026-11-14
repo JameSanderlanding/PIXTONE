@@ -119,7 +119,10 @@ class MainViewModel(
     val folderName = _folderName.asStateFlow()
 
     private val _librarySorting = MutableStateFlow(
-        TrackSorting.decode(prefs.librarySort, TrackSorting())
+        TrackSorting.decode(
+            prefs.librarySort,
+            TrackSorting(by = TrackSort.MODIFIED, reverse = true),
+        )
     )
     val librarySorting = _librarySorting.asStateFlow()
 
