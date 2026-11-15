@@ -1123,6 +1123,7 @@ fun MiniPlayer(
     durationMs: Long,
     onOpen: () -> Unit,
     onToggle: () -> Unit,
+    onPrevious: () -> Unit,
     onNext: () -> Unit,
 ) {
     val duration = if (durationMs > 0) durationMs else track.durationMs
@@ -1166,6 +1167,13 @@ fun MiniPlayer(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
+            }
+            Spacer(Modifier.width(4.dp))
+            Box(
+                Modifier.size(34.dp).clickable(onClick = onPrevious),
+                contentAlignment = Alignment.Center,
+            ) {
+                GlyphIcon(Glyph.Previous, tint = GlyphGray, modifier = Modifier.size(17.dp))
             }
             Box(
                 Modifier

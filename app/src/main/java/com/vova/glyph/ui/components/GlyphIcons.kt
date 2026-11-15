@@ -217,17 +217,16 @@ fun GlyphIcon(
             }
 
             Glyph.Text -> {
-                drawRoundRect(
-                    tint,
-                    topLeft = p(5f, 4f),
-                    size = Size(14f * u, 16f * u),
-                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(1f * u),
-                    style = strokeStyle,
-                )
-                line(7f, 7f, 17f, 7f)
-                line(7f, 10f, 15f, 10f)
-                line(7f, 13f, 13f, 13f)
-                line(7f, 16f, 11f, 16f)
+                path({
+                    moveTo(4.8f * u, 5f * u)
+                    lineTo(19.2f * u, 5f * u)
+                    lineTo(19.2f * u, 7.4f * u)
+                    lineTo(13.2f * u, 7.4f * u)
+                    lineTo(13.2f * u, 19f * u)
+                    lineTo(10.8f * u, 19f * u)
+                    lineTo(10.8f * u, 7.4f * u)
+                    lineTo(4.8f * u, 7.4f * u)
+                }, fill = true)
             }
 
             Glyph.Trash -> {

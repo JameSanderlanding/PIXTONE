@@ -194,6 +194,7 @@ private fun MiniPlayerBar(
         durationMs = progress.durationMs,
         onOpen = vm::openPlayer,
         onToggle = vm::togglePlayPause,
+        onPrevious = vm::previous,
         onNext = vm::next,
     )
 }
