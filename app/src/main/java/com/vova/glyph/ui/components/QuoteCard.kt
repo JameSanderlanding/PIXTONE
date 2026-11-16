@@ -25,7 +25,9 @@ import com.vova.glyph.data.fitQuoteText
 import com.vova.glyph.i18n.tr
 import com.vova.glyph.ui.theme.AppFont
 import com.vova.glyph.ui.theme.CoverTint
+import com.vova.glyph.ui.theme.FontFace
 import com.vova.glyph.ui.theme.ThemePalette
+import com.vova.glyph.ui.theme.UserFont
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -42,8 +44,8 @@ data class QuoteCardSpec(
     val artist: String,
     val artwork: String?,
     val colors: QuoteCardColors,
-    val quoteFont: AppFont,
-    val titleFont: AppFont,
+    val quoteFont: FontFace,
+    val titleFont: FontFace,
     val textSize: QuoteTextSize = QuoteTextSize.MEDIUM,
 )
 
@@ -310,7 +312,7 @@ private fun drawQuoteMark(
 
 private fun textPaint(
     context: Context,
-    font: AppFont,
+    font: FontFace,
     fontSize: Float,
     color: Int,
     bold: Boolean,
@@ -320,14 +322,21 @@ private fun textPaint(
     this.color = color
 }
 
-private fun AppFont.typeface(context: Context, bold: Boolean): Typeface {
-    val font = when (this) {
-        AppFont.DOTO -> R.font.doto
-        AppFont.PIXEL -> R.font.pixelify_sans
-        AppFont.GROTESK -> R.font.space_grotesk
-        AppFont.SYSTEM -> return if (bold) Typeface.DEFAULT_BOLD else Typeface.DEFAULT
+private fun FontFace.typeface(context: Context, bold: Boolean): Typeface {
+    val appFont = this as? AppFont
+    if (appFont != null) {
+        val font = when (appFont) {
+            AppFont.DOTO -> R.font.doto
+            AppFont.PIXEL -> R.font.pixelify_sans
+            AppFont.GROTESK -> R.font.space_grotesk
+            AppFont.SYSTEM -> return if (bold) Typeface.DEFAULT_BOLD else Typeface.DEFAULT
+        }
+        val base = ResourcesCompat.getFont(context, font) ?: Typeface.DEFAULT
+        return if (bold) Typeface.create(base, Typeface.BOLD) else base
     }
-    val base = ResourcesCompat.getFont(context, font) ?: Typeface.DEFAULT
+    val userFont = this as UserFont
+    val base = runCatching { Typeface.createFromFile(userFont.path) }
+        .getOrDefault(Typeface.DEFAULT)
     return if (bold) Typeface.create(base, Typeface.BOLD) else base
 }
 

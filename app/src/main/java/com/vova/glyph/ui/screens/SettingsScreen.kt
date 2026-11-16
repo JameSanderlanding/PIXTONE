@@ -29,12 +29,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -63,6 +65,7 @@ import com.vova.glyph.ui.theme.AppFont
 import com.vova.glyph.ui.theme.ColorSlot
 import com.vova.glyph.ui.theme.DefaultPalette
 import com.vova.glyph.ui.theme.FontController
+import com.vova.glyph.ui.theme.FontFace
 import com.vova.glyph.ui.theme.FontRole
 import com.vova.glyph.ui.theme.GlyphBlack
 import com.vova.glyph.ui.theme.GlyphDim
@@ -74,6 +77,10 @@ import com.vova.glyph.ui.theme.GlyphWhite
 import com.vova.glyph.ui.theme.ThemeController
 import com.vova.glyph.ui.theme.ThemePalette
 import com.vova.glyph.ui.theme.ThemePreset
+import com.vova.glyph.ui.theme.UserFont
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 private enum class SettingsPage { MAIN, THEME, THEME_EDITOR, FONTS, LANGUAGE, LICENSES }
 
@@ -429,8 +436,68 @@ private fun ThemeSettingsPage(
     onCreatePreset: () -> Unit,
     onEditPreset: () -> Unit,
 ) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val presets = ThemeController.allPresets()
     var pendingDelete by remember { mutableStateOf<ThemePreset?>(null) }
+    var notice by remember { mutableStateOf<String?>(null) }
+    var noticeError by remember { mutableStateOf(false) }
+
+    val exporter = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("text/plain"),
+    ) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        scope.launch {
+            val count = ThemeController.customPresets.size
+            val payload = ThemeController.exportThemes()
+            val result = withContext(Dispatchers.IO) {
+                runCatching {
+                    context.contentResolver.openOutputStream(uri)?.use { stream ->
+                        stream.write(payload.toByteArray())
+                    } ?: error("Не удалось сохранить файл")
+                }
+            }
+            result
+                .onSuccess {
+                    noticeError = false
+                    notice = "Экспортировано тем: $count"
+                }
+                .onFailure {
+                    noticeError = true
+                    notice = it.message ?: "Не удалось экспортировать темы"
+                }
+        }
+    }
+
+    val importer = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument(),
+    ) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        scope.launch {
+            val result = withContext(Dispatchers.IO) {
+                runCatching {
+                    val text = context.contentResolver.openInputStream(uri)
+                        ?.bufferedReader()
+                        ?.use { it.readText() }
+                        ?: error("Не удалось прочитать файл")
+                    ThemeController.importThemes(text)
+                }
+            }
+            result
+                .onSuccess { imported ->
+                    noticeError = false
+                    notice = if (imported.added > 0) {
+                        "Импортировано тем: ${imported.added}"
+                    } else {
+                        "Все темы из файла уже есть"
+                    }
+                }
+                .onFailure {
+                    noticeError = true
+                    notice = it.message ?: "Не удалось импортировать темы"
+                }
+        }
+    }
 
     SettingsPageHeader(title = "ТЕМА", onBack = onBack)
     Spacer(Modifier.height(7.dp))
@@ -483,6 +550,40 @@ private fun ThemeSettingsPage(
         leading = Glyph.Plus,
         modifier = Modifier.fillMaxWidth(),
     )
+
+    Spacer(Modifier.height(10.dp))
+    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        GlyphButton(
+            text = "ЭКСПОРТ",
+            onClick = {
+                notice = null
+                exporter.launch("pixtone-themes.txt")
+            },
+            filled = false,
+            leading = Glyph.Download,
+            enabled = ThemeController.customPresets.isNotEmpty(),
+            modifier = Modifier.weight(1f),
+        )
+        GlyphButton(
+            text = "ИМПОРТ",
+            onClick = {
+                notice = null
+                importer.launch(arrayOf("*/*"))
+            },
+            filled = false,
+            leading = Glyph.Folder,
+            modifier = Modifier.weight(1f),
+        )
+    }
+    notice?.let { message ->
+        Spacer(Modifier.height(10.dp))
+        Text(
+            message,
+            style = MaterialTheme.typography.bodySmall.copy(
+                color = if (noticeError) GlyphRed else GlyphGray,
+            ),
+        )
+    }
 
     pendingDelete?.let { preset ->
         ConfirmDialog(
@@ -612,6 +713,28 @@ private fun PresetNameField(
 
 @Composable
 private fun FontsSettingsPage(onBack: () -> Unit) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var pendingDelete by remember { mutableStateOf<UserFont?>(null) }
+    var notice by remember { mutableStateOf<String?>(null) }
+    var noticeError by remember { mutableStateOf(false) }
+
+    val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        notice = null
+        scope.launch {
+            FontController.importFont(context, uri)
+                .onSuccess {
+                    noticeError = false
+                    notice = "Шрифт «${it.title}» добавлен"
+                }
+                .onFailure {
+                    noticeError = true
+                    notice = it.message ?: "Не удалось добавить шрифт"
+                }
+        }
+    }
+
     SettingsPageHeader(title = "ШРИФТЫ", onBack = onBack)
     Spacer(Modifier.height(7.dp))
     Text(
@@ -623,12 +746,15 @@ private fun FontsSettingsPage(onBack: () -> Unit) {
     FontRole.entries.forEachIndexed { roleIndex, role ->
         if (roleIndex > 0) Spacer(Modifier.height(14.dp))
         GlyphSection(number = "0${roleIndex + 1}", title = role.label) {
-            AppFont.entries.forEachIndexed { fontIndex, font ->
+            FontController.allFonts.forEachIndexed { fontIndex, font ->
                 if (fontIndex > 0) Spacer(Modifier.height(9.dp))
                 FontRow(
                     font = font,
-                    selected = FontController.fontFor(role) == font,
+                    selected = FontController.fontFor(role).id == font.id,
                     onClick = { FontController.select(role, font) },
+                    onDelete = (font as? UserFont)?.let { userFont ->
+                        { pendingDelete = userFont }
+                    },
                 )
             }
         }
@@ -636,18 +762,53 @@ private fun FontsSettingsPage(onBack: () -> Unit) {
 
     Spacer(Modifier.height(16.dp))
     GlyphButton(
+        text = "ДОБАВИТЬ ШРИФТ",
+        onClick = {
+            notice = null
+            picker.launch(arrayOf("*/*"))
+        },
+        filled = true,
+        leading = Glyph.Plus,
+        modifier = Modifier.fillMaxWidth(),
+    )
+    Spacer(Modifier.height(10.dp))
+    GlyphButton(
         text = "СБРОСИТЬ К СТАНДАРТНЫМ",
         onClick = { FontController.reset() },
         filled = false,
         modifier = Modifier.fillMaxWidth(),
     )
+    notice?.let { message ->
+        Spacer(Modifier.height(10.dp))
+        Text(
+            message,
+            style = MaterialTheme.typography.bodySmall.copy(
+                color = if (noticeError) GlyphRed else GlyphGray,
+            ),
+        )
+    }
+
+    pendingDelete?.let { font ->
+        ConfirmDialog(
+            title = "Удалить шрифт?",
+            message = "Шрифт «${font.title}» будет удалён из приложения. Файл на устройстве останется.",
+            confirmText = "Удалить",
+            destructive = true,
+            onConfirm = {
+                FontController.deleteFont(font)
+                pendingDelete = null
+            },
+            onDismiss = { pendingDelete = null },
+        )
+    }
 }
 
 @Composable
 private fun FontRow(
-    font: AppFont,
+    font: FontFace,
     selected: Boolean,
     onClick: () -> Unit,
+    onDelete: (() -> Unit)? = null,
 ) {
     Row(
         Modifier
@@ -679,6 +840,8 @@ private fun FontRow(
                 fontSize = 10.sp,
                 letterSpacing = 0.6.sp,
             ),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f),
         )
         Box(
@@ -686,6 +849,17 @@ private fun FontRow(
                 .size(if (selected) 7.dp else 5.dp)
                 .background(if (selected) GlyphRed else GlyphDim, CircleShape)
         )
+        if (onDelete != null) {
+            Spacer(Modifier.width(6.dp))
+            GlyphIconButton(
+                glyph = Glyph.Trash,
+                onClick = onDelete,
+                size = 28.dp,
+                iconSize = 14.dp,
+                tint = GlyphDim,
+                description = "Удалить шрифт",
+            )
+        }
     }
 }
 

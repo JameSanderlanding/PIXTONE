@@ -171,7 +171,9 @@ class MainViewModel(
     private val _playlistTracks = MutableStateFlow<List<Track>>(emptyList())
     val playlistTracks = _playlistTracks.asStateFlow()
 
-    private val _hiddenAlbums = MutableStateFlow(prefs.hiddenAlbumKeys)
+    private val _hiddenAlbums = MutableStateFlow<Set<String>>(
+        prefs.hiddenAlbumKeys.mapTo(HashSet()) { Albums.normalizeKey(it) },
+    )
 
     val localTracks: StateFlow<List<Track>> = repo.tracks
         .map { list -> list.filter { it.source == Track.SOURCE_LOCAL } }

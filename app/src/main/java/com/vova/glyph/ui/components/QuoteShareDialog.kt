@@ -44,6 +44,7 @@ import com.vova.glyph.data.Prefs
 import com.vova.glyph.data.Track
 import com.vova.glyph.ui.theme.AppFont
 import com.vova.glyph.ui.theme.FontController
+import com.vova.glyph.ui.theme.FontFace
 import com.vova.glyph.ui.theme.GlyphBlack
 import com.vova.glyph.ui.theme.GlyphDim
 import com.vova.glyph.ui.theme.GlyphGray
@@ -51,6 +52,7 @@ import com.vova.glyph.ui.theme.GlyphLine
 import com.vova.glyph.ui.theme.GlyphRed
 import com.vova.glyph.ui.theme.GlyphSurface
 import com.vova.glyph.ui.theme.GlyphWhite
+import com.vova.glyph.ui.theme.UserFont
 import kotlinx.coroutines.launch
 
 @Composable
@@ -65,7 +67,10 @@ fun QuoteImageDialog(
     val screenHeight = LocalConfiguration.current.screenHeightDp.dp
     val prefs = remember(context.applicationContext) { Prefs(context.applicationContext) }
     var quoteFont by remember(quote.id) {
-        mutableStateOf(AppFont.fromId(prefs.quoteFont, FontController.body))
+        mutableStateOf(
+            FontController.allFonts.firstOrNull { it.id == prefs.quoteFont }
+                ?: FontController.body,
+        )
     }
     var quoteSize by remember(quote.id) {
         mutableStateOf(QuoteTextSize.fromName(prefs.quoteSize))
@@ -192,10 +197,10 @@ fun QuoteImageDialog(
                     Modifier.horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
-                    AppFont.entries.forEach { font ->
+                    FontController.allFonts.forEach { font ->
                         GlyphChip(
                             text = font.quoteLabel(),
-                            selected = font == quoteFont,
+                            selected = font.id == quoteFont.id,
                             onClick = {
                                 quoteFont = font
                                 prefs.quoteFont = font.id
@@ -249,9 +254,11 @@ fun QuoteImageDialog(
     }
 }
 
-private fun AppFont.quoteLabel(): String = when (this) {
+private fun FontFace.quoteLabel(): String = when (val face = this) {
+    is UserFont -> if (face.title.length > 16) face.title.take(16) + "…" else face.title
     AppFont.DOTO -> "DOTO"
     AppFont.PIXEL -> "PIXEL"
     AppFont.GROTESK -> "GROTESK"
     AppFont.SYSTEM -> "SYSTEM"
+    else -> face.id
 }

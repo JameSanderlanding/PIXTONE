@@ -314,22 +314,52 @@ object ThemeController {
                 JSONObject()
                     .put("id", preset.id)
                     .put("name", preset.name)
-                    .put(
-                        "colors",
-                        JSONArray().apply {
-                            put(preset.palette.background.toArgb())
-                            put(preset.palette.surface.toArgb())
-                            put(preset.palette.surfaceHigh.toArgb())
-                            put(preset.palette.text.toArgb())
-                            put(preset.palette.gray.toArgb())
-                            put(preset.palette.dim.toArgb())
-                            put(preset.palette.line.toArgb())
-                            put(preset.palette.accent.toArgb())
-                        },
-                    )
+                    .put("colors", colorsToJson(preset.palette)),
             )
         }
         sp.edit().putString(KEY_CUSTOM, array.toString()).apply()
+    }
+
+    fun exportThemes(): String = ThemeFile.export(customPresets)
+
+    fun importThemes(text: String): ThemeImportResult {
+        var added = 0
+        var skipped = 0
+        var presets = customPresets
+        ThemeFile.parse(text).forEachIndexed { index, entry ->
+            val rawName = entry.name.take(MAX_PRESET_NAME)
+            if (presets.any { it.name.equals(rawName, true) && it.palette == entry.palette }) {
+                skipped++
+                return@forEachIndexed
+            }
+            var name = rawName
+            var suffix = 2
+            while (presets.any { it.name.equals(name, true) }) {
+                name = "$rawName $suffix"
+                suffix++
+            }
+            presets = presets + ThemePreset(
+                id = "custom_${System.currentTimeMillis()}_$index",
+                name = name,
+                palette = entry.palette,
+            )
+            added++
+        }
+        if (added == 0 && skipped == 0) error("В файле не найдены темы")
+        customPresets = presets
+        saveCustomPresets()
+        return ThemeImportResult(added, skipped)
+    }
+
+    private fun colorsToJson(palette: ThemePalette): JSONArray = JSONArray().apply {
+        put(palette.background.toArgb())
+        put(palette.surface.toArgb())
+        put(palette.surfaceHigh.toArgb())
+        put(palette.text.toArgb())
+        put(palette.gray.toArgb())
+        put(palette.dim.toArgb())
+        put(palette.line.toArgb())
+        put(palette.accent.toArgb())
     }
 
     private fun loadCustomPresets(sp: SharedPreferences): List<ThemePreset> = runCatching {
@@ -363,4 +393,7 @@ object ThemeController {
 
     private const val KEY_PRESET = "preset"
     private const val KEY_CUSTOM = "custom_presets"
+    private const val MAX_PRESET_NAME = 28
 }
+
+data class ThemeImportResult(val added: Int, val skipped: Int)
