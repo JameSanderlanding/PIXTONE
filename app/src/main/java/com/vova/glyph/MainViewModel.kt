@@ -1176,7 +1176,7 @@ class MainViewModel(
                 notify("Треков для удаления нет")
                 return@launch
             }
-            if (playerState.value.trackId in ids) player.stop()
+            container.player.removeFromQueue(ids)
             val openPlaylist = _openPlaylistId.value
             runCatching { repo.deleteTracks(ids.toList()) }
                 .onSuccess {

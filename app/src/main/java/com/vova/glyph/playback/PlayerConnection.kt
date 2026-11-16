@@ -363,6 +363,28 @@ class PlayerConnection(private val context: Context) {
         originalItems = originalItems.map { if (it.mediaId == item.mediaId) item else it }
     }
 
+    fun removeFromQueue(trackIds: Collection<Long>): Boolean {
+        val player = controller ?: return false
+        if (trackIds.isEmpty()) return false
+        val removing = trackIds.mapTo(HashSet()) { it.toString() }
+        val mediaIds = (0 until player.mediaItemCount).map { player.getMediaItemAt(it).mediaId }
+        val indices = QueueEdits.removalIndices(mediaIds, removing)
+        if (indices.isEmpty()) return false
+        indices.forEach { player.removeMediaItem(it) }
+        if (player.mediaItemCount == 0) {
+            player.stop()
+            player.clearMediaItems()
+        } else if (player.currentMediaItem == null) {
+            player.seekToDefaultPosition()
+            player.prepare()
+        }
+        originalItems = originalItems.filterNot { it.mediaId in removing }
+        pendingSeekMs = null
+        updateState(player)
+        refreshProgress(player, detectLoop = false)
+        return true
+    }
+
     fun stop() {
         pendingSeekMs = null
         controller?.stop()
