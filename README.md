@@ -20,7 +20,7 @@
 PIXTONE plays the music stored on your device. Just a folder, a queue and an interface built around dots, segments and pixels. Nothing is uploaded anywhere: network access is used only for optional lyrics, cover lookup and the online catalog.
 
 <p align="center">
-  <code>59 KOTLIN FILES</code> · <code>16,369 LINES</code> · <code>6 LANGUAGES</code> · <code>0 TRACKERS</code> · <code>17.1 MB APK</code>
+  <code>61 KOTLIN FILES</code> · <code>16,427 LINES</code> · <code>6 LANGUAGES</code> · <code>0 TRACKERS</code> · <code>16.8 MB APK</code>
 </p>
 
 <p align="center">
@@ -119,15 +119,15 @@ All screenshots show the English interface with a generated demo library. Track 
 | **Sound tuning** | EQ, bass, reverb, speed, custom presets |
 | **Playlists and favorites** | Offline SQLite storage |
 | **Track search and edit** | Search, edit, override |
-| **Albums** | Grouped by tags |
+| **Albums** | Grouped by tags, featured artists merged |
 | **Sorting** | Five modes, filter dialog, persistent |
 | **Multi-select** | Bulk select, delete |
 | **Own images** | Covers from gallery |
 | **Sticky headers** | Search folds away |
 | **Lyrics** | Synced LRC, quotes, quote images |
 | **Smart cover art** | Genius, Deezer, iTunes, per-track refresh |
-| **Themes** | Six presets, custom palettes |
-| **Custom typography** | Four fonts, three roles |
+| **Themes** | Six presets, custom palettes, text export and import |
+| **Custom typography** | Built-in fonts plus your own, three roles |
 | **Six languages** | Switch on the fly |
 | **Pixel dissolve toasts** | Tap to dismiss |
 | **Lightweight and private** | No trackers, no ads |
@@ -204,7 +204,7 @@ cd PIXTONE
 The debug APK is produced at:
 
 ```text
-app/build/outputs/apk/debug/Pixton 2.0.0.apk
+app/build/outputs/apk/debug/Pixton 2.1.0.apk
 ```
 
 `local.properties` with your own `sdk.dir` is ignored by Git.
