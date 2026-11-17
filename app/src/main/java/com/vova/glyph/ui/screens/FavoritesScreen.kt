@@ -28,11 +28,13 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.vova.glyph.MainViewModel
 import com.vova.glyph.data.Track
+import com.vova.glyph.data.TrackSearch
 import com.vova.glyph.ui.components.AddToPlaylistSheet
 import com.vova.glyph.ui.components.EmptyState
 import com.vova.glyph.ui.components.Glyph
 import com.vova.glyph.ui.components.GlyphButton
 import com.vova.glyph.ui.components.GlyphIcon
+import com.vova.glyph.ui.components.GlyphSearchField
 import com.vova.glyph.ui.components.Hairline
 import com.vova.glyph.ui.components.MicroLabel
 import com.vova.glyph.ui.components.ScreenHeader
@@ -54,13 +56,27 @@ fun FavoritesScreen(vm: MainViewModel) {
     val playerState by vm.playerState.collectAsStateWithLifecycle()
     val unavailableIds by vm.unavailableIds.collectAsStateWithLifecycle()
     var playlistTarget by remember { mutableStateOf<Track?>(null) }
+    var query by remember { mutableStateOf("") }
+
+    val visible = remember(favorites, query) { TrackSearch.filter(favorites, query) }
 
     Column(Modifier.fillMaxSize()) {
         ScreenHeader(
             index = "04",
             title = "Избранное",
-            subtitle = "${favorites.size} ТРЕКОВ · СОБРАНО ВРУЧНУЮ",
+            subtitle = if (query.isBlank()) {
+                "${favorites.size} ТРЕКОВ · СОБРАНО ВРУЧНУЮ"
+            } else {
+                "НАЙДЕНО: ${visible.size}"
+            },
             onSettings = vm::openSettings,
+        )
+        Spacer(Modifier.height(18.dp))
+        GlyphSearchField(
+            query = query,
+            onQueryChange = { query = it },
+            placeholder = "Поиск по названию или исполнителю",
+            modifier = Modifier.padding(horizontal = 20.dp),
         )
 
         LazyColumn(
@@ -74,8 +90,8 @@ fun FavoritesScreen(vm: MainViewModel) {
             ) {
                 GlyphButton(
                     text = "СЛУШАТЬ ВСЁ",
-                    onClick = { vm.playTracks(favorites, 0, openPlayer = true) },
-                    enabled = favorites.isNotEmpty(),
+                    onClick = { vm.playTracks(visible, 0, openPlayer = true) },
+                    enabled = visible.isNotEmpty(),
                     leading = Glyph.Play,
                 )
                 Spacer(Modifier.weight(1f))
@@ -112,11 +128,11 @@ fun FavoritesScreen(vm: MainViewModel) {
         stickyHeader(key = "favorites") {
             SectionHeader(
                 number = "01",
-                title = "ВАША КОЛЛЕКЦИЯ",
+                title = if (query.isBlank()) "ВАША КОЛЛЕКЦИЯ" else "РЕЗУЛЬТАТЫ: ${visible.size}",
                 modifier = Modifier.background(GlyphBlack),
                 action = {
                     Text(
-                        "${favorites.size}",
+                        "${visible.size}",
                         style = MaterialTheme.typography.labelLarge.copy(
                             color = GlyphGray,
                             fontSize = 10.sp,
@@ -143,9 +159,25 @@ fun FavoritesScreen(vm: MainViewModel) {
                     },
                 )
             }
+        } else if (visible.isEmpty()) {
+            item {
+                EmptyState(
+                    glyph = Glyph.Search,
+                    title = "Ничего не найдено",
+                    body = "Попробуйте другое название, исполнителя или альбом.",
+                    action = {
+                        GlyphButton(
+                            text = "СБРОСИТЬ",
+                            onClick = { query = "" },
+                            filled = false,
+                            leading = Glyph.Close,
+                        )
+                    },
+                )
+            }
         } else {
             itemsIndexed(
-                items = favorites,
+                items = visible,
                 key = { _, track -> track.id },
                 contentType = { _, _ -> "track" },
             ) { index, track ->
@@ -154,7 +186,7 @@ fun FavoritesScreen(vm: MainViewModel) {
                     isCurrent = currentTrack?.id == track.id,
                     isPlaying = playerState.isPlaying && currentTrack?.id == track.id,
                     unavailable = track.id in unavailableIds,
-                    onClick = { vm.playTracks(favorites, index) },
+                    onClick = { vm.playTracks(visible, index) },
                     onFavorite = { vm.toggleFavorite(track) },
                     onAddToPlaylist = { playlistTarget = track },
                     onEditInfo = { vm.openTrackEditor(track) },

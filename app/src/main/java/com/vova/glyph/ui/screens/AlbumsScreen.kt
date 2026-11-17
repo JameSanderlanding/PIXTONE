@@ -22,11 +22,13 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.vova.glyph.MainViewModel
 import com.vova.glyph.Tab
+import com.vova.glyph.data.AlbumSearch
 import com.vova.glyph.ui.components.AlbumCard
 import com.vova.glyph.ui.components.ConfirmDialog
 import com.vova.glyph.ui.components.EmptyState
 import com.vova.glyph.ui.components.Glyph
 import com.vova.glyph.ui.components.GlyphButton
+import com.vova.glyph.ui.components.GlyphSearchField
 import com.vova.glyph.ui.components.ScreenHeader
 import com.vova.glyph.ui.components.SelectionBar
 
@@ -34,9 +36,12 @@ import com.vova.glyph.ui.components.SelectionBar
 fun AlbumsScreen(vm: MainViewModel) {
     val albums by vm.albums.collectAsStateWithLifecycle()
 
+    var query by remember { mutableStateOf("") }
     var selectionMode by remember { mutableStateOf(false) }
     var selectedKeys by remember { mutableStateOf<Set<String>>(emptySet()) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
+
+    val visibleAlbums = remember(albums, query) { AlbumSearch.filter(albums, query) }
 
     fun clearSelection() {
         selectionMode = false
@@ -49,10 +54,11 @@ fun AlbumsScreen(vm: MainViewModel) {
         if (selectionMode) {
             SelectionBar(
                 selectedCount = selectedKeys.size,
-                allSelected = albums.isNotEmpty() && albums.all { it.key in selectedKeys },
+                allSelected = visibleAlbums.isNotEmpty() &&
+                    visibleAlbums.all { it.key in selectedKeys },
                 onCancel = { clearSelection() },
                 onToggleAll = {
-                    val allKeys = albums.mapTo(HashSet()) { it.key }
+                    val allKeys = visibleAlbums.mapTo(HashSet()) { it.key }
                     selectedKeys = if (allKeys.isNotEmpty() && selectedKeys.containsAll(allKeys)) {
                         emptySet()
                     } else {
@@ -83,8 +89,18 @@ fun AlbumsScreen(vm: MainViewModel) {
                         ScreenHeader(
                             index = "03",
                             title = "Альбомы",
-                            subtitle = "АЛЬБОМОВ: ${albums.size}",
+                            subtitle = if (query.isBlank()) {
+                                "АЛЬБОМОВ: ${albums.size}"
+                            } else {
+                                "НАЙДЕНО: ${visibleAlbums.size}"
+                            },
                             onSettings = vm::openSettings,
+                        )
+                        Spacer(Modifier.height(18.dp))
+                        GlyphSearchField(
+                            query = query,
+                            onQueryChange = { query = it },
+                            placeholder = "Поиск по названию или исполнителю",
                         )
                         Spacer(Modifier.height(18.dp))
                     }
@@ -106,9 +122,25 @@ fun AlbumsScreen(vm: MainViewModel) {
                         },
                     )
                 }
+            } else if (visibleAlbums.isEmpty()) {
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    EmptyState(
+                        glyph = Glyph.Search,
+                        title = "Ничего не найдено",
+                        body = "Попробуйте другое название, исполнителя или альбом.",
+                        action = {
+                            GlyphButton(
+                                text = "СБРОСИТЬ",
+                                onClick = { query = "" },
+                                filled = false,
+                                leading = Glyph.Close,
+                            )
+                        },
+                    )
+                }
             } else {
                 items(
-                    items = albums,
+                    items = visibleAlbums,
                     key = { it.key },
                     contentType = { "album" },
                 ) { album ->
