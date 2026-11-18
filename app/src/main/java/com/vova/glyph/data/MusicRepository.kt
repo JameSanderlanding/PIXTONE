@@ -98,6 +98,11 @@ class MusicRepository(private val db: GlyphDb) {
         refresh()
     }
 
+    suspend fun removeFavorites(ids: Collection<Long>) {
+        db.removeFavorites(ids.toList())
+        refresh()
+    }
+
     suspend fun createPlaylist(name: String, description: String, cover: String?): Long {
         val id = db.createPlaylist(name, description, cover)
         refresh()
@@ -133,6 +138,11 @@ class MusicRepository(private val db: GlyphDb) {
 
     suspend fun removeFromPlaylist(playlistId: Long, trackId: Long) {
         db.removeFromPlaylist(playlistId, trackId)
+        refresh()
+    }
+
+    suspend fun removeTracksFromPlaylist(playlistId: Long, trackIds: Collection<Long>) {
+        db.removeTracksFromPlaylist(playlistId, trackIds.toList())
         refresh()
     }
 

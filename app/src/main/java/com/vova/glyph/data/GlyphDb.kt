@@ -451,6 +451,27 @@ class GlyphDb(context: Context) : SQLiteOpenHelper(context, "glyph.db", null, 17
         writableDatabase.update("tracks", values, "id = ?", arrayOf(trackId.toString()))
     }
 
+    suspend fun removeFavorites(ids: List<Long>) = withContext(Dispatchers.IO) {
+        if (ids.isEmpty()) return@withContext
+        val db = writableDatabase
+        db.beginTransaction()
+        try {
+            val values = ContentValues().apply { put("favorite", 0) }
+            ids.chunked(DELETE_CHUNK).forEach { chunk ->
+                val placeholders = chunk.joinToString(",") { "?" }
+                db.update(
+                    "tracks",
+                    values,
+                    "id IN ($placeholders)",
+                    chunk.map { it.toString() }.toTypedArray(),
+                )
+            }
+            db.setTransactionSuccessful()
+        } finally {
+            db.endTransaction()
+        }
+    }
+
     suspend fun updateArtwork(trackId: Long, artwork: String?) = withContext(Dispatchers.IO) {
         val values = ContentValues().apply {
             if (artwork == null) putNull("artwork") else put("artwork", artwork)
@@ -779,6 +800,28 @@ class GlyphDb(context: Context) : SQLiteOpenHelper(context, "glyph.db", null, 17
             arrayOf(playlistId.toString(), trackId.toString())
         )
     }
+
+    suspend fun removeTracksFromPlaylist(playlistId: Long, trackIds: List<Long>) =
+        withContext(Dispatchers.IO) {
+            if (trackIds.isEmpty()) return@withContext
+            val db = writableDatabase
+            db.beginTransaction()
+            try {
+                trackIds.chunked(DELETE_CHUNK).forEach { chunk ->
+                    val placeholders = chunk.joinToString(",") { "?" }
+                    val args = arrayOf(playlistId.toString()) +
+                        chunk.map { it.toString() }.toTypedArray()
+                    db.delete(
+                        "playlist_tracks",
+                        "playlist_id = ? AND track_id IN ($placeholders)",
+                        args,
+                    )
+                }
+                db.setTransactionSuccessful()
+            } finally {
+                db.endTransaction()
+            }
+        }
 
     private fun Cursor.toTracks(): List<Track> {
         val out = mutableListOf<Track>()

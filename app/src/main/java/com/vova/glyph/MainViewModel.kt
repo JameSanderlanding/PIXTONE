@@ -1082,6 +1082,15 @@ class MainViewModel(
         }
     }
 
+    fun removeFavorites(ids: Collection<Long>) {
+        if (ids.isEmpty()) return
+        viewModelScope.launch {
+            runCatching { repo.removeFavorites(ids) }
+                .onSuccess { notify("Убрано из избранного") }
+                .onFailure { notify(it.message ?: "Не удалось убрать из избранного") }
+        }
+    }
+
     fun updateTrackCover(track: Track) {
         if (track.isOnline) {
             notify("Обложку можно обновить только для локального трека")
@@ -1355,6 +1364,20 @@ class MainViewModel(
                         _playlistTracks.value = repo.playlistTracks(playlistId)
                     }
                     notify("Трек убран из плейлиста")
+                }
+                .onFailure { notify(it.message ?: "Не удалось убрать трек") }
+        }
+    }
+
+    fun removeTracksFromPlaylist(playlistId: Long, ids: Collection<Long>) {
+        if (ids.isEmpty()) return
+        viewModelScope.launch {
+            runCatching { repo.removeTracksFromPlaylist(playlistId, ids) }
+                .onSuccess {
+                    if (_openPlaylistId.value == playlistId) {
+                        _playlistTracks.value = repo.playlistTracks(playlistId)
+                    }
+                    notify("Убрано из плейлиста")
                 }
                 .onFailure { notify(it.message ?: "Не удалось убрать трек") }
         }

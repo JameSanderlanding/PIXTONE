@@ -37,6 +37,7 @@ import com.vova.glyph.data.TrackSort
 import com.vova.glyph.data.TrackSorter
 import com.vova.glyph.data.TrackSorting
 import com.vova.glyph.ui.components.AddToPlaylistSheet
+import com.vova.glyph.ui.components.ConfirmDialog
 import com.vova.glyph.ui.components.EmptyState
 import com.vova.glyph.ui.components.Glyph
 import com.vova.glyph.ui.components.GlyphButton
@@ -46,6 +47,7 @@ import com.vova.glyph.ui.components.Hairline
 import com.vova.glyph.ui.components.MicroLabel
 import com.vova.glyph.ui.components.ScreenHeader
 import com.vova.glyph.ui.components.SectionHeader
+import com.vova.glyph.ui.components.SelectionBar
 import com.vova.glyph.ui.components.Text
 import com.vova.glyph.ui.components.TrackRow
 import com.vova.glyph.ui.components.dropIndicator
@@ -69,6 +71,8 @@ fun FavoritesScreen(vm: MainViewModel) {
     var playlistTarget by remember { mutableStateOf<Track?>(null) }
     var query by remember { mutableStateOf("") }
     var editMode by remember { mutableStateOf(false) }
+    var selectedIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
+    var showRemoveConfirm by remember { mutableStateOf(false) }
 
     val visible = remember(favorites, query, favoriteOrder) {
         TrackSorter.apply(
@@ -82,16 +86,46 @@ fun FavoritesScreen(vm: MainViewModel) {
     val reorder = rememberReorderState(
         listState,
         remember(visible) { visible.mapTo(HashSet()) { it.id } },
-        onStart = { editMode = true },
+        onStart = { id ->
+            if (!editMode) {
+                editMode = true
+                selectedIds = setOf(id)
+            }
+        },
     ) { fromId, toId ->
         val from = visible.indexOfFirst { it.id == fromId }
         val to = visible.indexOfFirst { it.id == toId }
         if (from >= 0 && to >= 0) vm.reorderFavorites(ManualOrder.move(visible, from, to))
     }
 
-    BackHandler(editMode) { editMode = false }
+    fun clearSelection() {
+        editMode = false
+        selectedIds = emptySet()
+    }
+
+    fun toggleSelection(id: Long) {
+        selectedIds = if (id in selectedIds) selectedIds - id else selectedIds + id
+    }
+
+    BackHandler(editMode) { clearSelection() }
 
     Column(Modifier.fillMaxSize()) {
+        if (editMode) {
+            SelectionBar(
+                selectedCount = selectedIds.size,
+                allSelected = visible.isNotEmpty() && visible.all { it.id in selectedIds },
+                onCancel = { clearSelection() },
+                onToggleAll = {
+                    val ids = visible.mapTo(HashSet()) { it.id }
+                    selectedIds = if (ids.isNotEmpty() && selectedIds.containsAll(ids)) {
+                        emptySet()
+                    } else {
+                        ids
+                    }
+                },
+                onConfirm = { if (selectedIds.isNotEmpty()) showRemoveConfirm = true },
+            )
+        }
         ScreenHeader(
             index = "04",
             title = "Избранное",
@@ -161,7 +195,7 @@ fun FavoritesScreen(vm: MainViewModel) {
             SectionHeader(
                 number = "01",
                 title = when {
-                    editMode -> "ПЕРЕТАЩИТЕ ТРЕК"
+                    editMode && query.isBlank() -> "ПЕРЕТАЩИТЕ ТРЕК"
                     query.isBlank() -> "ВАША КОЛЛЕКЦИЯ"
                     else -> "РЕЗУЛЬТАТЫ: ${visible.size}"
                 },
@@ -169,7 +203,7 @@ fun FavoritesScreen(vm: MainViewModel) {
                 action = {
                     if (editMode) {
                         Row(
-                            Modifier.clickable { editMode = false },
+                            Modifier.clickable { clearSelection() },
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             MicroLabel("ГОТОВО", color = GlyphWhite)
@@ -237,18 +271,36 @@ fun FavoritesScreen(vm: MainViewModel) {
                     onEditInfo = { vm.openTrackEditor(track) },
                     onUpdateCover = if (track.isOnline) null else ({ vm.updateTrackCover(track) }),
                     onDelete = { vm.deleteTrack(track) },
-                    modifier = if (query.isBlank()) {
-                        Modifier
-                            .animateItem()
-                            .reorderable(reorder, track.id)
-                            .dropIndicator(reorder, track.id)
+                    selectionMode = editMode,
+                    selected = track.id in selectedIds,
+                    onSelectToggle = if (editMode) {
+                        { toggleSelection(track.id) }
                     } else {
-                        Modifier.animateItem()
+                        null
                     },
+                    modifier = Modifier
+                        .animateItem()
+                        .reorderable(reorder, track.id, dragEnabled = query.isBlank())
+                        .dropIndicator(reorder, track.id),
                 )
             }
         }
         }
+    }
+
+    if (showRemoveConfirm) {
+        val ids = selectedIds
+        ConfirmDialog(
+            title = "Убрать из избранного?",
+            message = "Будет убрано треков: ${ids.size}. Треки останутся в библиотеке.",
+            confirmText = "Убрать",
+            onConfirm = {
+                showRemoveConfirm = false
+                clearSelection()
+                vm.removeFavorites(ids)
+            },
+            onDismiss = { showRemoveConfirm = false },
+        )
     }
 
     playlistTarget?.let { track ->

@@ -47,6 +47,7 @@ import com.vova.glyph.ui.components.GlyphIconButton
 import com.vova.glyph.ui.components.Hairline
 import com.vova.glyph.ui.components.MicroLabel
 import com.vova.glyph.ui.components.SectionHeader
+import com.vova.glyph.ui.components.SelectionBar
 import com.vova.glyph.ui.components.SortDialog
 import com.vova.glyph.ui.components.Text
 import com.vova.glyph.ui.components.TrackRow
@@ -68,9 +69,11 @@ fun AlbumDetailScreen(vm: MainViewModel) {
     val playerState by vm.playerState.collectAsStateWithLifecycle()
     val unavailableIds by vm.unavailableIds.collectAsStateWithLifecycle()
     var showDeleteConfirm by remember { mutableStateOf(false) }
+    var showDeleteTracksConfirm by remember { mutableStateOf(false) }
     var showSort by remember { mutableStateOf(false) }
     var playlistTarget by remember { mutableStateOf<Track?>(null) }
     var editMode by remember { mutableStateOf(false) }
+    var selectedIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
     val sorting by vm.albumSorting.collectAsStateWithLifecycle()
     val albumOrder by vm.albumOrder.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
@@ -83,16 +86,46 @@ fun AlbumDetailScreen(vm: MainViewModel) {
     val reorder = rememberReorderState(
         listState,
         remember(sorted) { sorted.mapTo(HashSet()) { it.id } },
-        onStart = { editMode = true },
+        onStart = { id ->
+            if (!editMode) {
+                editMode = true
+                selectedIds = setOf(id)
+            }
+        },
     ) { fromId, toId ->
         val from = sorted.indexOfFirst { it.id == fromId }
         val to = sorted.indexOfFirst { it.id == toId }
         if (from >= 0 && to >= 0) vm.reorderAlbum(ManualOrder.move(sorted, from, to))
     }
 
-    BackHandler(editMode) { editMode = false }
+    fun clearSelection() {
+        editMode = false
+        selectedIds = emptySet()
+    }
+
+    fun toggleSelection(id: Long) {
+        selectedIds = if (id in selectedIds) selectedIds - id else selectedIds + id
+    }
+
+    BackHandler(editMode) { clearSelection() }
 
     Column(Modifier.fillMaxSize()) {
+        if (editMode) {
+            SelectionBar(
+                selectedCount = selectedIds.size,
+                allSelected = sorted.isNotEmpty() && sorted.all { it.id in selectedIds },
+                onCancel = { clearSelection() },
+                onToggleAll = {
+                    val ids = sorted.mapTo(HashSet()) { it.id }
+                    selectedIds = if (ids.isNotEmpty() && selectedIds.containsAll(ids)) {
+                        emptySet()
+                    } else {
+                        ids
+                    }
+                },
+                onConfirm = { if (selectedIds.isNotEmpty()) showDeleteTracksConfirm = true },
+            )
+        }
         Row(
             Modifier
                 .fillMaxWidth()
@@ -197,7 +230,7 @@ fun AlbumDetailScreen(vm: MainViewModel) {
                 action = {
                     if (editMode) {
                         Row(
-                            Modifier.clickable { editMode = false },
+                            Modifier.clickable { clearSelection() },
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             MicroLabel("ГОТОВО", color = GlyphWhite)
@@ -237,6 +270,13 @@ fun AlbumDetailScreen(vm: MainViewModel) {
                     onEditInfo = { vm.openTrackEditor(track) },
                     onUpdateCover = if (track.isOnline) null else ({ vm.updateTrackCover(track) }),
                     onDelete = { vm.deleteTrack(track) },
+                    selectionMode = editMode,
+                    selected = track.id in selectedIds,
+                    onSelectToggle = if (editMode) {
+                        { toggleSelection(track.id) }
+                    } else {
+                        null
+                    },
                     modifier = Modifier
                         .animateItem()
                         .reorderable(reorder, track.id)
@@ -258,6 +298,22 @@ fun AlbumDetailScreen(vm: MainViewModel) {
                 vm.deleteAlbum(currentAlbum)
             },
             onDismiss = { showDeleteConfirm = false },
+        )
+    }
+
+    if (showDeleteTracksConfirm) {
+        val ids = selectedIds
+        ConfirmDialog(
+            title = "Удалить выбранные треки?",
+            message = "Будет убрано треков: ${ids.size}. Файлы на устройстве останутся, при повторном сканировании папки треки вернутся в библиотеку.",
+            confirmText = "Удалить",
+            destructive = true,
+            onConfirm = {
+                showDeleteTracksConfirm = false
+                clearSelection()
+                vm.deleteTracks(ids)
+            },
+            onDismiss = { showDeleteTracksConfirm = false },
         )
     }
 

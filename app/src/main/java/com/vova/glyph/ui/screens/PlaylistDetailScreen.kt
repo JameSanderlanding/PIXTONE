@@ -57,6 +57,7 @@ import com.vova.glyph.ui.components.GlyphIconButton
 import com.vova.glyph.ui.components.Hairline
 import com.vova.glyph.ui.components.MicroLabel
 import com.vova.glyph.ui.components.SectionHeader
+import com.vova.glyph.ui.components.SelectionBar
 import com.vova.glyph.ui.components.SortDialog
 import com.vova.glyph.ui.components.Text
 import com.vova.glyph.ui.components.TrackRow
@@ -84,6 +85,8 @@ fun PlaylistDetailScreen(vm: MainViewModel) {
     var editCoverUri by remember { mutableStateOf<Uri?>(null) }
     var showSort by remember { mutableStateOf(false) }
     var editMode by remember { mutableStateOf(false) }
+    var selectedIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
+    var showRemoveTracksConfirm by remember { mutableStateOf(false) }
     val sorting by vm.playlistSorting.collectAsStateWithLifecycle()
 
     val coverPicker = rememberLauncherForActivityResult(
@@ -96,7 +99,12 @@ fun PlaylistDetailScreen(vm: MainViewModel) {
     val reorder = rememberReorderState(
         listState,
         remember(sorted) { sorted.mapTo(HashSet()) { it.id } },
-        onStart = { editMode = true },
+        onStart = { id ->
+            if (!editMode) {
+                editMode = true
+                selectedIds = setOf(id)
+            }
+        },
     ) { fromId, toId ->
         val from = sorted.indexOfFirst { it.id == fromId }
         val to = sorted.indexOfFirst { it.id == toId }
@@ -105,9 +113,34 @@ fun PlaylistDetailScreen(vm: MainViewModel) {
         }
     }
 
-    BackHandler(editMode) { editMode = false }
+    fun clearSelection() {
+        editMode = false
+        selectedIds = emptySet()
+    }
+
+    fun toggleSelection(id: Long) {
+        selectedIds = if (id in selectedIds) selectedIds - id else selectedIds + id
+    }
+
+    BackHandler(editMode) { clearSelection() }
 
     Column(Modifier.fillMaxSize()) {
+        if (editMode) {
+            SelectionBar(
+                selectedCount = selectedIds.size,
+                allSelected = sorted.isNotEmpty() && sorted.all { it.id in selectedIds },
+                onCancel = { clearSelection() },
+                onToggleAll = {
+                    val ids = sorted.mapTo(HashSet()) { it.id }
+                    selectedIds = if (ids.isNotEmpty() && selectedIds.containsAll(ids)) {
+                        emptySet()
+                    } else {
+                        ids
+                    }
+                },
+                onConfirm = { if (selectedIds.isNotEmpty()) showRemoveTracksConfirm = true },
+            )
+        }
         Row(
             Modifier
                 .fillMaxWidth()
@@ -230,7 +263,7 @@ fun PlaylistDetailScreen(vm: MainViewModel) {
                 action = {
                     if (editMode) {
                         Row(
-                            Modifier.clickable { editMode = false },
+                            Modifier.clickable { clearSelection() },
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             MicroLabel("ГОТОВО", color = GlyphWhite)
@@ -277,6 +310,13 @@ fun PlaylistDetailScreen(vm: MainViewModel) {
                     onEditInfo = { vm.openTrackEditor(track) },
                     onUpdateCover = if (track.isOnline) null else ({ vm.updateTrackCover(track) }),
                     onDelete = { vm.deleteTrack(track) },
+                    selectionMode = editMode,
+                    selected = track.id in selectedIds,
+                    onSelectToggle = if (editMode) {
+                        { toggleSelection(track.id) }
+                    } else {
+                        null
+                    },
                     modifier = Modifier
                         .animateItem()
                         .reorderable(reorder, track.id)
@@ -298,6 +338,21 @@ fun PlaylistDetailScreen(vm: MainViewModel) {
                 vm.deletePlaylist(currentPlaylist)
             },
             onDismiss = { showDeleteConfirm = false },
+        )
+    }
+
+    if (showRemoveTracksConfirm) {
+        val ids = selectedIds
+        ConfirmDialog(
+            title = "Убрать из плейлиста?",
+            message = "Будет убрано треков: ${ids.size}. Треки останутся в библиотеке.",
+            confirmText = "Убрать",
+            onConfirm = {
+                showRemoveTracksConfirm = false
+                clearSelection()
+                vm.removeTracksFromPlaylist(currentPlaylist.id, ids)
+            },
+            onDismiss = { showRemoveTracksConfirm = false },
         )
     }
 

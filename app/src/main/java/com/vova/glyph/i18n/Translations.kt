@@ -373,6 +373,10 @@ private val DICT: Map<String, Tr> = mapOf(
     "В избранное" to t("Add to favorites", "Zu Favoriten", "Ajouter aux favoris", "加入收藏", "お気に入りに追加"),
     "Добавить в плейлист" to t("Add to playlist", "Zur Playlist hinzufügen", "Ajouter à la playlist", "加入播放列表", "プレイリストに追加"),
     "Убрать из плейлиста" to t("Remove from playlist", "Aus der Playlist entfernen", "Retirer de la playlist", "从播放列表移除", "プレイリストから削除"),
+    "Убрать из избранного?" to t("Remove from favorites?", "Aus Favoriten entfernen?", "Retirer des favoris ?", "取消收藏？", "お気に入りから削除しますか？"),
+    "Убрать из плейлиста?" to t("Remove from playlist?", "Aus der Playlist entfernen?", "Retirer de la playlist ?", "从播放列表移除？", "プレイリストから削除しますか？"),
+    "Убрано из плейлиста" to t("Removed from playlist", "Aus der Playlist entfernt", "Retiré de la playlist", "已从播放列表移除", "プレイリストから削除しました"),
+    "Не удалось убрать из избранного" to t("Couldn't remove from favorites", "Konnte nicht aus Favoriten entfernt werden", "Impossible de retirer des favoris", "无法取消收藏", "お気に入りから削除できませんでした"),
 
     "ОТКРЫВАЮ ПАПКУ…" to t("OPENING FOLDER…", "ORDNER WIRD GEÖFFNET…", "OUVERTURE DU DOSSIER…", "正在打开文件夹…", "フォルダを開いています…"),
     "ОТКРЫВАЮ ФАЙЛ…" to t("OPENING FILE…", "DATEI WIRD GEÖFFNET…", "OUVERTURE DU FICHIER…", "正在打开文件…", "ファイルを開いています…"),
@@ -656,6 +660,14 @@ private val RULES: List<Rule> = listOf(
         "Morceaux à retirer : %1. Les fichiers restent sur l'appareil et reviendront dans la bibliothèque au prochain scan du dossier.",
         "将移除曲目: %1。设备上的文件会保留，下次扫描文件夹时曲目会回到音乐库。",
         "削除する曲: %1。デバイス上のファイルは残り、次回フォルダをスキャンすると曲はライブラリに戻ります。",
+    ),
+    r(
+        "^Будет убрано треков: (\\d+)\\. Треки останутся в библиотеке\\.$",
+        "Tracks to remove: %1. They stay in your library.",
+        "Titel werden entfernt: %1. Sie bleiben in der Bibliothek.",
+        "Morceaux à retirer : %1. Ils restent dans la bibliothèque.",
+        "将移除曲目: %1。曲目会保留在音乐库中。",
+        "削除する曲: %1。曲はライブラリに残ります。",
     ),
     r(
         "^Будет удалено плейлистов: (\\d+)\\. Плейлисты не восстанавливаются, треки останутся в библиотеке\\.$",
