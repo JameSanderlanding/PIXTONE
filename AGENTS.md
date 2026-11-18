@@ -36,7 +36,7 @@
 | UI | Jetpack Compose, Material 3 |
 | Плеер | AndroidX Media3 ExoPlayer + MediaSessionService |
 | Async | Kotlin Coroutines, StateFlow / SharedFlow |
-| БД | SQLiteOpenHelper, схема `glyph.db` версии 16 |
+| БД | SQLiteOpenHelper, схема `glyph.db` версии 17 |
 | Сеть | OkHttp, org.json, Jsoup |
 | Картинки | Coil |
 | Сборка | Gradle 9.6, AGP 9.4.1, JDK 21 |
@@ -120,6 +120,8 @@ PIXTONE/
 | `QueryText.kt` | нормализация и транслитерация поисковых запросов |
 | `Lyrics.kt` | `LyricsResult`, `LyricLine`, `CachedLyrics`, парсинг LRC, gap-маркеры |
 | `TrackSearch.kt` | поиск по названию и исполнителю (включая ручные значения) и альбому |
+| `TrackSorter.kt` | сортировка списков треков по критерию и карте ручных позиций |
+| `ManualOrder.kt` | чистая логика ручного порядка: `move()`, `positions()`, scope-константы |
 | `QuoteTextLayout.kt` | перенос строк цитаты и подбор размера шрифта под квадрат; чистые функции, покрыты unit-тестами |
 
 ### `playback/`
@@ -153,7 +155,8 @@ PIXTONE/
 | `theme/Fonts.kt` | доступные шрифты, `FontController`, роли шрифтов |
 | `components/LocalizedText.kt` | **кастомный `Text`**, который прогоняет строку через `tr()` |
 | `components/MessageHost.kt` | очередь всплывающих сообщений, pixel-dissolve, закрытие по тапу |
-| `components/Common.kt` | дизайн-система: кнопки, заголовки, обложки, lower nav, EmptyState и т.д. |
+| `components/Common.kt` | дизайн-система: кнопки, заголовки, обложки, lower nav, EmptyState, `TrackRow` и т.д. |
+| `components/Reorder.kt` | жест перетаскивания: долгое нажатие, подъём строки, подсветка цели, drop |
 | `components/Dialogs.kt` | диалоги создания плейлиста, подтверждения |
 | `components/LyricsDialog.kt` | диалог текста песни, выделение строк и сохранённые цитаты |
 | `components/QuoteCard.kt` | рендер картинки-цитаты 1:1: обложка, тень, исполнитель и название, PNG для шаринга |
@@ -262,6 +265,7 @@ PIXTONE/
 - Хранятся в `playlists` и `playlist_tracks`.
 - `playlist_tracks.position` задаёт порядок.
 - Создание, удаление, добавление и удаление треков идут через `MusicRepository`.
+- Название, описание и обложку плейлиста можно изменить в любой момент: карандаш в шапке `PlaylistDetailScreen` открывает `EditPlaylistDialog` (тот же `PlaylistFormDialog`, что и создание). Обложка меняется тапом по превью через системный выбор картинки; старая копия в `files/covers/` удаляется после успешного сохранения. Правки идут через `MainViewModel.updatePlaylist()` → `MusicRepository.updatePlaylist()` → `GlyphDb.updatePlaylist()`.
 - Обложка плейлиста копируется в `files/covers/` через `ArtworkStore.copyPlaylistCover()`.
 - Сообщение о добавлении конкретного трека в плейлист намеренно не показывается; показывается только «уже в плейлисте» и ошибки.
 
@@ -309,8 +313,11 @@ PIXTONE/
 
 ### 4.10 Сортировка списков треков
 
-- Состояние — `TrackSorting` (`by: TrackSort`, `reverse`) в `MainViewModel`. Три независимых состояния по экранам (`SortTarget`): `librarySorting`, `albumSorting`, `playlistSorting`. Библиотека и плейлисты запоминаются между запусками (`glyph_prefs`: `sort_library`, `sort_playlist`, формат `CRITERION:0|1`), альбомы — только в памяти.
-- Значения `TrackSort`: `TITLE` (по названию без учёта регистра), `ADDED` (по `added_at`), `MODIFIED` (по `file_mtime`), `TRACK_NO` (по номеру трека из тегов), `PLAYLIST` (порядок `playlist_tracks.position`).
+- Состояние — `TrackSorting` (`by: TrackSort`, `reverse`) в `MainViewModel`. Три независимых состояния по экранам (`SortTarget`): `librarySorting`, `albumSorting`, `playlistSorting`. Библиотека и плейлисты запоминаются между запусками (`glyph_prefs`: `sort_library`, `sort_playlist`, формат `CRITERION:0|1`), альбомы — только в памяти (при открытии альбома с сохранённым ручным порядком сортировка сама переключается на `MANUAL`).
+- Значения `TrackSort`: `TITLE` (по названию без учёта регистра), `ADDED` (по `added_at`), `MODIFIED` (по `file_mtime`), `TRACK_NO` (по номеру трека из тегов), `PLAYLIST` (порядок `playlist_tracks.position`), `MANUAL` (пользовательский порядок).
+- Ручной порядок: долгое нажатие на строку трека включает режим правки и сразу поднимает её; трек можно перетащить вверх или вниз, цель подсвечивается красным, строки переезжают с анимацией (`Modifier.animateItem`). После отпускания порядок сохраняется. Работает в библиотеке, избранном, содержимом альбома и плейлиста (в библиотеке и избранном — только при пустом поиске). Первое перетаскивание переключает сортировку на `MANUAL` (в плейлисте — на `PLAYLIST`), потому что иначе список снова разложился бы по старому критерию. Порядок хранится в таблице `track_order` (`scope`: `library` / `favorites` / `album`, `scope_id` — ключ альбома) и в `playlist_tracks.position` для плейлистов; чистая логика перемещения — `ManualOrder.move()`, покрыта unit-тестами.
+- `TrackSorter.apply()` принимает карту `order: Map<Long, Int>`: для `MANUAL` треки сортируются по сохранённой позиции, а треки без позиции (новые) уходят в конец, сохраняя исходный порядок.
+- Режим правки включается только долгим нажатием, поэтому по умолчанию ни перетаскивания, ни чекбоксов нет. В библиотеке долгое нажатие одновременно включает режим выделения и выделяет поднятый трек: появляются чекбоксы, а удаление срабатывает только от точного тапа по чекбоксу, не от нажатия по строке. Выход — крестик в `SelectionBar` (библиотека) или «ГОТОВО» в заголовке списка (альбом, избранное, плейлист); системная «назад» тоже выключает режим. Пока режим включён, заголовок списка показывает «ПЕРЕТАЩИТЕ ТРЕК».
 - Значения по умолчанию: библиотека — `MODIFIED` с `reverse = true` (сначала самые свежие файлы), альбом — `TRACK_NO`, плейлист — `PLAYLIST`.
 - `TrackSorter.apply()` — чистая функция сортировки, покрыта unit-тестами. При равных ключах порядок добивается по названию; треки с неизвестным номером или датой файла уходят в конец при любом направлении сортировки.
 - UI: компактная кнопка-фильтр (`FilterButton` из `ui/components/Sorts.kt`) в заголовке списка треков (библиотека, альбом, плейлист) открывает модальный диалог `SortDialog` с критериями и пунктом «РЕВЕРС». Критерии не отображаются на экране постоянно; кнопка подсвечивается, когда включён реверс. В библиотеке кнопка живёт в заголовке «ВСЕ ТРЕКИ» рядом с «ПАПКА»/«ФАЙЛ» и остаётся доступной при активном поиске, в альбоме и плейлисте — в sticky-заголовке треков.
@@ -351,13 +358,14 @@ PIXTONE/
 
 ## 5. Данные и хранилища
 
-### SQLite (`glyph.db`, версия 16)
+### SQLite (`glyph.db`, версия 17)
 
 | Таблица | Назначение |
 |---|---|
 | `tracks` | треки: title, custom_title, artist, custom_artist, album, genre, duration, uri, artwork, favorite, source, source_id, added_at, file_size, file_mtime, track_no |
 | `playlists` | плейлисты: name, description, cover, created_at |
 | `playlist_tracks` | связь плейлист↔трек + position |
+| `track_order` | ручной порядок: scope (`library` / `favorites` / `album`), scope_id, track_id, position |
 | `lyrics` | кэш текстов: plain, synced, found, fetched_at |
 | `lyric_highlights` | сохранённые цитаты: track_id, quote_id, line_index, text, time_ms, created_at |
 

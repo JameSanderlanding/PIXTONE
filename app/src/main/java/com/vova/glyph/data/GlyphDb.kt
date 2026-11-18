@@ -10,7 +10,7 @@ import kotlinx.coroutines.withContext
 
 private const val UNKNOWN_COUNT = -1
 
-class GlyphDb(context: Context) : SQLiteOpenHelper(context, "glyph.db", null, 16) {
+class GlyphDb(context: Context) : SQLiteOpenHelper(context, "glyph.db", null, 17) {
     override fun onCreate(db: SQLiteDatabase) {
         db.execSQL(
             """
@@ -64,6 +64,7 @@ class GlyphDb(context: Context) : SQLiteOpenHelper(context, "glyph.db", null, 16
 
         createLyricsTable(db)
         createLyricHighlightsTable(db)
+        createTrackOrderTable(db)
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
@@ -123,12 +124,14 @@ class GlyphDb(context: Context) : SQLiteOpenHelper(context, "glyph.db", null, 16
                 db.execSQL("ALTER TABLE tracks ADD COLUMN played_at INTEGER NOT NULL DEFAULT 0")
             }
         }
+        if (oldVersion < 17) createTrackOrderTable(db)
     }
 
     override fun onDowngrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
         // Local builds from other branches may carry a newer schema version.
         // Keep their data and only make sure this version's tables exist.
         createLyricHighlightsTable(db)
+        createTrackOrderTable(db)
     }
 
     private fun SQLiteDatabase.hasColumn(table: String, column: String): Boolean =
@@ -149,6 +152,20 @@ class GlyphDb(context: Context) : SQLiteOpenHelper(context, "glyph.db", null, 16
                 synced TEXT,
                 found INTEGER NOT NULL DEFAULT 1,
                 fetched_at INTEGER NOT NULL DEFAULT 0
+            )
+            """.trimIndent()
+        )
+    }
+
+    private fun createTrackOrderTable(db: SQLiteDatabase) {
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS track_order (
+                scope TEXT NOT NULL,
+                scope_id TEXT NOT NULL,
+                track_id INTEGER NOT NULL,
+                position INTEGER NOT NULL,
+                PRIMARY KEY (scope, scope_id, track_id)
             )
             """.trimIndent()
         )
@@ -464,6 +481,7 @@ class GlyphDb(context: Context) : SQLiteOpenHelper(context, "glyph.db", null, 16
                 val placeholders = chunk.joinToString(",") { "?" }
                 val args = chunk.map { it.toString() }.toTypedArray()
                 db.delete("playlist_tracks", "track_id IN ($placeholders)", args)
+                db.delete("track_order", "track_id IN ($placeholders)", args)
                 db.delete("lyrics", "track_id IN ($placeholders)", args)
                 db.delete("lyric_highlights", "track_id IN ($placeholders)", args)
                 db.delete("tracks", "id IN ($placeholders)", args)
@@ -646,6 +664,76 @@ class GlyphDb(context: Context) : SQLiteOpenHelper(context, "glyph.db", null, 16
                 put("created_at", System.currentTimeMillis())
             }
             writableDatabase.insertOrThrow("playlists", null, values)
+        }
+
+    suspend fun trackOrder(scope: String, scopeId: String): List<Long> =
+        withContext(Dispatchers.IO) {
+            readableDatabase.query(
+                "track_order",
+                arrayOf("track_id"),
+                "scope = ? AND scope_id = ?",
+                arrayOf(scope, scopeId),
+                null,
+                null,
+                "position ASC",
+            ).use { cursor ->
+                val out = mutableListOf<Long>()
+                while (cursor.moveToNext()) out += cursor.getLong(0)
+                out
+            }
+        }
+
+    suspend fun saveTrackOrder(scope: String, scopeId: String, trackIds: List<Long>) =
+        withContext(Dispatchers.IO) {
+            val db = writableDatabase
+            db.beginTransaction()
+            try {
+                db.delete("track_order", "scope = ? AND scope_id = ?", arrayOf(scope, scopeId))
+                trackIds.forEachIndexed { index, trackId ->
+                    val values = ContentValues().apply {
+                        put("scope", scope)
+                        put("scope_id", scopeId)
+                        put("track_id", trackId)
+                        put("position", index)
+                    }
+                    db.insertWithOnConflict(
+                        "track_order", null, values, SQLiteDatabase.CONFLICT_REPLACE,
+                    )
+                }
+                db.setTransactionSuccessful()
+            } finally {
+                db.endTransaction()
+            }
+        }
+
+    suspend fun reorderPlaylist(playlistId: Long, trackIds: List<Long>) =
+        withContext(Dispatchers.IO) {
+            val db = writableDatabase
+            db.beginTransaction()
+            try {
+                trackIds.forEachIndexed { index, trackId ->
+                    val values = ContentValues().apply { put("position", index) }
+                    db.update(
+                        "playlist_tracks",
+                        values,
+                        "playlist_id = ? AND track_id = ?",
+                        arrayOf(playlistId.toString(), trackId.toString()),
+                    )
+                }
+                db.setTransactionSuccessful()
+            } finally {
+                db.endTransaction()
+            }
+        }
+
+    suspend fun updatePlaylist(id: Long, name: String, description: String, cover: String?) =
+        withContext(Dispatchers.IO) {
+            val values = ContentValues().apply {
+                put("name", name)
+                put("description", description)
+                put("cover", cover)
+            }
+            writableDatabase.update("playlists", values, "id = ?", arrayOf(id.toString()))
         }
 
     suspend fun deletePlaylist(id: Long) = withContext(Dispatchers.IO) {

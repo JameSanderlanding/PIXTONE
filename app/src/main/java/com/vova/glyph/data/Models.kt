@@ -48,7 +48,7 @@ data class Playlist(
     val trackCount: Int = 0,
 )
 
-enum class TrackSort { TITLE, ADDED, MODIFIED, TRACK_NO, PLAYLIST }
+enum class TrackSort { TITLE, ADDED, MODIFIED, TRACK_NO, PLAYLIST, MANUAL }
 
 data class TrackSorting(
     val by: TrackSort = TrackSort.TITLE,

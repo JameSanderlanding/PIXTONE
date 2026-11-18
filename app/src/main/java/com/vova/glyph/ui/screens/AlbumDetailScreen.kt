@@ -1,6 +1,8 @@
 package com.vova.glyph.ui.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -14,6 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -28,6 +31,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.vova.glyph.MainViewModel
 import com.vova.glyph.SortTarget
 import com.vova.glyph.Tab
+import com.vova.glyph.data.ManualOrder
 import com.vova.glyph.data.Track
 import com.vova.glyph.data.TrackSort
 import com.vova.glyph.data.TrackSorter
@@ -46,6 +50,9 @@ import com.vova.glyph.ui.components.SectionHeader
 import com.vova.glyph.ui.components.SortDialog
 import com.vova.glyph.ui.components.Text
 import com.vova.glyph.ui.components.TrackRow
+import com.vova.glyph.ui.components.dropIndicator
+import com.vova.glyph.ui.components.rememberReorderState
+import com.vova.glyph.ui.components.reorderable
 import com.vova.glyph.ui.theme.GlyphBlack
 import com.vova.glyph.ui.theme.GlyphDim
 import com.vova.glyph.ui.theme.GlyphGray
@@ -63,10 +70,27 @@ fun AlbumDetailScreen(vm: MainViewModel) {
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var showSort by remember { mutableStateOf(false) }
     var playlistTarget by remember { mutableStateOf<Track?>(null) }
+    var editMode by remember { mutableStateOf(false) }
     val sorting by vm.albumSorting.collectAsStateWithLifecycle()
+    val albumOrder by vm.albumOrder.collectAsStateWithLifecycle()
+    val listState = rememberLazyListState()
 
     val currentAlbum = album ?: return
-    val sorted = remember(tracks, sorting) { TrackSorter.apply(tracks, sorting) }
+    val sorted = remember(tracks, sorting, albumOrder) {
+        TrackSorter.apply(tracks, sorting, albumOrder)
+    }
+
+    val reorder = rememberReorderState(
+        listState,
+        remember(sorted) { sorted.mapTo(HashSet()) { it.id } },
+        onStart = { editMode = true },
+    ) { fromId, toId ->
+        val from = sorted.indexOfFirst { it.id == fromId }
+        val to = sorted.indexOfFirst { it.id == toId }
+        if (from >= 0 && to >= 0) vm.reorderAlbum(ManualOrder.move(sorted, from, to))
+    }
+
+    BackHandler(editMode) { editMode = false }
 
     Column(Modifier.fillMaxSize()) {
         Row(
@@ -99,6 +123,7 @@ fun AlbumDetailScreen(vm: MainViewModel) {
 
         LazyColumn(
             Modifier.fillMaxWidth().weight(1f),
+            state = listState,
             contentPadding = PaddingValues(bottom = 24.dp),
         ) {
         item {
@@ -167,14 +192,23 @@ fun AlbumDetailScreen(vm: MainViewModel) {
         stickyHeader(key = "tracks") {
             SectionHeader(
                 number = "01",
-                title = "ТРЕКИ",
+                title = if (editMode) "ПЕРЕТАЩИТЕ ТРЕК" else "ТРЕКИ",
                 modifier = Modifier.background(GlyphBlack),
                 action = {
-                    FilterButton(
-                        onClick = { showSort = true },
-                        active = sorting.reverse,
-                        size = 30,
-                    )
+                    if (editMode) {
+                        Row(
+                            Modifier.clickable { editMode = false },
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            MicroLabel("ГОТОВО", color = GlyphWhite)
+                        }
+                    } else {
+                        FilterButton(
+                            onClick = { showSort = true },
+                            active = sorting.reverse,
+                            size = 30,
+                        )
+                    }
                 },
             )
         }
@@ -197,12 +231,16 @@ fun AlbumDetailScreen(vm: MainViewModel) {
                     isCurrent = currentTrack?.id == track.id,
                     isPlaying = playerState.isPlaying && currentTrack?.id == track.id,
                     unavailable = track.id in unavailableIds,
-                    onClick = { vm.playTracks(sorted, index) },
+                    onClick = { if (!editMode) vm.playTracks(sorted, index) },
                     onFavorite = { vm.toggleFavorite(track) },
                     onAddToPlaylist = { playlistTarget = track },
                     onEditInfo = { vm.openTrackEditor(track) },
                     onUpdateCover = if (track.isOnline) null else ({ vm.updateTrackCover(track) }),
                     onDelete = { vm.deleteTrack(track) },
+                    modifier = Modifier
+                        .animateItem()
+                        .reorderable(reorder, track.id)
+                        .dropIndicator(reorder, track.id),
                 )
             }
         }
@@ -242,6 +280,7 @@ fun AlbumDetailScreen(vm: MainViewModel) {
                 TrackSort.TITLE to "НАЗВАНИЕ",
                 TrackSort.ADDED to "ДОБАВЛЕНО",
                 TrackSort.MODIFIED to "ИЗМЕНЕНО",
+                TrackSort.MANUAL to "ВРУЧНУЮ",
             ),
             sorting = sorting,
             onSortBy = { vm.setSortBy(SortTarget.ALBUM, it) },

@@ -14,6 +14,7 @@ import com.vova.glyph.data.Albums
 import com.vova.glyph.data.LyricLine
 import com.vova.glyph.data.LyricQuote
 import com.vova.glyph.data.LyricQuoteLine
+import com.vova.glyph.data.ManualOrder
 import com.vova.glyph.data.OnlineTrack
 import com.vova.glyph.data.Playlist
 import com.vova.glyph.data.SoundPreset
@@ -134,6 +135,15 @@ class MainViewModel(
     )
     val playlistSorting = _playlistSorting.asStateFlow()
 
+    private val _libraryOrder = MutableStateFlow<Map<Long, Int>>(emptyMap())
+    val libraryOrder = _libraryOrder.asStateFlow()
+
+    private val _favoriteOrder = MutableStateFlow<Map<Long, Int>>(emptyMap())
+    val favoriteOrder = _favoriteOrder.asStateFlow()
+
+    private val _albumOrder = MutableStateFlow<Map<Long, Int>>(emptyMap())
+    val albumOrder = _albumOrder.asStateFlow()
+
     private var metadataJob: Job? = null
 
     private val _lyrics = MutableStateFlow<String?>(null)
@@ -221,6 +231,14 @@ class MainViewModel(
         _unavailableIds.value = prefs.unavailableTracks
         viewModelScope.launch {
             _unavailableIds.collect { prefs.unavailableTracks = it }
+        }
+        viewModelScope.launch {
+            _libraryOrder.value = ManualOrder.positions(
+                repo.trackOrder(ManualOrder.LIBRARY, "")
+            )
+            _favoriteOrder.value = ManualOrder.positions(
+                repo.trackOrder(ManualOrder.FAVORITES, "")
+            )
         }
         viewModelScope.launch {
             runCatching { repo.refresh() }
@@ -427,6 +445,43 @@ class MainViewModel(
         SortTarget.LIBRARY -> _librarySorting
         SortTarget.ALBUM -> _albumSorting
         SortTarget.PLAYLIST -> _playlistSorting
+    }
+
+    fun reorderLibrary(ordered: List<Track>) {
+        val ids = ordered.map { it.id }
+        _libraryOrder.value = ManualOrder.positions(ids)
+        _librarySorting.update { it.copy(by = TrackSort.MANUAL, reverse = false) }
+        persistSorting(SortTarget.LIBRARY)
+        viewModelScope.launch {
+            runCatching { repo.saveTrackOrder(ManualOrder.LIBRARY, "", ids) }
+        }
+    }
+
+    fun reorderFavorites(ordered: List<Track>) {
+        val ids = ordered.map { it.id }
+        _favoriteOrder.value = ManualOrder.positions(ids)
+        viewModelScope.launch {
+            runCatching { repo.saveTrackOrder(ManualOrder.FAVORITES, "", ids) }
+        }
+    }
+
+    fun reorderAlbum(ordered: List<Track>) {
+        val key = _openAlbumKey.value ?: return
+        val ids = ordered.map { it.id }
+        _albumOrder.value = ManualOrder.positions(ids)
+        _albumSorting.update { it.copy(by = TrackSort.MANUAL, reverse = false) }
+        viewModelScope.launch {
+            runCatching { repo.saveTrackOrder(ManualOrder.ALBUM, key, ids) }
+        }
+    }
+
+    fun reorderPlaylist(playlistId: Long, ordered: List<Track>) {
+        _playlistTracks.value = ordered
+        _playlistSorting.update { it.copy(by = TrackSort.PLAYLIST, reverse = false) }
+        persistSorting(SortTarget.PLAYLIST)
+        viewModelScope.launch {
+            runCatching { repo.reorderPlaylist(playlistId, ordered.map { it.id }) }
+        }
     }
 
     private fun startMetadataBackfill() {
@@ -1102,10 +1157,18 @@ class MainViewModel(
 
     fun openAlbum(key: String) {
         _openAlbumKey.value = key
+        viewModelScope.launch {
+            val ids = repo.trackOrder(ManualOrder.ALBUM, key)
+            _albumOrder.value = ManualOrder.positions(ids)
+            if (ids.isNotEmpty() && _albumSorting.value.by == TrackSort.TRACK_NO) {
+                _albumSorting.update { it.copy(by = TrackSort.MANUAL, reverse = false) }
+            }
+        }
     }
 
     fun closeAlbum() {
         _openAlbumKey.value = null
+        _albumOrder.value = emptyMap()
     }
 
     fun openTrackEditor(track: Track) {
@@ -1215,6 +1278,33 @@ class MainViewModel(
                 notify("Плейлист «$trimmed» создан")
             }.onFailure {
                 notify(it.message ?: "Не удалось создать плейлист")
+            }
+        }
+    }
+
+    fun updatePlaylist(playlist: Playlist, name: String, description: String, coverUri: Uri?) {
+        val trimmed = name.trim()
+        if (trimmed.isBlank()) {
+            notify("У плейлиста должно быть название")
+            return
+        }
+        viewModelScope.launch {
+            val newCover = coverUri?.let { uri ->
+                runCatching { container.artworkStore.copyPlaylistCover(uri) }.getOrNull()
+            }
+            val coverPath = newCover ?: playlist.cover
+            runCatching {
+                repo.updatePlaylist(playlist.id, trimmed, description.trim(), coverPath)
+            }.onSuccess {
+                if (newCover != null && newCover != playlist.cover) {
+                    container.artworkStore.deleteCover(playlist.cover)
+                }
+                notify("Плейлист «$trimmed» обновлён")
+            }.onFailure {
+                if (newCover != null && newCover != playlist.cover) {
+                    container.artworkStore.deleteCover(newCover)
+                }
+                notify(it.message ?: "Не удалось сохранить плейлист")
             }
         }
     }

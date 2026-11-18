@@ -1,9 +1,17 @@
 package com.vova.glyph.data
 
 object TrackSorter {
-    fun apply(tracks: List<Track>, sorting: TrackSorting): List<Track> {
+    fun apply(
+        tracks: List<Track>,
+        sorting: TrackSorting,
+        order: Map<Long, Int> = emptyMap(),
+    ): List<Track> {
         if (sorting.by == TrackSort.PLAYLIST) {
             return if (sorting.reverse) tracks.reversed() else tracks
+        }
+        if (sorting.by == TrackSort.MANUAL) {
+            val ordered = tracks.sortedBy { order[it.id] ?: Int.MAX_VALUE }
+            return if (sorting.reverse) ordered.reversed() else ordered
         }
         val comparator = when (sorting.by) {
             TrackSort.TITLE -> compareBy(String.CASE_INSENSITIVE_ORDER) { it.effectiveTitle }
@@ -15,7 +23,7 @@ object TrackSorter {
             TrackSort.TRACK_NO -> compareBy<Track> { if (it.trackNumber > 0) 0 else 1 }
                 .thenBy { it.trackNumber }
                 .thenBy(String.CASE_INSENSITIVE_ORDER) { it.effectiveTitle }
-            TrackSort.PLAYLIST -> compareBy { 0 }
+            TrackSort.PLAYLIST, TrackSort.MANUAL -> compareBy { 0 }
         }
         val knownFirst = when (sorting.by) {
             TrackSort.MODIFIED -> compareBy<Track> { if (it.fileModifiedAt > 0) 0 else 1 }

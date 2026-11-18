@@ -206,8 +206,52 @@ fun CreatePlaylistDialog(
     onDismiss: () -> Unit,
     onCreate: (name: String, description: String) -> Unit,
 ) {
-    var name by remember { mutableStateOf("") }
-    var description by remember { mutableStateOf("") }
+    PlaylistFormDialog(
+        label = "НОВЫЙ ПЛЕЙЛИСТ",
+        confirmText = "Создать",
+        initialName = "",
+        initialDescription = "",
+        coverModel = coverUri,
+        onPickCover = onPickCover,
+        onDismiss = onDismiss,
+        onConfirm = onCreate,
+    )
+}
+
+@Composable
+fun EditPlaylistDialog(
+    name: String,
+    description: String,
+    coverModel: Any?,
+    onPickCover: () -> Unit,
+    onDismiss: () -> Unit,
+    onSave: (name: String, description: String) -> Unit,
+) {
+    PlaylistFormDialog(
+        label = "РЕДАКТИРОВАТЬ ПЛЕЙЛИСТ",
+        confirmText = "Сохранить",
+        initialName = name,
+        initialDescription = description,
+        coverModel = coverModel,
+        onPickCover = onPickCover,
+        onDismiss = onDismiss,
+        onConfirm = onSave,
+    )
+}
+
+@Composable
+private fun PlaylistFormDialog(
+    label: String,
+    confirmText: String,
+    initialName: String,
+    initialDescription: String,
+    coverModel: Any?,
+    onPickCover: () -> Unit,
+    onDismiss: () -> Unit,
+    onConfirm: (name: String, description: String) -> Unit,
+) {
+    var name by remember(initialName) { mutableStateOf(initialName) }
+    var description by remember(initialDescription) { mutableStateOf(initialDescription) }
     var error by remember { mutableStateOf<String?>(null) }
     val shape = RoundedCornerShape(2.dp)
 
@@ -226,7 +270,7 @@ fun CreatePlaylistDialog(
         ) {
             Column(Modifier.padding(18.dp)) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    MicroLabel("НОВЫЙ ПЛЕЙЛИСТ", color = GlyphRed)
+                    MicroLabel(label, color = GlyphRed)
                     Spacer(Modifier.weight(1f))
                     GlyphIconButton(
                         glyph = Glyph.Close,
@@ -247,9 +291,9 @@ fun CreatePlaylistDialog(
                             .clickable(onClick = onPickCover),
                         contentAlignment = Alignment.Center,
                     ) {
-                        if (coverUri != null) {
+                        if (coverModel != null) {
                             AsyncImage(
-                                model = coverUri,
+                                model = coverModel,
                                 contentDescription = com.vova.glyph.i18n.tr("Обложка плейлиста"),
                                 modifier = Modifier.fillMaxSize(),
                                 contentScale = ContentScale.Crop,
@@ -273,7 +317,7 @@ fun CreatePlaylistDialog(
                         MicroLabel("ОБЛОЖКА", color = GlyphGray)
                         Spacer(Modifier.height(5.dp))
                         Text(
-                            if (coverUri == null) "Выберите .PNG или .JPG" else "Обложка выбрана",
+                            if (coverModel == null) "Выберите .PNG или .JPG" else "Обложка выбрана",
                             style = MaterialTheme.typography.bodySmall.copy(color = GlyphWhite),
                         )
                         Spacer(Modifier.height(8.dp))
@@ -320,12 +364,12 @@ fun CreatePlaylistDialog(
                         modifier = Modifier.weight(1f),
                     )
                     GlyphButton(
-                        text = "Создать",
+                        text = confirmText,
                         onClick = {
                             if (name.isBlank()) {
                                 error = "Дайте плейлисту название"
                             } else {
-                                onCreate(name.trim(), description.trim())
+                                onConfirm(name.trim(), description.trim())
                             }
                         },
                         modifier = Modifier.weight(1f),

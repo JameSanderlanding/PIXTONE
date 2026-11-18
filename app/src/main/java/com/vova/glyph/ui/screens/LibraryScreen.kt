@@ -58,6 +58,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.vova.glyph.MainViewModel
 import com.vova.glyph.SortTarget
+import com.vova.glyph.data.ManualOrder
 import com.vova.glyph.data.Playlist
 import com.vova.glyph.data.Track
 import com.vova.glyph.data.TrackSearch
@@ -82,6 +83,9 @@ import com.vova.glyph.ui.components.SelectionBar
 import com.vova.glyph.ui.components.SortDialog
 import com.vova.glyph.ui.components.Text
 import com.vova.glyph.ui.components.TrackRow
+import com.vova.glyph.ui.components.dropIndicator
+import com.vova.glyph.ui.components.rememberReorderState
+import com.vova.glyph.ui.components.reorderable
 import com.vova.glyph.ui.theme.DotoFamily
 import com.vova.glyph.ui.theme.GlyphBlack
 import com.vova.glyph.ui.theme.GlyphDim
@@ -106,6 +110,7 @@ fun LibraryScreen(vm: MainViewModel) {
     val scanStatus by vm.scanStatus.collectAsStateWithLifecycle()
     val scanFound by vm.scanFound.collectAsStateWithLifecycle()
     val sorting by vm.librarySorting.collectAsStateWithLifecycle()
+    val libraryOrder by vm.libraryOrder.collectAsStateWithLifecycle()
 
     var query by remember { mutableStateOf("") }
     var showCreate by remember { mutableStateOf(false) }
@@ -194,8 +199,23 @@ fun LibraryScreen(vm: MainViewModel) {
         ActivityResultContracts.OpenDocument()
     ) { uri -> if (uri != null) vm.onFilePicked(uri) }
 
-    val sorted = remember(tracks, query, sorting) {
-        TrackSorter.apply(TrackSearch.filter(tracks, query), sorting)
+    val sorted = remember(tracks, query, sorting, libraryOrder) {
+        TrackSorter.apply(TrackSearch.filter(tracks, query), sorting, libraryOrder)
+    }
+
+    val reorder = rememberReorderState(
+        listState,
+        remember(sorted) { sorted.mapTo(HashSet()) { it.id } },
+        onStart = { id ->
+            if (selectionType == null) {
+                selectionType = LibrarySelection.TRACK
+                selectedIds = setOf(id)
+            }
+        },
+    ) { fromId, toId ->
+        val from = sorted.indexOfFirst { it.id == fromId }
+        val to = sorted.indexOfFirst { it.id == toId }
+        if (from >= 0 && to >= 0) vm.reorderLibrary(ManualOrder.move(sorted, from, to))
     }
 
     val librarySubtitle = buildString {
@@ -335,7 +355,11 @@ fun LibraryScreen(vm: MainViewModel) {
             stickyHeader(key = "tracks") {
                 SectionHeader(
                     number = "03",
-                    title = if (query.isBlank()) "ВСЕ ТРЕКИ" else "РЕЗУЛЬТАТЫ: ${sorted.size}",
+                    title = when {
+                        selectionType == LibrarySelection.TRACK && query.isBlank() -> "ПЕРЕТАЩИТЕ ТРЕК"
+                        query.isBlank() -> "ВСЕ ТРЕКИ"
+                        else -> "РЕЗУЛЬТАТЫ: ${sorted.size}"
+                    },
                     modifier = Modifier.background(GlyphBlack).padding(top = 10.dp),
                     action = {
                         if (selectionType == null) {
@@ -416,12 +440,7 @@ fun LibraryScreen(vm: MainViewModel) {
                         isPlaying = playerState.isPlaying && currentTrack?.id == track.id,
                         unavailable = track.id in unavailableIds,
                         onClick = {
-                            when (selectionType) {
-                                LibrarySelection.TRACK ->
-                                    toggleSelection(LibrarySelection.TRACK, track.id)
-                                null -> vm.playTracks(sorted, index)
-                                else -> Unit
-                            }
+                            if (selectionType == null) vm.playTracks(sorted, index)
                         },
                         onFavorite = { vm.toggleFavorite(track) },
                         onLyrics = {
@@ -436,12 +455,15 @@ fun LibraryScreen(vm: MainViewModel) {
                         onDelete = { vm.deleteTrack(track) },
                         selectionMode = selectionType == LibrarySelection.TRACK,
                         selected = track.id in selectedIds,
-                        onLongClick = {
-                            if (selectionType == null) {
-                                selectionType = LibrarySelection.TRACK
-                                selectedIds = setOf(track.id)
-                            }
+                        onSelectToggle = if (selectionType == LibrarySelection.TRACK) {
+                            { toggleSelection(LibrarySelection.TRACK, track.id) }
+                        } else {
+                            null
                         },
+                        modifier = Modifier
+                            .animateItem()
+                            .reorderable(reorder, track.id, dragEnabled = query.isBlank())
+                            .dropIndicator(reorder, track.id),
                     )
                 }
             }
@@ -531,6 +553,7 @@ fun LibraryScreen(vm: MainViewModel) {
                 TrackSort.TITLE to "НАЗВАНИЕ",
                 TrackSort.ADDED to "ДОБАВЛЕНО",
                 TrackSort.MODIFIED to "ИЗМЕНЕНО",
+                TrackSort.MANUAL to "ВРУЧНУЮ",
             ),
             sorting = sorting,
             onSortBy = { vm.setSortBy(SortTarget.LIBRARY, it) },

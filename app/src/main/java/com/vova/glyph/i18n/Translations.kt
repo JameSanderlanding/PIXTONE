@@ -111,6 +111,7 @@ private val DICT: Map<String, Tr> = mapOf(
     "ПЛЕЙЛИСТЫ" to t("PLAYLISTS", "WIEDERGABELISTEN", "PLAYLISTS", "播放列表", "プレイリスト"),
     "СОЗДАТЬ" to t("CREATE", "ERSTELLEN", "CRÉER", "创建", "作成"),
     "ВСЕ ТРЕКИ" to t("ALL TRACKS", "ALLE TITEL", "TOUS LES MORCEAUX", "全部曲目", "すべての曲"),
+    "ПЕРЕТАЩИТЕ ТРЕК" to t("DRAG A TRACK", "TITEL ZIEHEN", "DÉPLACEZ UN MORCEAU", "拖动曲目", "曲をドラッグ"),
     "ПАПКА" to t("FOLDER", "ORDNER", "DOSSIER", "文件夹", "フォルダ"),
     "ФАЙЛ" to t("FILE", "DATEI", "FICHIER", "文件", "ファイル"),
     "ФАЙЛЫ" to t("FILES", "DATEIEN", "FICHIERS", "文件", "ファイル"),
@@ -261,6 +262,8 @@ private val DICT: Map<String, Tr> = mapOf(
     "СИНИЙ" to t("BLUE", "BLAU", "BLEU", "蓝", "青"),
 
     "НОВЫЙ ПЛЕЙЛИСТ" to t("NEW PLAYLIST", "NEUE PLAYLIST", "NOUVELLE PLAYLIST", "新建播放列表", "新しいプレイリスト"),
+    "РЕДАКТИРОВАТЬ ПЛЕЙЛИСТ" to t("EDIT PLAYLIST", "PLAYLIST BEARBEITEN", "MODIFIER LA PLAYLIST", "编辑播放列表", "プレイリストを編集"),
+    "Редактировать плейлист" to t("Edit playlist", "Playlist bearbeiten", "Modifier la playlist", "编辑播放列表", "プレイリストを編集"),
     "Обложка плейлиста" to t("Playlist cover", "Playlist-Cover", "Pochette de la playlist", "播放列表封面", "プレイリストのカバー"),
     "ОБЛОЖКА" to t("COVER", "COVER", "POCHETTE", "封面", "カバー"),
     "Сменить обложку" to t("Change cover", "Cover ändern", "Changer la pochette", "更换封面", "カバーを変更"),
@@ -333,6 +336,7 @@ private val DICT: Map<String, Tr> = mapOf(
     "РЕВЕРС" to t("REVERSE", "UMGEKEHRT", "INVERSÉ", "倒序", "逆順"),
     "НОМЕР" to t("NUMBER", "NUMMER", "NUMÉRO", "编号", "番号"),
     "ПОРЯДОК" to t("ORDER", "REIHENFOLGE", "ORDRE", "顺序", "順序"),
+    "ВРУЧНУЮ" to t("CUSTOM", "EIGENE", "PERSONNALISÉ", "自定义", "カスタム"),
     "Не закрывайте приложение. Большая фонотека может занять несколько минут." to t("Don't close the app. A large library may take a few minutes.", "Schließen Sie die App nicht. Eine große Bibliothek kann einige Minuten dauern.", "Ne fermez pas l'application. Une grande bibliothèque peut prendre quelques minutes.", "请勿关闭应用。大型音乐库可能需要几分钟。", "アプリを閉じないでください。大きなライブラリは数分かかることがあります。"),
 
     "Удалить плейлист" to t("Delete playlist", "Playlist löschen", "Supprimer la playlist", "删除播放列表", "プレイリストを削除"),
@@ -401,6 +405,7 @@ private val DICT: Map<String, Tr> = mapOf(
     "Убрано из избранного" to t("Removed from favorites", "Aus Favoriten entfernt", "Retiré des favoris", "已取消收藏", "お気に入りから削除しました"),
     "У плейлиста должно быть название" to t("The playlist needs a name", "Die Playlist braucht einen Namen", "La playlist doit avoir un nom", "播放列表需要名称", "プレイリストに名前が必要です"),
     "Не удалось создать плейлист" to t("Couldn't create the playlist", "Playlist konnte nicht erstellt werden", "Impossible de créer la playlist", "无法创建播放列表", "プレイリストを作成できませんでした"),
+    "Не удалось сохранить плейлист" to t("Couldn't save the playlist", "Playlist konnte nicht gespeichert werden", "Impossible d'enregistrer la playlist", "无法保存播放列表", "プレイリストを保存できませんでした"),
     "Не удалось удалить плейлист" to t("Couldn't delete the playlist", "Playlist konnte nicht gelöscht werden", "Impossible de supprimer la playlist", "无法删除播放列表", "プレイリストを削除できませんでした"),
     "Трек уже в этом плейлисте" to t("Track is already in this playlist", "Titel ist bereits in dieser Playlist", "Le morceau est déjà dans cette playlist", "曲目已在此播放列表中", "この曲はすでにプレイリストにあります"),
     "Этот трек уже в библиотеке" to t("This track is already in the library", "Dieser Titel ist bereits in der Bibliothek", "Ce morceau est déjà dans la bibliothèque", "该曲目已在音乐库中", "この曲はすでにライブラリにあります"),
@@ -611,6 +616,14 @@ private val RULES: List<Rule> = listOf(
         "Playlist « %1 » créée",
         "已创建播放列表“%1”",
         "プレイリスト「%1」を作成しました",
+    ),
+    r(
+        "^Плейлист «(.+)» обновлён$",
+        "Playlist “%1” updated",
+        "Playlist “%1” aktualisiert",
+        "Playlist « %1 » mise à jour",
+        "已更新播放列表“%1”",
+        "プレイリスト「%1」を更新しました",
     ),
     r(
         "^Плейлист «(.+)» удалён$",

@@ -1,5 +1,9 @@
 package com.vova.glyph.ui.screens
 
+import android.net.Uri
+import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -19,6 +23,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -36,10 +41,12 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.vova.glyph.MainViewModel
 import com.vova.glyph.SortTarget
+import com.vova.glyph.data.ManualOrder
 import com.vova.glyph.data.Track
 import com.vova.glyph.data.TrackSort
 import com.vova.glyph.data.TrackSorter
 import com.vova.glyph.ui.components.ConfirmDialog
+import com.vova.glyph.ui.components.EditPlaylistDialog
 import com.vova.glyph.ui.components.EmptyState
 import com.vova.glyph.ui.components.FilterButton
 import com.vova.glyph.ui.components.Glyph
@@ -53,6 +60,9 @@ import com.vova.glyph.ui.components.SectionHeader
 import com.vova.glyph.ui.components.SortDialog
 import com.vova.glyph.ui.components.Text
 import com.vova.glyph.ui.components.TrackRow
+import com.vova.glyph.ui.components.dropIndicator
+import com.vova.glyph.ui.components.rememberReorderState
+import com.vova.glyph.ui.components.reorderable
 import com.vova.glyph.ui.theme.GlyphBlack
 import com.vova.glyph.ui.theme.GlyphDim
 import com.vova.glyph.ui.theme.GlyphGray
@@ -70,11 +80,32 @@ fun PlaylistDetailScreen(vm: MainViewModel) {
     val unavailableIds by vm.unavailableIds.collectAsStateWithLifecycle()
     var showAddTracks by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
+    var showEdit by remember { mutableStateOf(false) }
+    var editCoverUri by remember { mutableStateOf<Uri?>(null) }
     var showSort by remember { mutableStateOf(false) }
+    var editMode by remember { mutableStateOf(false) }
     val sorting by vm.playlistSorting.collectAsStateWithLifecycle()
+
+    val coverPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri -> if (uri != null) editCoverUri = uri }
 
     val currentPlaylist = playlist ?: return
     val sorted = remember(tracks, sorting) { TrackSorter.apply(tracks, sorting) }
+    val listState = rememberLazyListState()
+    val reorder = rememberReorderState(
+        listState,
+        remember(sorted) { sorted.mapTo(HashSet()) { it.id } },
+        onStart = { editMode = true },
+    ) { fromId, toId ->
+        val from = sorted.indexOfFirst { it.id == fromId }
+        val to = sorted.indexOfFirst { it.id == toId }
+        if (from >= 0 && to >= 0) {
+            vm.reorderPlaylist(currentPlaylist.id, ManualOrder.move(sorted, from, to))
+        }
+    }
+
+    BackHandler(editMode) { editMode = false }
 
     Column(Modifier.fillMaxSize()) {
         Row(
@@ -104,6 +135,17 @@ fun PlaylistDetailScreen(vm: MainViewModel) {
             }
             Spacer(Modifier.width(6.dp))
             GlyphIconButton(
+                glyph = Glyph.Pencil,
+                onClick = {
+                    editCoverUri = null
+                    showEdit = true
+                },
+                size = 32.dp,
+                iconSize = 16.dp,
+                tint = GlyphGray,
+                description = com.vova.glyph.i18n.tr("Редактировать плейлист"),
+            )
+            GlyphIconButton(
                 glyph = Glyph.Trash,
                 onClick = { showDeleteConfirm = true },
                 size = 32.dp,
@@ -115,6 +157,7 @@ fun PlaylistDetailScreen(vm: MainViewModel) {
 
         LazyColumn(
             Modifier.fillMaxWidth().weight(1f),
+            state = listState,
             contentPadding = PaddingValues(bottom = 24.dp),
         ) {
         item {
@@ -182,14 +225,23 @@ fun PlaylistDetailScreen(vm: MainViewModel) {
         stickyHeader(key = "tracks") {
             SectionHeader(
                 number = "01",
-                title = "ТРЕКИ В ПЛЕЙЛИСТЕ",
+                title = if (editMode) "ПЕРЕТАЩИТЕ ТРЕК" else "ТРЕКИ В ПЛЕЙЛИСТЕ",
                 modifier = Modifier.background(GlyphBlack),
                 action = {
-                    FilterButton(
-                        onClick = { showSort = true },
-                        active = sorting.reverse,
-                        size = 30,
-                    )
+                    if (editMode) {
+                        Row(
+                            Modifier.clickable { editMode = false },
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            MicroLabel("ГОТОВО", color = GlyphWhite)
+                        }
+                    } else {
+                        FilterButton(
+                            onClick = { showSort = true },
+                            active = sorting.reverse,
+                            size = 30,
+                        )
+                    }
                 },
             )
         }
@@ -219,12 +271,16 @@ fun PlaylistDetailScreen(vm: MainViewModel) {
                     isCurrent = currentTrack?.id == track.id,
                     isPlaying = playerState.isPlaying && currentTrack?.id == track.id,
                     unavailable = track.id in unavailableIds,
-                    onClick = { vm.playTracks(sorted, index) },
+                    onClick = { if (!editMode) vm.playTracks(sorted, index) },
                     onFavorite = { vm.toggleFavorite(track) },
                     onRemove = { vm.removeTrackFromPlaylist(currentPlaylist.id, track) },
                     onEditInfo = { vm.openTrackEditor(track) },
                     onUpdateCover = if (track.isOnline) null else ({ vm.updateTrackCover(track) }),
                     onDelete = { vm.deleteTrack(track) },
+                    modifier = Modifier
+                        .animateItem()
+                        .reorderable(reorder, track.id)
+                        .dropIndicator(reorder, track.id),
                 )
             }
         }
@@ -242,6 +298,24 @@ fun PlaylistDetailScreen(vm: MainViewModel) {
                 vm.deletePlaylist(currentPlaylist)
             },
             onDismiss = { showDeleteConfirm = false },
+        )
+    }
+
+    if (showEdit) {
+        EditPlaylistDialog(
+            name = currentPlaylist.name,
+            description = currentPlaylist.description,
+            coverModel = editCoverUri ?: currentPlaylist.cover,
+            onPickCover = { coverPicker.launch("image/*") },
+            onDismiss = {
+                showEdit = false
+                editCoverUri = null
+            },
+            onSave = { name, description ->
+                vm.updatePlaylist(currentPlaylist, name, description, editCoverUri)
+                showEdit = false
+                editCoverUri = null
+            },
         )
     }
 

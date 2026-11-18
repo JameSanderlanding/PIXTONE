@@ -1,6 +1,8 @@
 package com.vova.glyph.ui.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -27,8 +30,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.vova.glyph.MainViewModel
+import com.vova.glyph.data.ManualOrder
 import com.vova.glyph.data.Track
 import com.vova.glyph.data.TrackSearch
+import com.vova.glyph.data.TrackSort
+import com.vova.glyph.data.TrackSorter
+import com.vova.glyph.data.TrackSorting
 import com.vova.glyph.ui.components.AddToPlaylistSheet
 import com.vova.glyph.ui.components.EmptyState
 import com.vova.glyph.ui.components.Glyph
@@ -41,6 +48,9 @@ import com.vova.glyph.ui.components.ScreenHeader
 import com.vova.glyph.ui.components.SectionHeader
 import com.vova.glyph.ui.components.Text
 import com.vova.glyph.ui.components.TrackRow
+import com.vova.glyph.ui.components.dropIndicator
+import com.vova.glyph.ui.components.rememberReorderState
+import com.vova.glyph.ui.components.reorderable
 import com.vova.glyph.ui.theme.GlyphBlack
 import com.vova.glyph.ui.theme.GlyphDim
 import com.vova.glyph.ui.theme.GlyphGray
@@ -55,10 +65,31 @@ fun FavoritesScreen(vm: MainViewModel) {
     val currentTrack by vm.currentTrack.collectAsStateWithLifecycle()
     val playerState by vm.playerState.collectAsStateWithLifecycle()
     val unavailableIds by vm.unavailableIds.collectAsStateWithLifecycle()
+    val favoriteOrder by vm.favoriteOrder.collectAsStateWithLifecycle()
     var playlistTarget by remember { mutableStateOf<Track?>(null) }
     var query by remember { mutableStateOf("") }
+    var editMode by remember { mutableStateOf(false) }
 
-    val visible = remember(favorites, query) { TrackSearch.filter(favorites, query) }
+    val visible = remember(favorites, query, favoriteOrder) {
+        TrackSorter.apply(
+            TrackSearch.filter(favorites, query),
+            TrackSorting(by = TrackSort.MANUAL),
+            favoriteOrder,
+        )
+    }
+
+    val listState = rememberLazyListState()
+    val reorder = rememberReorderState(
+        listState,
+        remember(visible) { visible.mapTo(HashSet()) { it.id } },
+        onStart = { editMode = true },
+    ) { fromId, toId ->
+        val from = visible.indexOfFirst { it.id == fromId }
+        val to = visible.indexOfFirst { it.id == toId }
+        if (from >= 0 && to >= 0) vm.reorderFavorites(ManualOrder.move(visible, from, to))
+    }
+
+    BackHandler(editMode) { editMode = false }
 
     Column(Modifier.fillMaxSize()) {
         ScreenHeader(
@@ -81,6 +112,7 @@ fun FavoritesScreen(vm: MainViewModel) {
 
         LazyColumn(
             Modifier.fillMaxWidth().weight(1f),
+            state = listState,
             contentPadding = PaddingValues(bottom = 24.dp),
         ) {
         item {
@@ -128,16 +160,29 @@ fun FavoritesScreen(vm: MainViewModel) {
         stickyHeader(key = "favorites") {
             SectionHeader(
                 number = "01",
-                title = if (query.isBlank()) "ВАША КОЛЛЕКЦИЯ" else "РЕЗУЛЬТАТЫ: ${visible.size}",
+                title = when {
+                    editMode -> "ПЕРЕТАЩИТЕ ТРЕК"
+                    query.isBlank() -> "ВАША КОЛЛЕКЦИЯ"
+                    else -> "РЕЗУЛЬТАТЫ: ${visible.size}"
+                },
                 modifier = Modifier.background(GlyphBlack),
                 action = {
-                    Text(
-                        "${visible.size}",
-                        style = MaterialTheme.typography.labelLarge.copy(
-                            color = GlyphGray,
-                            fontSize = 10.sp,
-                        ),
-                    )
+                    if (editMode) {
+                        Row(
+                            Modifier.clickable { editMode = false },
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            MicroLabel("ГОТОВО", color = GlyphWhite)
+                        }
+                    } else {
+                        Text(
+                            "${visible.size}",
+                            style = MaterialTheme.typography.labelLarge.copy(
+                                color = GlyphGray,
+                                fontSize = 10.sp,
+                            ),
+                        )
+                    }
                 },
             )
         }
@@ -186,12 +231,20 @@ fun FavoritesScreen(vm: MainViewModel) {
                     isCurrent = currentTrack?.id == track.id,
                     isPlaying = playerState.isPlaying && currentTrack?.id == track.id,
                     unavailable = track.id in unavailableIds,
-                    onClick = { vm.playTracks(visible, index) },
+                    onClick = { if (!editMode) vm.playTracks(visible, index) },
                     onFavorite = { vm.toggleFavorite(track) },
                     onAddToPlaylist = { playlistTarget = track },
                     onEditInfo = { vm.openTrackEditor(track) },
                     onUpdateCover = if (track.isOnline) null else ({ vm.updateTrackCover(track) }),
                     onDelete = { vm.deleteTrack(track) },
+                    modifier = if (query.isBlank()) {
+                        Modifier
+                            .animateItem()
+                            .reorderable(reorder, track.id)
+                            .dropIndicator(reorder, track.id)
+                    } else {
+                        Modifier.animateItem()
+                    },
                 )
             }
         }

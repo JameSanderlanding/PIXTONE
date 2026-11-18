@@ -846,6 +846,8 @@ fun TrackRow(
     selected: Boolean = false,
     unavailable: Boolean = false,
     onLongClick: (() -> Unit)? = null,
+    onSelectToggle: (() -> Unit)? = null,
+    modifier: Modifier = Modifier,
 ) {
     var menuOpen by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
@@ -853,7 +855,7 @@ fun TrackRow(
         track.effectiveTitle + track.effectiveArtist
     }
     val durationLabel = remember(track.durationMs) { formatDuration(track.durationMs) }
-    Column {
+    Column(modifier) {
         Row(
             Modifier
                 .fillMaxWidth()
@@ -963,32 +965,7 @@ fun TrackRow(
                     letterSpacing = 0.4.sp,
                 ),
             )
-            if (selectionMode) {
-                Spacer(Modifier.width(4.dp))
-                Box(
-                    Modifier
-                        .size(24.dp)
-                        .background(
-                            if (selected) GlyphRed else Color.Transparent,
-                            RoundedCornerShape(2.dp),
-                        )
-                        .border(
-                            1.dp,
-                            if (selected) GlyphRed else GlyphLine,
-                            RoundedCornerShape(2.dp),
-                        ),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    if (selected) {
-                        GlyphIcon(
-                            Glyph.Check,
-                            tint = GlyphWhite,
-                            modifier = Modifier.size(13.dp),
-                            stroke = 2.dp,
-                        )
-                    }
-                }
-            } else {
+            if (!selectionMode) {
                 Box(
                     Modifier
                         .size(36.dp)
@@ -1083,6 +1060,38 @@ fun TrackRow(
                                     menuOpen = false
                                     confirmDelete = true
                                 },
+                            )
+                        }
+                    }
+                }
+            }
+            if (onSelectToggle != null) {
+                Box(
+                    Modifier
+                        .size(34.dp)
+                        .clickable(onClick = onSelectToggle),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Box(
+                        Modifier
+                            .size(22.dp)
+                            .background(
+                                if (selected) GlyphRed else Color.Transparent,
+                                RoundedCornerShape(2.dp),
+                            )
+                            .border(
+                                1.dp,
+                                if (selected) GlyphRed else GlyphLine,
+                                RoundedCornerShape(2.dp),
+                            ),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        if (selected) {
+                            GlyphIcon(
+                                Glyph.Check,
+                                tint = GlyphWhite,
+                                modifier = Modifier.size(12.dp),
+                                stroke = 2.dp,
                             )
                         }
                     }
