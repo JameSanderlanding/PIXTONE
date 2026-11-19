@@ -23,7 +23,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -41,7 +40,6 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.vova.glyph.MainViewModel
 import com.vova.glyph.SortTarget
-import com.vova.glyph.data.ManualOrder
 import com.vova.glyph.data.Track
 import com.vova.glyph.data.TrackSort
 import com.vova.glyph.data.TrackSorter
@@ -61,9 +59,6 @@ import com.vova.glyph.ui.components.SelectionBar
 import com.vova.glyph.ui.components.SortDialog
 import com.vova.glyph.ui.components.Text
 import com.vova.glyph.ui.components.TrackRow
-import com.vova.glyph.ui.components.dropIndicator
-import com.vova.glyph.ui.components.rememberReorderState
-import com.vova.glyph.ui.components.reorderable
 import com.vova.glyph.ui.theme.GlyphBlack
 import com.vova.glyph.ui.theme.GlyphDim
 import com.vova.glyph.ui.theme.GlyphGray
@@ -95,23 +90,6 @@ fun PlaylistDetailScreen(vm: MainViewModel) {
 
     val currentPlaylist = playlist ?: return
     val sorted = remember(tracks, sorting) { TrackSorter.apply(tracks, sorting) }
-    val listState = rememberLazyListState()
-    val reorder = rememberReorderState(
-        listState,
-        remember(sorted) { sorted.mapTo(HashSet()) { it.id } },
-        onStart = { id ->
-            if (!editMode) {
-                editMode = true
-                selectedIds = setOf(id)
-            }
-        },
-    ) { fromId, toId ->
-        val from = sorted.indexOfFirst { it.id == fromId }
-        val to = sorted.indexOfFirst { it.id == toId }
-        if (from >= 0 && to >= 0) {
-            vm.reorderPlaylist(currentPlaylist.id, ManualOrder.move(sorted, from, to))
-        }
-    }
 
     fun clearSelection() {
         editMode = false
@@ -190,7 +168,6 @@ fun PlaylistDetailScreen(vm: MainViewModel) {
 
         LazyColumn(
             Modifier.fillMaxWidth().weight(1f),
-            state = listState,
             contentPadding = PaddingValues(bottom = 24.dp),
         ) {
         item {
@@ -258,7 +235,7 @@ fun PlaylistDetailScreen(vm: MainViewModel) {
         stickyHeader(key = "tracks") {
             SectionHeader(
                 number = "01",
-                title = if (editMode) "ПЕРЕТАЩИТЕ ТРЕК" else "ТРЕКИ В ПЛЕЙЛИСТЕ",
+                title = "ТРЕКИ В ПЛЕЙЛИСТЕ",
                 modifier = Modifier.background(GlyphBlack),
                 action = {
                     if (editMode) {
@@ -304,7 +281,9 @@ fun PlaylistDetailScreen(vm: MainViewModel) {
                     isCurrent = currentTrack?.id == track.id,
                     isPlaying = playerState.isPlaying && currentTrack?.id == track.id,
                     unavailable = track.id in unavailableIds,
-                    onClick = { if (!editMode) vm.playTracks(sorted, index) },
+                    onClick = {
+                        if (editMode) toggleSelection(track.id) else vm.playTracks(sorted, index)
+                    },
                     onFavorite = { vm.toggleFavorite(track) },
                     onRemove = { vm.removeTrackFromPlaylist(currentPlaylist.id, track) },
                     onEditInfo = { vm.openTrackEditor(track) },
@@ -312,15 +291,17 @@ fun PlaylistDetailScreen(vm: MainViewModel) {
                     onDelete = { vm.deleteTrack(track) },
                     selectionMode = editMode,
                     selected = track.id in selectedIds,
+                    onLongClick = {
+                        if (!editMode) {
+                            editMode = true
+                            selectedIds = setOf(track.id)
+                        }
+                    },
                     onSelectToggle = if (editMode) {
                         { toggleSelection(track.id) }
                     } else {
                         null
                     },
-                    modifier = Modifier
-                        .animateItem()
-                        .reorderable(reorder, track.id)
-                        .dropIndicator(reorder, track.id),
                 )
             }
         }

@@ -129,37 +129,6 @@ class TrackSorterTest {
     }
 
     @Test
-    fun `manual order follows saved positions`() {
-        val order = mapOf(1L to 2, 2L to 0, 3L to 1)
-
-        val sorted = TrackSorter.apply(tracks, TrackSorting(by = TrackSort.MANUAL), order)
-
-        assertEquals(listOf(2L, 3L, 1L), sorted.map { it.id })
-    }
-
-    @Test
-    fun `tracks without a manual position go last and keep their order`() {
-        val order = mapOf(1L to 1)
-
-        val sorted = TrackSorter.apply(tracks, TrackSorting(by = TrackSort.MANUAL), order)
-
-        assertEquals(listOf(1L, 2L, 3L), sorted.map { it.id })
-    }
-
-    @Test
-    fun `manual order reverses when asked`() {
-        val order = mapOf(1L to 2, 2L to 0, 3L to 1)
-
-        val sorted = TrackSorter.apply(
-            tracks,
-            TrackSorting(by = TrackSort.MANUAL, reverse = true),
-            order,
-        )
-
-        assertEquals(listOf(1L, 3L, 2L), sorted.map { it.id })
-    }
-
-    @Test
     fun `encoding round trips through prefs value`() {
         val sorting = TrackSorting(by = TrackSort.MODIFIED, reverse = true)
 

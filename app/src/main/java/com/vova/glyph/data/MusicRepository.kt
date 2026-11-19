@@ -114,17 +114,6 @@ class MusicRepository(private val db: GlyphDb) {
         refresh()
     }
 
-    suspend fun trackOrder(scope: String, scopeId: String): List<Long> = db.trackOrder(scope, scopeId)
-
-    suspend fun saveTrackOrder(scope: String, scopeId: String, trackIds: List<Long>) {
-        db.saveTrackOrder(scope, scopeId, trackIds)
-    }
-
-    suspend fun reorderPlaylist(id: Long, trackIds: List<Long>) {
-        db.reorderPlaylist(id, trackIds)
-        refresh()
-    }
-
     suspend fun deletePlaylist(id: Long) {
         db.deletePlaylist(id)
         refresh()

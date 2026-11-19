@@ -111,7 +111,6 @@ private val DICT: Map<String, Tr> = mapOf(
     "ПЛЕЙЛИСТЫ" to t("PLAYLISTS", "WIEDERGABELISTEN", "PLAYLISTS", "播放列表", "プレイリスト"),
     "СОЗДАТЬ" to t("CREATE", "ERSTELLEN", "CRÉER", "创建", "作成"),
     "ВСЕ ТРЕКИ" to t("ALL TRACKS", "ALLE TITEL", "TOUS LES MORCEAUX", "全部曲目", "すべての曲"),
-    "ПЕРЕТАЩИТЕ ТРЕК" to t("DRAG A TRACK", "TITEL ZIEHEN", "DÉPLACEZ UN MORCEAU", "拖动曲目", "曲をドラッグ"),
     "ПАПКА" to t("FOLDER", "ORDNER", "DOSSIER", "文件夹", "フォルダ"),
     "ФАЙЛ" to t("FILE", "DATEI", "FICHIER", "文件", "ファイル"),
     "ФАЙЛЫ" to t("FILES", "DATEIEN", "FICHIERS", "文件", "ファイル"),
