@@ -909,6 +909,7 @@ fun TrackRow(
     onLyrics: (() -> Unit)? = null,
     onAddToPlaylist: (() -> Unit)? = null,
     onEditInfo: (() -> Unit)? = null,
+    onShare: (() -> Unit)? = null,
     onUpdateCover: (() -> Unit)? = null,
     onRemove: (() -> Unit)? = null,
     onDelete: (() -> Unit)? = null,
@@ -1105,6 +1106,15 @@ fun TrackRow(
                                 onClick = {
                                     menuOpen = false
                                     onEditInfo()
+                                },
+                            )
+                        }
+                        if (onShare != null) {
+                            DropdownMenuItem(
+                                text = { Text("Поделиться") },
+                                onClick = {
+                                    menuOpen = false
+                                    onShare()
                                 },
                             )
                         }

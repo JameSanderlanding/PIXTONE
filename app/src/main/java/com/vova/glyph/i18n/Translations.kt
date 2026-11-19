@@ -312,6 +312,8 @@ private val DICT: Map<String, Tr> = mapOf(
     "ПОДЕЛИТЬСЯ" to t("SHARE", "TEILEN", "PARTAGER", "分享", "共有"),
     "НЕ УДАЛОСЬ ПОСТРОИТЬ КАРТИНКУ" to t("COULD NOT BUILD THE IMAGE", "BILD KONNTE NICHT ERSTELLT WERDEN", "IMPOSSIBLE DE CRÉER L'IMAGE", "无法生成图片", "画像を作成できませんでした"),
     "НЕ УДАЛОСЬ ПОДЕЛИТЬСЯ" to t("COULD NOT SHARE", "TEILEN NICHT MÖGLICH", "PARTAGE IMPOSSIBLE", "无法分享", "共有できませんでした"),
+    "Не удалось поделиться" to t("Could not share", "Teilen nicht möglich", "Partage impossible", "无法分享", "共有できませんでした"),
+    "Поделиться можно только локальным треком" to t("Only local tracks can be shared", "Nur lokale Titel können geteilt werden", "Seules les pistes locales peuvent être partagées", "只能分享本地曲目", "ローカル曲のみ共有できます"),
 
     "ПЕРВЫЙ ЗАПУСК / 00" to t("FIRST LAUNCH / 00", "ERSTER START / 00", "PREMIER LANCEMENT / 00", "首次启动 / 00", "初回起動 / 00"),
     "ЗНАКОМСТВО" to t("INTRO", "VORSTELLUNG", "INTRODUCTION", "初见", "はじめに"),

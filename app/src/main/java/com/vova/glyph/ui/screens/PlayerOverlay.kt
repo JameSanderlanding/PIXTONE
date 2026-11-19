@@ -239,6 +239,15 @@ fun PlayerOverlay(vm: MainViewModel) {
                                     vm.openTrackEditor(current)
                                 },
                             )
+                            if (!current.isOnline) {
+                                DropdownMenuItem(
+                                    text = { Text("Поделиться") },
+                                    onClick = {
+                                        showTrackMenu = false
+                                        vm.shareTrack(current)
+                                    },
+                                )
+                            }
                         }
                     }
                     PlayerAction(

@@ -18,6 +18,7 @@ import com.vova.glyph.data.OnlineTrack
 import com.vova.glyph.data.Playlist
 import com.vova.glyph.data.SoundPreset
 import com.vova.glyph.data.Track
+import com.vova.glyph.data.TrackShare
 import com.vova.glyph.data.TrackSort
 import com.vova.glyph.data.TrackSorting
 import com.vova.glyph.playback.DspUiState
@@ -1076,6 +1077,18 @@ class MainViewModel(
                 container.artworkStore.deleteReplacedArt(track.artwork)
             }
             notify("Обложка обновлена")
+        }
+    }
+
+    fun shareTrack(track: Track) {
+        if (track.isOnline) {
+            notify("Поделиться можно только локальным треком")
+            return
+        }
+        viewModelScope.launch {
+            if (!TrackShare.share(app, track)) {
+                notify("Не удалось поделиться")
+            }
         }
     }
 

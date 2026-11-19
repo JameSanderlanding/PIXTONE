@@ -235,6 +235,7 @@ fun FavoritesScreen(vm: MainViewModel) {
                     onFavorite = { vm.toggleFavorite(track) },
                     onAddToPlaylist = { playlistTarget = track },
                     onEditInfo = { vm.openTrackEditor(track) },
+                    onShare = if (track.isOnline) null else ({ vm.shareTrack(track) }),
                     onUpdateCover = if (track.isOnline) null else ({ vm.updateTrackCover(track) }),
                     onDelete = { vm.deleteTrack(track) },
                     selectionMode = editMode,
