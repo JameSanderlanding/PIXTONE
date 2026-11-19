@@ -348,7 +348,7 @@ private fun SettingsMain(
     Spacer(Modifier.height(14.dp))
 
     GlyphSection(number = "03", title = "О ПРИЛОЖЕНИИ") {
-        InfoRow("ВЕРСИЯ", "2.1.0")
+        InfoRow("ВЕРСИЯ", "2.1.1")
         Spacer(Modifier.height(9.dp))
         InfoRow("СБОРКА", "PIXTONE / LOCAL-FIRST")
         Spacer(Modifier.height(9.dp))

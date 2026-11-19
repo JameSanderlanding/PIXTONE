@@ -30,7 +30,6 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.vova.glyph.MainViewModel
 import com.vova.glyph.data.Track
-import com.vova.glyph.data.TrackSearch
 import com.vova.glyph.ui.components.AddToPlaylistSheet
 import com.vova.glyph.ui.components.ConfirmDialog
 import com.vova.glyph.ui.components.EmptyState
@@ -45,6 +44,7 @@ import com.vova.glyph.ui.components.SectionHeader
 import com.vova.glyph.ui.components.SelectionBar
 import com.vova.glyph.ui.components.Text
 import com.vova.glyph.ui.components.TrackRow
+import com.vova.glyph.ui.components.rememberFilteredTracks
 import com.vova.glyph.ui.theme.GlyphBlack
 import com.vova.glyph.ui.theme.GlyphDim
 import com.vova.glyph.ui.theme.GlyphGray
@@ -65,7 +65,7 @@ fun FavoritesScreen(vm: MainViewModel) {
     var selectedIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
     var showRemoveConfirm by remember { mutableStateOf(false) }
 
-    val visible = remember(favorites, query) { TrackSearch.filter(favorites, query) }
+    val visible = rememberFilteredTracks(favorites, query)
 
     fun clearSelection() {
         editMode = false

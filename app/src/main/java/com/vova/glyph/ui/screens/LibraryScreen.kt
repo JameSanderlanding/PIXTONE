@@ -60,10 +60,7 @@ import com.vova.glyph.MainViewModel
 import com.vova.glyph.SortTarget
 import com.vova.glyph.data.Playlist
 import com.vova.glyph.data.Track
-import com.vova.glyph.data.TrackSearch
 import com.vova.glyph.data.TrackSort
-import com.vova.glyph.data.TrackSorter
-import com.vova.glyph.data.TrackSorting
 import com.vova.glyph.ui.components.ConfirmDialog
 import com.vova.glyph.ui.components.CreatePlaylistDialog
 import com.vova.glyph.ui.components.DotSpinner
@@ -82,6 +79,7 @@ import com.vova.glyph.ui.components.SelectionBar
 import com.vova.glyph.ui.components.SortDialog
 import com.vova.glyph.ui.components.Text
 import com.vova.glyph.ui.components.TrackRow
+import com.vova.glyph.ui.components.rememberSortedTracks
 import com.vova.glyph.ui.theme.DotoFamily
 import com.vova.glyph.ui.theme.GlyphBlack
 import com.vova.glyph.ui.theme.GlyphDim
@@ -194,9 +192,7 @@ fun LibraryScreen(vm: MainViewModel) {
         ActivityResultContracts.OpenDocument()
     ) { uri -> if (uri != null) vm.onFilePicked(uri) }
 
-    val sorted = remember(tracks, query, sorting) {
-        TrackSorter.apply(TrackSearch.filter(tracks, query), sorting)
-    }
+    val sorted = rememberSortedTracks(tracks, query, sorting)
 
     val librarySubtitle = buildString {
         append("${tracks.size} ТРЕКОВ · ${favorites.size} В ИЗБРАННОМ")

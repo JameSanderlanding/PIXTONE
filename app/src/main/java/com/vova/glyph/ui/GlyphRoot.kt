@@ -55,7 +55,6 @@ fun GlyphRoot(vm: MainViewModel) {
     val openAlbumKey by vm.openAlbumKey.collectAsStateWithLifecycle()
     val trackEditorTrack by vm.trackEditorTrack.collectAsStateWithLifecycle()
     val currentTrack by vm.currentTrack.collectAsStateWithLifecycle()
-    val playerState by vm.playerState.collectAsStateWithLifecycle()
     val unavailableTrack by vm.unavailableTrack.collectAsStateWithLifecycle()
 
     val artwork = currentTrack?.artwork
@@ -126,7 +125,6 @@ fun GlyphRoot(vm: MainViewModel) {
                     MiniPlayerBar(
                         vm = vm,
                         track = track,
-                        isPlaying = playerState.isPlaying,
                     )
                 }
                 Box(Modifier.navigationBarsPadding()) {
@@ -183,15 +181,13 @@ fun GlyphRoot(vm: MainViewModel) {
 private fun MiniPlayerBar(
     vm: MainViewModel,
     track: Track,
-    isPlaying: Boolean,
 ) {
-    val progress by vm.progress.collectAsStateWithLifecycle()
+    val playerState by vm.playerState.collectAsStateWithLifecycle()
 
     MiniPlayer(
         track = track,
-        isPlaying = isPlaying,
-        positionMs = progress.positionMs,
-        durationMs = progress.durationMs,
+        isPlaying = playerState.isPlaying,
+        progress = vm.progress,
         onOpen = vm::openPlayer,
         onToggle = vm::togglePlayPause,
         onPrevious = vm::previous,

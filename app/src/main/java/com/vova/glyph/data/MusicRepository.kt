@@ -1,8 +1,10 @@
 package com.vova.glyph.data
 
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.withContext
 
 class MusicRepository(private val db: GlyphDb) {
     private val _tracks = MutableStateFlow<List<Track>>(emptyList())
@@ -17,7 +19,7 @@ class MusicRepository(private val db: GlyphDb) {
     private val _onlineHistory = MutableStateFlow<List<Track>>(emptyList())
     val onlineHistory: StateFlow<List<Track>> = _onlineHistory.asStateFlow()
 
-    suspend fun refresh() {
+    suspend fun refresh() = withContext(Dispatchers.IO) {
         _tracks.value = db.allTracks()
         _favorites.value = db.favoriteTracks()
         _playlists.value = db.playlists()
@@ -135,7 +137,9 @@ class MusicRepository(private val db: GlyphDb) {
         refresh()
     }
 
-    suspend fun playlistTracks(playlistId: Long): List<Track> = db.playlistTracks(playlistId)
+    suspend fun playlistTracks(playlistId: Long): List<Track> = withContext(Dispatchers.IO) {
+        db.playlistTracks(playlistId)
+    }
 
     suspend fun trackById(id: Long): Track? = db.trackById(id)
 

@@ -25,6 +25,7 @@ import com.vova.glyph.playback.PlayerProgress
 import com.vova.glyph.playback.PlayerUiState
 import com.vova.glyph.playback.dsp.EqPreset
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
@@ -37,6 +38,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -181,7 +183,7 @@ class MainViewModel(
 
     val albums: StateFlow<List<Album>> = combine(repo.tracks, _hiddenAlbums) { tracks, hidden ->
         Albums.group(tracks.filter { it.source == Track.SOURCE_LOCAL }).filter { it.key !in hidden }
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    }.flowOn(Dispatchers.Default).stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     private val _online = MutableStateFlow(OnlineUiState())
     val online: StateFlow<OnlineUiState> = _online.asStateFlow()

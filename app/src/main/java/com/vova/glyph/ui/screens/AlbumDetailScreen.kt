@@ -32,7 +32,6 @@ import com.vova.glyph.SortTarget
 import com.vova.glyph.Tab
 import com.vova.glyph.data.Track
 import com.vova.glyph.data.TrackSort
-import com.vova.glyph.data.TrackSorter
 import com.vova.glyph.i18n.tr
 import com.vova.glyph.ui.components.AddToPlaylistSheet
 import com.vova.glyph.ui.components.ConfirmDialog
@@ -49,6 +48,7 @@ import com.vova.glyph.ui.components.SelectionBar
 import com.vova.glyph.ui.components.SortDialog
 import com.vova.glyph.ui.components.Text
 import com.vova.glyph.ui.components.TrackRow
+import com.vova.glyph.ui.components.rememberSortedTracks
 import com.vova.glyph.ui.theme.GlyphBlack
 import com.vova.glyph.ui.theme.GlyphDim
 import com.vova.glyph.ui.theme.GlyphGray
@@ -72,9 +72,7 @@ fun AlbumDetailScreen(vm: MainViewModel) {
     val sorting by vm.albumSorting.collectAsStateWithLifecycle()
 
     val currentAlbum = album ?: return
-    val sorted = remember(tracks, sorting) {
-        TrackSorter.apply(tracks, sorting)
-    }
+    val sorted = rememberSortedTracks(tracks, "", sorting)
 
     fun clearSelection() {
         editMode = false

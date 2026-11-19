@@ -20,7 +20,7 @@
 PIXTONE plays the music stored on your device. Just a folder, a queue and an interface built around dots, segments and pixels. Nothing is uploaded anywhere: network access is used only for optional lyrics, cover lookup and the online catalog.
 
 <p align="center">
-  <code>61 KOTLIN FILES</code> · <code>16,427 LINES</code> · <code>6 LANGUAGES</code> · <code>0 TRACKERS</code> · <code>16.8 MB APK</code>
+  <code>64 KOTLIN FILES</code> · <code>17,115 LINES</code> · <code>6 LANGUAGES</code> · <code>0 TRACKERS</code> · <code>16.5 MB APK</code>
 </p>
 
 <p align="center">
@@ -108,7 +108,13 @@ All screenshots show the English interface with a generated demo library. Track 
 
 </details>
 
-## 02 — Features
+## 02 — What's new in 2.1.1
+
+**Playlists are editable at any time.** The pencil in the playlist header opens the same form used for creation: rename the playlist, rewrite the description and replace the cover from the gallery. Saving updates the playlist in place — its tracks stay untouched, and the previous cover copy is deleted from app storage.
+
+**Faster lists and covers.** The library, album, playlist and favorites lists now sort and filter off the main thread, so typing in the search field and fast-scrolling a large library no longer stutter. Cover images use a dedicated Coil loader with memory and disk caches, gradients and generated placeholders are drawn with fewer nodes, and the mini-player no longer recomposes the whole screen twice a second — only its thin progress line updates. Database reads run on the IO dispatcher too.
+
+## 03 — Features
 
 | Feature | Details |
 |---|---|
@@ -117,13 +123,14 @@ All screenshots show the English interface with a generated demo library. Track 
 | **Folder scanning** | MP3, FLAC, OGG, AAC |
 | **Background playback** | Notification and Bluetooth |
 | **Sound tuning** | EQ, bass, reverb, speed, custom presets |
-| **Playlists and favorites** | Offline SQLite storage |
+| **Playlists and favorites** | Offline SQLite storage; edit the name, description and cover at any time |
 | **Track search and edit** | Search, edit, override |
 | **Albums** | Grouped by tags, featured artists merged |
 | **Sorting** | Five modes, filter dialog, persistent |
 | **Multi-select** | Bulk select, delete |
 | **Own images** | Covers from gallery |
 | **Sticky headers** | Search folds away |
+| **Smooth lists** | Sorting and filtering off the main thread, tuned image cache |
 | **Lyrics** | Synced LRC, quotes, quote images |
 | **Smart cover art** | Genius, Deezer, iTunes, per-track refresh |
 | **Themes** | Six presets, custom palettes, text export and import |
@@ -132,7 +139,7 @@ All screenshots show the English interface with a generated demo library. Track 
 | **Pixel dissolve toasts** | Tap to dismiss |
 | **Lightweight and private** | No trackers, no ads |
 
-## 03 — Tech stack
+## 04 — Tech stack
 
 | Layer | Technology |
 |---|---|
@@ -147,7 +154,7 @@ All screenshots show the English interface with a generated demo library. Track 
 | **Build** | Gradle 9.6, Android Gradle Plugin 9.4.1, JDK 21 |
 | **SDK** | minSdk 26, targetSdk 37, compileSdk 37 |
 
-## 04 — Architecture
+## 05 — Architecture
 
 ```text
 MainActivity
@@ -169,7 +176,7 @@ MainViewModel ── MusicRepository ── GlyphDb (SQLite)
 
 The app has no backend and no network dependency for local playback. Network access is used only for optional lyrics, cover lookup and the online catalog.
 
-## 05 — Project structure
+## 06 — Project structure
 
 ```text
 app/src/main/java/com/vova/glyph/
@@ -187,7 +194,7 @@ app/src/main/java/com/vova/glyph/
     └── screens/             # library, player, settings, onboarding
 ```
 
-## 06 — Build
+## 07 — Build
 
 Requirements:
 
@@ -204,12 +211,12 @@ cd PIXTONE
 The debug APK is produced at:
 
 ```text
-app/build/outputs/apk/debug/Pixton 2.1.0.apk
+app/build/outputs/apk/debug/Pixton 2.1.1.apk
 ```
 
 `local.properties` with your own `sdk.dir` is ignored by Git.
 
-## 07 — Third-party licenses
+## 08 — Third-party licenses
 
 Fonts — Doto, Pixelify Sans, Space Grotesk — are licensed under the **SIL Open Font License 1.1**.
 
@@ -217,11 +224,11 @@ Libraries are licensed under **Apache License 2.0** (AndroidX, Compose, Media3, 
 
 Full license texts are bundled in `app/src/main/assets/licenses/` and available inside the app under **Settings → Licenses**.
 
-## 08 — Disclaimer
+## 09 — Disclaimer
 
 PIXTONE is a player for music you already own and is intended for **personal, non-commercial use only**. Track metadata, lyrics and cover art fetched from third-party services belong to their respective owners and are used only for local display. The project is not affiliated with any music service or brand.
 
-## 09 — License
+## 10 — License
 
 Released under the [MIT License](LICENSE).
 

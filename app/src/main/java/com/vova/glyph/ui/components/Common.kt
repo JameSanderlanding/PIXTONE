@@ -54,10 +54,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PointMode
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.scale
+import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
@@ -71,10 +77,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.vova.glyph.data.Album
 import com.vova.glyph.data.Playlist
 import com.vova.glyph.data.Track
+import com.vova.glyph.playback.PlayerProgress
 import com.vova.glyph.ui.theme.DotoFamily
 import com.vova.glyph.ui.theme.GlyphBlack
 import com.vova.glyph.ui.theme.GlyphDim
@@ -85,6 +93,7 @@ import com.vova.glyph.ui.theme.GlyphSurface
 import com.vova.glyph.ui.theme.GlyphSurfaceHigh
 import com.vova.glyph.ui.theme.GlyphWhite
 import com.vova.glyph.ui.theme.PixelFamily
+import kotlinx.coroutines.flow.StateFlow
 import java.io.File
 import kotlin.math.PI
 import kotlin.math.cos
@@ -117,7 +126,7 @@ fun coverModel(path: String?): Any? = when {
     path.isNullOrBlank() -> null
     path.startsWith("http://") || path.startsWith("https://") -> path
     path.startsWith("content://") -> Uri.parse(path)
-    else -> File(path).takeIf { it.exists() && it.length() > 0 }
+    else -> File(path)
 }
 
 @Composable
@@ -129,28 +138,34 @@ fun GlyphCover(
 ) {
     val shape = remember(corner) { RoundedCornerShape(corner) }
     val model = remember(artwork) { coverModel(artwork) }
+    val surface = GlyphSurfaceHigh
+    val line = GlyphLine
+    val background = GlyphBlack
+    val overlay = remember(background) {
+        Brush.verticalGradient(
+            0.55f to Color.Transparent,
+            1f to background.copy(alpha = 0.36f),
+        )
+    }
+    var failed by remember(model) { mutableStateOf(false) }
     Box(
         modifier
             .clip(shape)
-            .background(GlyphSurfaceHigh)
-            .border(1.dp, GlyphLine, shape)
+            .background(surface)
+            .border(1.dp, line, shape)
     ) {
-        if (model != null) {
+        if (model != null && !failed) {
             AsyncImage(
                 model = model,
                 contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop,
-            )
-            Box(
-                Modifier
+                modifier = Modifier
                     .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            0.55f to Color.Transparent,
-                            1f to GlyphBlack.copy(alpha = 0.36f),
-                        )
-                    )
+                    .drawWithContent {
+                        drawContent()
+                        drawRect(overlay)
+                    },
+                contentScale = ContentScale.Crop,
+                onError = { failed = true },
             )
         } else {
             GlyphPlaceholder(seed)
@@ -160,31 +175,61 @@ fun GlyphCover(
 
 @Composable
 fun GlyphPlaceholder(seed: String, modifier: Modifier = Modifier) {
-    val pattern = remember(seed) {
+    val dots = remember(seed) {
+        var mask = 0L
         val random = Random(seed.hashCode())
-        List(64) { random.nextFloat() > 0.46f }
+        for (i in 0 until 64) {
+            if (random.nextFloat() > 0.46f) mask = mask or (1L shl i)
+        }
+        mask
     }
     val accent = remember(seed) { (seed.hashCode() and 0x7fffffff) % 64 }
-    Canvas(modifier.fillMaxSize().background(GlyphBlack)) {
+    val groups = remember(dots, accent) {
+        val active = ArrayList<Offset>(40)
+        val inactive = ArrayList<Offset>(40)
+        for (i in 0 until 64) {
+            if (i == accent) continue
+            val point = Offset((i % 8).toFloat(), (i / 8).toFloat())
+            if ((dots ushr i) and 1L == 1L) active.add(point) else inactive.add(point)
+        }
+        active to inactive
+    }
+    val background = GlyphBlack
+    val accentColor = GlyphRed
+    val activeColor = GlyphWhite.copy(alpha = 0.82f)
+    val inactiveColor = GlyphWhite.copy(alpha = 0.08f)
+    Canvas(modifier.fillMaxSize().background(background)) {
         val cols = 8
         val cell = size.minDimension / (cols + 1.1f)
         val startX = (size.width - cell * cols) / 2f + cell / 2f
         val startY = (size.height - cell * cols) / 2f + cell / 2f
-        for (i in 0 until 64) {
-            val col = i % cols
-            val row = i / cols
-            val active = pattern[i]
-            val color = when {
-                i == accent -> GlyphRed
-                active -> GlyphWhite.copy(alpha = 0.82f)
-                else -> GlyphWhite.copy(alpha = 0.08f)
-            }
-            drawCircle(
-                color = color,
-                radius = cell * if (i == accent) 0.22f else 0.15f,
-                center = Offset(startX + col * cell, startY + row * cell),
+        withTransform({
+            translate(startX, startY)
+            scale(cell, cell, pivot = Offset.Zero)
+        }) {
+            drawPoints(
+                points = groups.first,
+                pointMode = PointMode.Points,
+                color = activeColor,
+                strokeWidth = 0.30f,
+                cap = StrokeCap.Round,
+            )
+            drawPoints(
+                points = groups.second,
+                pointMode = PointMode.Points,
+                color = inactiveColor,
+                strokeWidth = 0.30f,
+                cap = StrokeCap.Round,
             )
         }
+        drawCircle(
+            color = accentColor,
+            radius = cell * 0.22f,
+            center = Offset(
+                startX + (accent % cols) * cell,
+                startY + (accent / cols) * cell,
+            ),
+        )
     }
 }
 
@@ -626,6 +671,10 @@ fun PlayingBars(
     modifier: Modifier = Modifier,
     color: Color = GlyphWhite,
 ) {
+    if (!playing) {
+        PausedBars(modifier, color = GlyphDim)
+        return
+    }
     val transition = rememberInfiniteTransition(label = "bars")
     val a by transition.animateFloat(
         initialValue = 0.3f,
@@ -645,14 +694,17 @@ fun PlayingBars(
         animationSpec = infiniteRepeatable(tween(650, easing = LinearEasing), RepeatMode.Reverse),
         label = "c",
     )
-    val levels = if (playing) listOf(a, b, c) else listOf(0.35f, 0.65f, 0.45f)
     Canvas(modifier.size(14.dp)) {
         val barWidth = size.width / 5f
         val gap = barWidth / 2f
         for (i in 0..2) {
-            val h = size.height * levels[i]
+            val h = size.height * when (i) {
+                0 -> a
+                1 -> b
+                else -> c
+            }
             drawRoundRect(
-                color = if (playing) color else GlyphDim,
+                color = color,
                 topLeft = Offset(i * (barWidth + gap), size.height - h),
                 size = androidx.compose.ui.geometry.Size(barWidth, h),
                 cornerRadius = androidx.compose.ui.geometry.CornerRadius(barWidth / 2),
@@ -660,6 +712,26 @@ fun PlayingBars(
         }
     }
 }
+
+@Composable
+private fun PausedBars(modifier: Modifier, color: Color) {
+    Canvas(modifier.size(14.dp)) {
+        val barWidth = size.width / 5f
+        val gap = barWidth / 2f
+        val levels = PAUSED_LEVELS
+        for (i in 0..2) {
+            val h = size.height * levels[i]
+            drawRoundRect(
+                color = color,
+                topLeft = Offset(i * (barWidth + gap), size.height - h),
+                size = androidx.compose.ui.geometry.Size(barWidth, h),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(barWidth / 2),
+            )
+        }
+    }
+}
+
+private val PAUSED_LEVELS = floatArrayOf(0.35f, 0.65f, 0.45f)
 
 @Composable
 fun DotSpinner(
@@ -855,13 +927,36 @@ fun TrackRow(
         track.effectiveTitle + track.effectiveArtist
     }
     val durationLabel = remember(track.durationMs) { formatDuration(track.durationMs) }
+    val typography = MaterialTheme.typography
+    val white = GlyphWhite
+    val gray = GlyphGray
+    val dim = GlyphDim
+    val red = GlyphRed
+    val line = GlyphLine
+    val doto = DotoFamily
+    val titleStyle = remember(typography, white, isCurrent) {
+        typography.titleSmall.copy(
+            color = if (isCurrent) white else white.copy(alpha = 0.94f),
+            fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Medium,
+        )
+    }
+    val artistStyle = remember(typography, gray) { typography.bodySmall.copy(color = gray) }
+    val durationStyle = remember(dim, doto) {
+        TextStyle(
+            fontFamily = doto,
+            fontSize = 10.sp,
+            color = dim,
+            letterSpacing = 0.4.sp,
+        )
+    }
+    val rowBackground = remember(selected, red) {
+        if (selected) red.copy(alpha = 0.08f) else Color.Transparent
+    }
     Column(modifier) {
         Row(
             Modifier
                 .fillMaxWidth()
-                .background(
-                    if (selected) GlyphRed.copy(alpha = 0.08f) else Color.Transparent
-                )
+                .background(rowBackground)
                 .combinedClickable(
                     onClick = onClick,
                     onLongClick = onLongClick,
@@ -900,10 +995,7 @@ fun TrackRow(
                     }
                     Text(
                         track.effectiveTitle,
-                        style = MaterialTheme.typography.titleSmall.copy(
-                            color = if (isCurrent) GlyphWhite else GlyphWhite.copy(alpha = 0.94f),
-                            fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Medium,
-                        ),
+                        style = titleStyle,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -912,7 +1004,7 @@ fun TrackRow(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         track.displayArtist,
-                        style = MaterialTheme.typography.bodySmall.copy(color = GlyphGray),
+                        style = artistStyle,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f, fill = false),
@@ -921,10 +1013,10 @@ fun TrackRow(
                         Spacer(Modifier.width(7.dp))
                         Box(
                             Modifier
-                                .border(1.dp, GlyphLine, RoundedCornerShape(1.dp))
+                                .border(1.dp, line, RoundedCornerShape(1.dp))
                                 .padding(horizontal = 4.dp, vertical = 1.dp)
                         ) {
-                            MicroLabel("ОНЛАЙН", color = GlyphRed, fontSize = 6)
+                            MicroLabel("ОНЛАЙН", color = red, fontSize = 6)
                         }
                     }
                 }
@@ -958,12 +1050,7 @@ fun TrackRow(
             }
             Text(
                 durationLabel,
-                style = TextStyle(
-                    fontFamily = DotoFamily,
-                    fontSize = 10.sp,
-                    color = GlyphDim,
-                    letterSpacing = 0.4.sp,
-                ),
+                style = durationStyle,
             )
             if (!selectionMode) {
                 Box(
@@ -974,7 +1061,7 @@ fun TrackRow(
                 ) {
                     GlyphIcon(
                         glyph = if (track.favorite) Glyph.HeartFilled else Glyph.Heart,
-                        tint = if (track.favorite) GlyphRed else GlyphGray,
+                        tint = if (track.favorite) red else gray,
                         modifier = Modifier.size(17.dp),
                         stroke = 1.5.dp,
                     )
@@ -988,7 +1075,7 @@ fun TrackRow(
                     ) {
                         GlyphIcon(
                             glyph = Glyph.Text,
-                            tint = GlyphGray,
+                            tint = gray,
                             modifier = Modifier.size(17.dp),
                             stroke = 1.5.dp,
                         )
@@ -1000,7 +1087,7 @@ fun TrackRow(
                         .clickable { menuOpen = true },
                     contentAlignment = Alignment.Center,
                 ) {
-                    GlyphIcon(Glyph.More, tint = GlyphDim, modifier = Modifier.size(16.dp))
+                    GlyphIcon(Glyph.More, tint = dim, modifier = Modifier.size(16.dp))
                     DropdownMenu(
                         expanded = menuOpen,
                         onDismissRequest = { menuOpen = false },
@@ -1053,7 +1140,7 @@ fun TrackRow(
                                 text = {
                                     Text(
                                         "Удалить",
-                                        style = MaterialTheme.typography.bodyMedium.copy(color = GlyphRed),
+                                        style = MaterialTheme.typography.bodyMedium.copy(color = red),
                                     )
                                 },
                                 onClick = {
@@ -1076,12 +1163,12 @@ fun TrackRow(
                         Modifier
                             .size(22.dp)
                             .background(
-                                if (selected) GlyphRed else Color.Transparent,
+                                if (selected) red else Color.Transparent,
                                 RoundedCornerShape(2.dp),
                             )
                             .border(
                                 1.dp,
-                                if (selected) GlyphRed else GlyphLine,
+                                if (selected) red else line,
                                 RoundedCornerShape(2.dp),
                             ),
                         contentAlignment = Alignment.Center,
@@ -1089,7 +1176,7 @@ fun TrackRow(
                         if (selected) {
                             GlyphIcon(
                                 Glyph.Check,
-                                tint = GlyphWhite,
+                                tint = white,
                                 modifier = Modifier.size(12.dp),
                                 stroke = 2.dp,
                             )
@@ -1128,24 +1215,14 @@ fun TrackRow(
 fun MiniPlayer(
     track: Track,
     isPlaying: Boolean,
-    positionMs: Long,
-    durationMs: Long,
+    progress: StateFlow<PlayerProgress>,
     onOpen: () -> Unit,
     onToggle: () -> Unit,
     onPrevious: () -> Unit,
     onNext: () -> Unit,
 ) {
-    val duration = if (durationMs > 0) durationMs else track.durationMs
-    val progress = if (duration > 0) (positionMs.toFloat() / duration).coerceIn(0f, 1f) else 0f
     Column(Modifier.fillMaxWidth().background(GlyphBlack)) {
-        Box(Modifier.fillMaxWidth().height(1.dp).background(GlyphLine)) {
-            Box(
-                Modifier
-                    .fillMaxWidth(progress)
-                    .height(1.dp)
-                    .background(GlyphWhite)
-            )
-        }
+        MiniPlayerProgress(progress = progress, fallbackDurationMs = track.durationMs)
         Row(
             Modifier
                 .fillMaxWidth()
@@ -1206,6 +1283,28 @@ fun MiniPlayer(
                 GlyphIcon(Glyph.Next, tint = GlyphGray, modifier = Modifier.size(17.dp))
             }
         }
+    }
+}
+
+@Composable
+private fun MiniPlayerProgress(
+    progress: StateFlow<PlayerProgress>,
+    fallbackDurationMs: Long,
+) {
+    val state by progress.collectAsStateWithLifecycle()
+    val duration = if (state.durationMs > 0) state.durationMs else fallbackDurationMs
+    val fraction = if (duration > 0) {
+        (state.positionMs.toFloat() / duration).coerceIn(0f, 1f)
+    } else {
+        0f
+    }
+    Box(Modifier.fillMaxWidth().height(1.dp).background(GlyphLine)) {
+        Box(
+            Modifier
+                .fillMaxWidth(fraction)
+                .height(1.dp)
+                .background(GlyphWhite)
+        )
     }
 }
 

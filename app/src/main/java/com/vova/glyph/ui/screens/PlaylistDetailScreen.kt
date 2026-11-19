@@ -42,7 +42,6 @@ import com.vova.glyph.MainViewModel
 import com.vova.glyph.SortTarget
 import com.vova.glyph.data.Track
 import com.vova.glyph.data.TrackSort
-import com.vova.glyph.data.TrackSorter
 import com.vova.glyph.ui.components.ConfirmDialog
 import com.vova.glyph.ui.components.EditPlaylistDialog
 import com.vova.glyph.ui.components.EmptyState
@@ -59,6 +58,7 @@ import com.vova.glyph.ui.components.SelectionBar
 import com.vova.glyph.ui.components.SortDialog
 import com.vova.glyph.ui.components.Text
 import com.vova.glyph.ui.components.TrackRow
+import com.vova.glyph.ui.components.rememberSortedTracks
 import com.vova.glyph.ui.theme.GlyphBlack
 import com.vova.glyph.ui.theme.GlyphDim
 import com.vova.glyph.ui.theme.GlyphGray
@@ -89,7 +89,7 @@ fun PlaylistDetailScreen(vm: MainViewModel) {
     ) { uri -> if (uri != null) editCoverUri = uri }
 
     val currentPlaylist = playlist ?: return
-    val sorted = remember(tracks, sorting) { TrackSorter.apply(tracks, sorting) }
+    val sorted = rememberSortedTracks(tracks, "", sorting)
 
     fun clearSelection() {
         editMode = false
